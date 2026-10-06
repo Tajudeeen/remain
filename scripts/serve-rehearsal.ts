@@ -27,10 +27,10 @@ try {
   const hosts = allowedHosts(process.env.REMAIN_ALLOWED_HOSTS);
   if (host === '0.0.0.0' && hosts.length === 0) throw new Error('PUBLIC_BIND_REQUIRES_ALLOWED_HOSTS');
 
-  const server = createRehearsalServer({
-    allowedHosts: hosts,
-    buildSha: process.env.REMAIN_BUILD_SHA
-  });
+  const configuredBuildSha = process.env.REMAIN_BUILD_SHA;
+  const server = createRehearsalServer(configuredBuildSha === undefined
+    ? { allowedHosts: hosts }
+    : { allowedHosts: hosts, buildSha: configuredBuildSha });
 
   server.listen(listenPort, host, () => {
     const address = host === '0.0.0.0' ? 'configured public host' : `http://${host}:${listenPort}`;
