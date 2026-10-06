@@ -43,7 +43,7 @@ npx --yes agent-browser@0.38.2 install
 npm run test:web
 ```
 
-On Linux, browser system dependencies may require `install --with-deps`. This tool is isolated from the production dependency tree. GitHub CI installs it, tests the real browser flow and uploads five labelled synthetic screenshots. The rehearsal server binds to loopback and must not be exposed as a production trading backend.
+On Linux, browser system dependencies may require `install --with-deps`. This tool is isolated from the production dependency tree. GitHub CI installs it, tests the real browser flow and uploads five labelled synthetic screenshots. Local development binds to loopback. Public fixture deployment requires an explicit host allowlist and remains a rehearsal service, never a production trading backend.
 
 For a terminal-only rehearsal:
 
@@ -60,6 +60,20 @@ npm run rehearse:orders
 ```
 
 This standalone backend rehearsal binds a passing fixture plan, persists an uncertain attempt in SQLite, reopens it with the same request ID, observes a fictional fill and independently checks its fictional transfer/balance evidence. A later fictional reorg invalidates the match. The temporary database is removed. There are no network calls or browser order controls. Read the [journal contract, invariants and storage limitations](docs/order-journal.md). Synthetic matches never establish a settled mainnet trade.
+
+## Proof receipt rehearsal
+
+```sh
+npm run rehearse:receipt
+```
+
+This fixture-only flow creates a canonical receipt only after synthetic settlement reconciliation passes. Its independent verifier recomputes settlement, binding and receipt integrity and rejects tampering. Read [proof receipt and provenance](docs/proof-receipt.md).
+
+## Fixture deployment hardening
+
+The rehearsal can be packaged in the committed non-root Docker image. A public bind fails closed unless `REMAIN_ALLOWED_HOSTS` names the exact public hostname. `/healthz` exposes only fixture readiness, execution remains disabled, and `npm run smoke:deployed` verifies the deployed surface from outside. See the [deployment runbook](docs/deployment-runbook.md).
+
+No external deployment is claimed yet. The connected Vercel session currently exposes no deployable team context, so a public URL and external smoke result remain required evidence for Gate 5.
 
 ## Live discovery and feasibility
 
@@ -96,6 +110,8 @@ GitHub has a manual **Binance read-only feasibility** workflow with `discover` a
 - [Planning engine](docs/planning-engine.md)
 - [Planning interface](docs/planning-interface.md)
 - [Order journal and settlement rehearsal](docs/order-journal.md)
+- [Proof receipt and provenance](docs/proof-receipt.md)
+- [Fixture deployment runbook](docs/deployment-runbook.md)
 - [Developer experience log](docs/devex-log.md)
 
 The dependency lockfile is committed. `npm run check:security` is a small source-policy check, not a security audit. No deployed custom contracts exist at this milestone.
