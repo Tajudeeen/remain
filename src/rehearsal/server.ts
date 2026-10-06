@@ -6,15 +6,24 @@ const assets = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']], ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']], ['/logo.png', ['logo.png', 'image/png']]
 ]);
+
+export type RehearsalServerOptions = Readonly<{
+  assetRoot?: URL;
+  allowedHosts?: readonly string[];
+  buildSha?: string;
+}>;
+
 function headers(response: ServerResponse): void {
   response.setHeader('Cache-Control', 'no-store'); response.setHeader('X-Content-Type-Options', 'nosniff');
   response.setHeader('Referrer-Policy', 'no-referrer'); response.setHeader('X-Frame-Options', 'DENY');
   response.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   response.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; object-src 'none'");
 }
-function json(response: ServerResponse, status: number, value: unknown): void {
+function json(response: ServerResponse, status: number, value: unknown, head = false): void {
   if (response.destroyed) return;
-  response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); response.end(JSON.stringify(value));
+  const body = JSON.stringify(value);
+  response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': Buffer.byteLength(body) });
+  response.end(head ? undefined : body);
 }
 function readBody(request: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -29,15 +38,60 @@ function readBody(request: IncomingMessage): Promise<string> {
     request.on('aborted', () => { if (!done) { done = true; reject(new RehearsalError('INVALID_REQUEST')); } });
   });
 }
-export function createRehearsalServer(assetRoot = new URL('../../web/', import.meta.url)) {
-  // One global budget is intentionally simple and memory-bounded for a local
-  // fixture server. This is not an authenticated production trading service.
+function normalizeAllowedHosts(values: readonly string[] | undefined): Set<string> {
+  const hosts = new Set<string>();
+  for (const raw of values ?? []) {
+    const value = raw.trim().toLowerCase();
+    if (!/^[a-z0-9.-]+(?::[0-9]{1,5})?$/.test(value) || value.startsWith('.') || value.endsWith('.') || value.includes('..')) throw new RehearsalError('INVALID_REQUEST');
+    hosts.add(value);
+  }
+  return hosts;
+}
+function normalizedHost(value: string | undefined): string | null {
+  if (!value) return null;
+  const host = value.toLowerCase();
+  if (!/^[a-z0-9.-]+(?::[0-9]{1,5})?$/.test(host) || host.startsWith('.') || host.endsWith('.') || host.includes('..')) return null;
+  return host;
+}
+function hostAllowed(host: string, explicit: Set<string>): boolean {
+  if (/^(?:localhost|127\.0\.0\.1)(?::[0-9]{1,5})?$/.test(host)) return true;
+  if (explicit.has(host)) return true;
+  const withoutPort = host.replace(/:[0-9]{1,5}$/, '');
+  return explicit.has(withoutPort);
+}
+function buildId(value: string | undefined): string {
+  return value && /^[a-f0-9]{7,40}$/i.test(value) ? value.toLowerCase() : 'unknown';
+}
+
+export function createRehearsalServer(options: RehearsalServerOptions = {}) {
+  const assetRoot = options.assetRoot ?? new URL('../../web/', import.meta.url);
+  const allowedHosts = normalizeAllowedHosts(options.allowedHosts);
+  const deployedBuild = buildId(options.buildSha);
+  // One global budget is intentionally simple and memory-bounded for a fixture
+  // service. It is not an authenticated production trading backend.
   let windowStarted = Date.now(); let requests = 0; let inFlight = 0;
   const server = createServer(async (request, response) => {
     headers(response);
-    const host = request.headers.host;
-    if (!host || !/^(?:localhost|127\.0\.0\.1)(?::[0-9]{1,5})?$/.test(host)) { json(response, 403, { code: 'HOST_REJECTED' }); return; }
-    if (request.headers['sec-fetch-site'] === 'cross-site' || request.headers.origin && request.headers.origin !== `http://${host}`) { json(response, 403, { code: 'ORIGIN_REJECTED' }); return; }
+    const host = normalizedHost(request.headers.host);
+    if (!host || !hostAllowed(host, allowedHosts)) { json(response, 403, { code: 'HOST_REJECTED' }); return; }
+    if (
+      request.headers['sec-fetch-site'] === 'cross-site' ||
+      request.headers.origin && request.headers.origin !== `http://${host}` && request.headers.origin !== `https://${host}`
+    ) { json(response, 403, { code: 'ORIGIN_REJECTED' }); return; }
+
+    if (request.url === '/healthz') {
+      if (request.method !== 'GET' && request.method !== 'HEAD') { response.setHeader('Allow', 'GET, HEAD'); json(response, 405, { code: 'METHOD_REJECTED' }); return; }
+      json(response, 200, {
+        status: 'ok',
+        service: 'remain-rehearsal',
+        mode: 'TEST_FIXTURE',
+        executionEnabled: false,
+        liveGate: 'BLOCKED',
+        buildSha: deployedBuild
+      }, request.method === 'HEAD');
+      return;
+    }
+
     // Exact URL allowlist, rather than filesystem joining untrusted paths.
     const asset = assets.get(request.url ?? '');
     if (asset && (request.method === 'GET' || request.method === 'HEAD')) {
