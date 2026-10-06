@@ -1,5 +1,7 @@
 # Remain
 
+Netlify deployment uses the existing synthetic planner through a bounded serverless function. See [Netlify deployment](docs/netlify-deployment.md). The source remains private and the hosted demo keeps live execution disabled.
+
 Raise cash. Stay invested.
 
 Remain works backward from a USDT cash target to a bounded partial sale of a tokenized-stock position on BNB Smart Chain. BellGuard checks market state, quote freshness and user limits. The intended result is a reconciled settlement receipt showing cash received and exposure retained.
