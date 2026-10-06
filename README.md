@@ -6,9 +6,13 @@ Remain works backward from a USDT cash target to a bounded partial sale of a tok
 
 ## Current state
 
-Milestone 0 feasibility kit plus Milestone 1's standalone cash solver and BellGuard. Execution is disabled. There is no trading UI or deployed product yet. Tests use synthetic data. The first live discovery run was blocked by Binance compliance code 40304. A successful discovery and held-stock RFQ check are still required before live integration. See [milestone status](docs/milestone-status.md) and [access troubleshooting](docs/access-troubleshooting.md).
+Milestone 0 feasibility kit, Milestone 1's standalone cash solver and BellGuard, and Milestone 2's interactive planning rehearsal. Execution is disabled. There is no live wallet flow or deployed trading product. The interface uses an explicitly fictional position and the actual planning engine. GitHub and owner-reported local discovery both returned Binance compliance code 40304. A successful discovery and held-stock RFQ check are still required before live integration. See [milestone status](docs/milestone-status.md) and [access troubleshooting](docs/access-troubleshooting.md).
 
 This repo stays private until the owner approves public release. Nothing here is financial advice or a claim of Binance endorsement.
+
+![Synthetic Remain planning interface. No live stock holdings or settlement.](docs/assets/planning-desktop.png)
+
+[Mobile rehearsal screenshot](docs/assets/planning-mobile.png). Both images use fictional data.
 
 ## Local verification
 
@@ -23,6 +27,25 @@ npm run test:coverage
 The kit includes exact-byte HMAC signing, a read-only endpoint allowlist, bounded responses and retries, input/schema validation, synthetic adversarial tests and sanitized evidence reports. No wallet-signing or trade-submission methods exist.
 
 ## Cash-planning rehearsal
+
+Open the interactive interface without API credentials or a wallet:
+
+```sh
+npm run dev
+```
+
+Visit `http://127.0.0.1:3000`. Enter a cash target, choose a retained floor and test regular, closed or paused market scenarios. BellGuard shows a bounded synthetic result. Changing an input clears the old result. The inspection window expires after 15 seconds. Downloads are labelled synthetic planning records, never settlement receipts. An original textless mark and graphite, cream and Binance-inspired yellow define the interface. Read the [interface contract](docs/planning-interface.md).
+
+For automated browser verification, install its pinned development-only browser tool first:
+
+```sh
+npx --yes agent-browser@0.38.2 install
+npm run test:web
+```
+
+On Linux, browser system dependencies may require `install --with-deps`. This tool is isolated from the production dependency tree. GitHub CI installs it, tests the real browser flow and uploads five labelled synthetic screenshots. The rehearsal server binds to loopback and must not be exposed as a production trading backend.
+
+For a terminal-only rehearsal:
 
 ```sh
 npm run rehearse:plan
@@ -63,6 +86,7 @@ GitHub has a manual **Binance read-only feasibility** workflow with `discover` a
 - [Product lock](docs/product-lock.md)
 - [Security boundaries](docs/security.md)
 - [Planning engine](docs/planning-engine.md)
+- [Planning interface](docs/planning-interface.md)
 - [Developer experience log](docs/devex-log.md)
 
 The dependency lockfile is committed. `npm run check:security` is a small source-policy check, not a security audit. No deployed custom contracts exist at this milestone.
