@@ -5,6 +5,7 @@ coverage/
 .env.*
 !.env.example
 evidence/
+state/
 *.log
 *.pem
 *.key

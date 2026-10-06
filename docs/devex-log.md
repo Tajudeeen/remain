@@ -12,6 +12,9 @@ Real findings and unanswered questions. No fabricated live measurements.
 | Example typedDataToSign can be an opaque hex string while signing guidance references EIP-712 | Opaque payloads blocked; ask which endpoint returns complete typed-data object for each vendor | Trading API example and live schema confirmation pending |
 | A read-only build is not transaction simulation or settlement | Report labels separate these capabilities | Trading API and [Transaction API](https://web3.binance.com/en/dev-docs/catalog/web3-wallet/api/rest-api/transaction-api) |
 | Quote lifetime is short | Single-shot quote/build, local 20-second build cutoff | Trading API; real latency and TTL observations pending |
+| RFQ request deduplication is documented for 30 minutes | Preserve request IDs durably; unresolved outcomes after that window require investigation | Trading API documentation reviewed 2026-10-06; no real submission tested |
+| Submit quoteId refers to built rfq.orderId; status uses returned platform orderId | Keep planning quote, built order and platform order identities separate | Trading API; actual vendor mapping remains unverified |
+| RFQ statuses list PENDING_VENDOR, PENDING_ONCHAIN, FILLED, FAILED, EXPIRED and CANCELLED | Model these observations conservatively; do not invent partial-fill or cancellation endpoint support | Trading API; live lifecycle, cancellation and partial fills still need support confirmation |
 
 ## Live observations
 
@@ -24,6 +27,8 @@ The official [full documentation](https://web3.binance.com/en/dev-docs/llms-full
 Owner-reported local observation, 2026-10-06 05:23:34 UTC: discovery run `ac3580b8-1e20-4ad5-b8f7-9a895b6f8dda` returned the same 40304 compliance rejection. This weakens an explanation limited to GitHub hosting, but does not identify the compliance rule or prove valid credentials. No successful endpoint, stock coverage or latency measurement was established. The owner was given a concrete support request with project ID, timestamp and code. Operator approval and access review remain unresolved.
 
 The owner authorized independent interface work while access is blocked. The interface displays TEST_FIXTURE, labels the position fictional and keeps execution disabled. No fixture price, impact, fee, market status, coverage or quote result is recorded as a Binance observation.
+
+The next authorized independent module uses a real local SQLite journal with synthetic order and settlement evidence. Tests show local process/crash consistency and conservative accounting behavior. They do not measure Binance execution or demonstrate settlement. No typed payloads, signatures or actual balances are persisted by the rehearsal. The fixture confirmation threshold is a demo policy; live BSC finality and vendor order attribution remain research/adapter work.
 
 Run discovery, then held-stock feasibility. Record run IDs, permitted endpoint paths, status, latency and redacted evidence. Record chain/ticker/issuer coverage and empty-list cases. Compare issuers only if two real BSC wrappers for the same underlying are discoverable. Preserve API errors as classified outcomes. Distinguish documentation ambiguities from actual runtime failures.
 

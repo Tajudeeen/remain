@@ -11,6 +11,7 @@ Remain is a cash-target tokenized-stock product with BellGuard risk checks. The 
 - The owner requested continuation on 2026-10-06 after the live rejection was explained. Milestone 1 may proceed as a standalone, tested planning engine with an injected quote provider. Its live integration remains blocked by gate 0. This authorization does not enable execution or bypass access restrictions.
 - The owner again requested continuation on 2026-10-06 after local discovery also returned 40304. Milestone 2 may build a clearly labelled synthetic planning interface and local rehearsal server. No live wallet connection or Binance adapter is enabled. Fixture UI tests do not close gate 0.
 - Do not add live execution, agents or smart contracts before the feasibility gate is satisfied.
+- The owner's next-milestone request authorizes milestone 3 as a standalone TEST_FIXTURE order journal and settlement rehearsal. It has no submission, signing, wallet, RPC or Binance execution adapter. Synthetic reconciliation does not satisfy live settlement evidence.
 - No secrets, private keys, seeds, raw signed payloads or wallet balances in committed files or public logs.
 - Never sign, approve, submit, broadcast or make live trades without explicit user approval.
 - Read-only quote/build endpoints are permitted for feasibility, never order/submit.
