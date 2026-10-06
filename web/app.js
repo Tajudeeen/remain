@@ -1,14 +1,41 @@
 const $ = (id) => document.getElementById(id);
 const form = $('plan-form');
 const bar = $('position-bar');
-// Animate deliberate navigation only. Global smooth scrolling can move a
-// form control while focus/automation is trying to click its current bounds.
-for (const link of document.querySelectorAll('nav a[href^="#"]')) link.addEventListener('click', (event) => {
-  const target = document.querySelector(link.getAttribute('href'));
-  if (!target) return;
-  event.preventDefault(); history.replaceState(null, '', link.getAttribute('href'));
-  target.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+function route(focus = false) {
+  const hash = location.hash;
+  const dashboard = ['#dashboard', '#planner', '#cash-target'].includes(hash);
+  $('landing-view').hidden = dashboard;
+  $('dashboard-view').hidden = !dashboard;
+  document.title = dashboard ? 'Cash planner | Remain' : 'Remain | Raise cash. Stay invested.';
+  for (const link of document.querySelectorAll('nav a')) {
+    if (link.getAttribute('href') === (dashboard ? '#dashboard' : hash)) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  }
+  const target = hash === '#how-it-works' ? $('how-title') : hash === '#about' ? $('trust-title') : dashboard ? $('intro-title') : $('landing-title');
+  if (focus) { target.focus({ preventScroll: true }); target.scrollIntoView({ behavior: 'auto', block: 'start' }); }
+}
+window.addEventListener('hashchange', () => route(true));
+// Re-clicking the current route must still focus its heading.
+for (const link of document.querySelectorAll('a[href^="#"]')) link.addEventListener('click', () => {
+  if (link.getAttribute('href') === location.hash) route(true);
 });
+route(Boolean(location.hash));
+let splashTimer;
+function dismissSplash(focus = false) {
+  clearTimeout(splashTimer); $('splash').hidden = true; $('site-content').inert = false;
+  try { sessionStorage.setItem('remain-introduced', 'yes'); } catch { /* Navigation must work without storage. */ }
+  if (focus) route(true);
+}
+let introduced = false;
+try { introduced = sessionStorage.getItem('remain-introduced') === 'yes'; } catch { /* Storage is optional. */ }
+if (!introduced && !reducedMotion.matches && !location.hash) {
+  $('splash').hidden = false; $('site-content').inert = true;
+  splashTimer = setTimeout(() => dismissSplash(), 1800);
+}
+$('skip-splash').addEventListener('click', () => dismissSplash(true));
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !$('splash').hidden) dismissSplash(true); });
+reducedMotion.addEventListener('change', () => { if (reducedMotion.matches) dismissSplash(); });
 const cells = Array.from({ length: 100 }, () => { const cell = document.createElement('span'); cell.className = 'bar-cell'; cell.setAttribute('aria-hidden', 'true'); bar.append(cell); return cell; });
 let version = 0;
 let controller;

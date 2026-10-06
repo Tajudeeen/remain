@@ -27,10 +27,44 @@ try {
   await browser('open', `http://127.0.0.1:${address.port}`);
   await browser('wait', '--load', 'networkidle');
   await browser('snapshot', '-i');
-  await browser('eval', "window.rehearsalSubmits = 0; window.rehearsalEvents = []; document.querySelector('#plan-form').addEventListener('submit', () => window.rehearsalSubmits++); for (const kind of ['click', 'input', 'submit']) document.addEventListener(kind, event => { window.rehearsalEvents.push({kind, target: event.target.id || event.target.tagName}); if(window.rehearsalEvents.length > 16) window.rehearsalEvents.shift(); }, true)");
-  await check("getComputedStyle(document.documentElement).scrollBehavior === 'auto'");
+  stage = 'landing introduction';
+  await mkdir('evidence', { recursive: true });
+  await browser('wait', '--fn', "document.querySelector('#splash').hidden");
+  await check("!document.querySelector('#landing-view').hidden && document.querySelector('#dashboard-view').hidden && !document.querySelector('#site-content').inert");
+  await check("document.querySelector('#launch-planner') && document.querySelector('footer').innerText.includes('Live execution disabled')");
+  await browser('screenshot', 'evidence/rehearsal-landing.png', '--full');
+  for (const width of [320, 375, 768, 1024, 1440]) {
+    await browser('set', 'viewport', String(width), '1000');
+    await check('document.documentElement.scrollWidth <= window.innerWidth');
+    await browser('screenshot', `evidence/rehearsal-landing-${width}.png`, '--full');
+  }
+  stage = 'splash skip';
+  await browser('eval', "sessionStorage.removeItem('remain-introduced')");
+  await browser('open', `http://127.0.0.1:${address.port}`);
+  await browser('wait', '--fn', "!document.querySelector('#splash').hidden");
+  await check("document.querySelector('#site-content').inert");
+  await browser('screenshot', 'evidence/rehearsal-splash.png');
+  await browser('click', '#skip-splash');
+  await check("document.querySelector('#splash').hidden && !document.querySelector('#site-content').inert && document.activeElement.id === 'landing-title'");
+  stage = 'repeat visit';
+  await browser('open', `http://127.0.0.1:${address.port}`);
+  await check("document.querySelector('#splash').hidden");
   await browser('press', 'Tab');
   await check("document.activeElement.classList.contains('skip')");
+  await browser('press', 'Enter');
+  await browser('wait', '--fn', "!document.querySelector('#dashboard-view').hidden");
+  await check("document.querySelector('#landing-view').hidden && document.activeElement.id === 'intro-title'");
+  stage = 'route history';
+  await browser('click', '.dashboard-nav a');
+  await browser('wait', '--fn', "!document.querySelector('#landing-view').hidden");
+  await browser('back');
+  await browser('wait', '--fn', "!document.querySelector('#dashboard-view').hidden");
+  await browser('forward');
+  await browser('wait', '--fn', "!document.querySelector('#landing-view').hidden");
+  await browser('click', '#launch-planner');
+  await browser('wait', '--fn', "!document.querySelector('#dashboard-view').hidden");
+  await browser('eval', "window.rehearsalSubmits = 0; window.rehearsalEvents = []; document.querySelector('#plan-form').addEventListener('submit', () => window.rehearsalSubmits++); for (const kind of ['click', 'input', 'submit']) document.addEventListener(kind, event => { window.rehearsalEvents.push({kind, target: event.target.id || event.target.tagName}); if(window.rehearsalEvents.length > 16) window.rehearsalEvents.shift(); }, true)");
+  await check("getComputedStyle(document.documentElement).scrollBehavior === 'auto'");
   await check("document.body.innerText.includes('TEST_FIXTURE') && document.querySelector('#plan-button') && document.querySelector('#download').disabled");
   stage = 'safe plan'; await browser('click', '#plan-button');
   await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Plan available'");
@@ -83,7 +117,15 @@ try {
   }
   const errors = await browser('errors');
   assert.deepEqual((errors as { errors?: unknown[] }).errors ?? [], [], 'Unexpected browser errors');
-  console.log('Browser rehearsal passed: keyboard entry, planning, hard blocks, duplicate input events, changed-input invalidation, checksum download, expiry, request race and five responsive widths. TEST_FIXTURE only.');
+  stage = 'direct dashboard link';
+  await browser('open', `http://127.0.0.1:${address.port}/#dashboard`);
+  await check("!document.querySelector('#dashboard-view').hidden && document.querySelector('#splash').hidden");
+  stage = 'reduced motion';
+  await browser('set', 'media', 'light', 'reduced-motion');
+  await browser('eval', "sessionStorage.removeItem('remain-introduced')");
+  await browser('open', `http://127.0.0.1:${address.port}`);
+  await check("matchMedia('(prefers-reduced-motion: reduce)').matches && document.querySelector('#splash').hidden && !document.querySelector('#site-content').inert");
+  console.log('Browser rehearsal passed: landing, splash skip, repeat visit, keyboard entry, route history, direct dashboard link, planning, hard blocks, duplicate input events, changed-input invalidation, checksum download, expiry, request race and both views at five responsive widths. TEST_FIXTURE only.');
 } catch (error) {
   console.error(`Browser rehearsal failed during ${stage}.`);
   await mkdir('evidence', { recursive: true });
