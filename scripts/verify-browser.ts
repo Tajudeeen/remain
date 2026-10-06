@@ -11,6 +11,7 @@ const exec = promisify(execFile); const session = `remain-${randomUUID().slice(0
 const server = createRehearsalServer();
 await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
 const address = server.address(); assert.ok(address && typeof address === 'object');
+let stage = 'initial load';
 async function browser(...args: string[]) {
   const { stdout } = await exec('agent-browser', ['--session', session, '--json', ...args], { timeout: 30000, maxBuffer: 2 * 1024 * 1024 });
   const result = JSON.parse(stdout) as { success: boolean; data?: unknown; error?: string };
@@ -25,22 +26,22 @@ try {
   await browser('wait', '--load', 'networkidle');
   await browser('snapshot', '-i');
   await check("document.body.innerText.includes('TEST_FIXTURE') && document.querySelector('#plan-button') && document.querySelector('#download').disabled");
-  await browser('click', '#plan-button');
+  stage = 'safe plan'; await browser('click', '#plan-button');
   await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Plan available'");
   await check("document.querySelector('#retained-number').textContent === '75' && document.querySelector('#minimum-cash').textContent === '25.00'");
-  await browser('fill', '#cash-target', '40');
+  stage = 'unreachable target'; await browser('fill', '#cash-target', '40');
   await check("document.querySelector('#retained-number').textContent === '—' && document.querySelector('#download').disabled");
   await browser('click', '#plan-button');
   await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Plan blocked'");
-  await browser('click', '[data-scenario="closed"]');
+  stage = 'closed market'; await browser('click', '[data-scenario="closed"]');
   await browser('wait', '--fn', "document.querySelector('#guard-details').textContent.includes('explicit permission')");
-  await browser('check', '#closed-permission'); await browser('click', '#plan-button');
+  stage = 'closed market permission'; await browser('check', '#closed-permission'); await browser('click', '#plan-button');
   await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Plan available'");
   await check("document.querySelector('#guard-details').textContent.includes('explicitly permitted')");
-  await browser('select', '#market', 'pause'); await browser('click', '#plan-button');
+  stage = 'paused market'; await browser('select', '#market', 'pause'); await browser('click', '#plan-button');
   await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Plan blocked'");
   await check("document.querySelector('#guard-details').textContent.includes('cannot override')");
-  await browser('click', '[data-scenario="safe"]');
+  stage = 'snapshot expiry'; await browser('click', '[data-scenario="safe"]');
   await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Plan available'");
   await mkdir('evidence', { recursive: true });
   // Allow deterministic clock advancement without a blocking sleep.
@@ -50,21 +51,30 @@ try {
   await browser('click', '[data-scenario="safe"]');
   await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Plan available'");
   // An older response must not overwrite settings changed during a request.
-  await browser('eval', "window.remainRealFetch = window.fetch; window.fetch = async (...args) => { const response = await window.remainRealFetch(...args); await new Promise(resolve => setTimeout(resolve, 500)); return response; }");
+  stage = 'response race'; await browser('eval', "window.remainRealFetch = window.fetch; window.fetch = async (...args) => { const response = await window.remainRealFetch(...args); await new Promise(resolve => setTimeout(resolve, 500)); return response; }");
   await browser('click', '#plan-button'); await browser('fill', '#cash-target', '30');
   await browser('wait', '700');
   await check("document.querySelector('#retained-number').textContent === '—' && document.querySelector('#download').disabled && !document.querySelector('#plan-button').disabled");
   await browser('eval', 'window.fetch = window.remainRealFetch');
   await browser('click', '[data-scenario="safe"]');
   await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Plan available'");
-  for (const width of [320, 375, 768, 1024, 1440]) {
+  stage = 'responsive widths'; for (const width of [320, 375, 768, 1024, 1440]) {
     await browser('set', 'viewport', String(width), '1000');
     await check('document.documentElement.scrollWidth <= window.innerWidth');
     await browser('screenshot', `evidence/rehearsal-${width}.png`, '--full');
   }
   const errors = await browser('errors');
-  assert.ok(JSON.stringify(errors) === '{}' || !JSON.stringify(errors).includes('Error'), 'Unexpected browser errors');
+  assert.deepEqual((errors as { errors?: unknown[] }).errors ?? [], [], 'Unexpected browser errors');
   console.log('Browser rehearsal passed: planning, hard blocks, changed-input invalidation, expiry, request race and five responsive widths. TEST_FIXTURE only.');
+} catch (error) {
+  console.error(`Browser rehearsal failed during ${stage}.`);
+  await mkdir('evidence', { recursive: true });
+  try {
+    await browser('screenshot', 'evidence/rehearsal-failure.png', '--full');
+    console.error(JSON.stringify(await browser('eval', "({ verdict: document.querySelector('#verdict-pill').textContent, message: document.querySelector('#form-message').textContent, details: document.querySelector('#guard-details').textContent, cash: document.querySelector('#cash-target').value, market: document.querySelector('#market').value, permission: document.querySelector('#closed-permission').checked })")));
+    console.error(JSON.stringify(await browser('errors')));
+  } catch { console.error('Could not collect browser failure details.'); }
+  throw error;
 } finally {
   try { await browser('close'); } catch { console.error('Browser cleanup could not confirm session closure.'); }
   await new Promise<void>((resolve) => server.close(() => resolve()));
