@@ -2,10 +2,58 @@
 
 Raise cash. Stay invested.
 
-A BSC tokenized-stock cash-target execution product with BellGuard policy checks and verifiable settlement receipts.
+Remain works backward from a USDT cash target to a bounded partial sale of a tokenized-stock position on BNB Smart Chain. BellGuard checks market state, quote freshness and user limits. The intended result is a reconciled settlement receipt showing cash received and exposure retained.
 
-## Status
+## Current state
 
-Private build in progress. Milestone 0 must prove live Binance authentication, RWA discovery, balances, an RFQ quote, and payload construction before product implementation starts. No live execution is enabled.
+Milestone 0 feasibility kit. Execution is disabled. There is no trading UI or deployed product yet. Tests use synthetic data. Live Binance feasibility remains blocked until credentials and a supported held stock are configured. See [milestone status](docs/milestone-status.md).
 
-The repository will stay private until the finished submission is reviewed.
+This repo stays private until the owner approves public release. Nothing here is financial advice or a claim of Binance endorsement.
+
+## Local verification
+
+Requires Node.js 24 and npm.
+
+```sh
+npm ci
+npm run verify
+npm run test:coverage
+```
+
+The kit includes exact-byte HMAC signing, a read-only endpoint allowlist, bounded responses and retries, input/schema validation, synthetic adversarial tests and sanitized evidence reports. No wallet-signing or trade-submission methods exist.
+
+## Live discovery and feasibility
+
+Apply for a Web3 API key at [Binance developer portal](https://web3.binance.com/en/dev-portal). Keep both credentials outside git. Put these in an ignored local `.env.local`, or GitHub Actions secrets:
+
+- `BINANCE_WEB3_API_KEY`
+- `BINANCE_WEB3_SECRET_KEY`
+
+First discover supported public stock metadata. This requires only those two credentials:
+
+```sh
+npm run discover:binance
+```
+
+Then configure these three non-secret values locally or in GitHub Actions repository variables:
+
+- `REMAIN_WALLET_ADDRESS`: your public BSC wallet address. Never a key or seed.
+- `REMAIN_RWA_TOKEN_ADDRESS`: a supported BSC stock contract returned by discovery, already held by this wallet.
+- `REMAIN_SELL_AMOUNT_RAW`: positive integer raw-token units within that balance. Calculate using that token's observed decimals, never assume 18.
+
+```sh
+npm run smoke:binance
+```
+
+Smoke reads chain support, stock metadata, market state and holdings, requests a stock-to-USDT RFQ quote and builds an unsigned payload. It requires inspectable EIP-712 structure. It never approves, signs, submits or broadcasts. Evidence lands in ignored `evidence/` with private file permissions. This gate proves read-only feasibility only. Semantic order verification, signature safety, settlement and live trades are later gates.
+
+GitHub has a manual **Binance read-only feasibility** workflow with `discover` and `feasibility` modes once the workflow reaches `main`. Automated CI never receives Binance secrets. The manual workflow rejects missing configuration before networking. Public discovery output contains only selected public token metadata. Smoke artifacts contain hashes and checks, never wallets, balances or raw payloads. Do not share an artifact as a settlement receipt.
+
+## Plan and evidence
+
+- [Build blueprint](docs/build-plan.md)
+- [Product lock](docs/product-lock.md)
+- [Security boundaries](docs/security.md)
+- [Developer experience log](docs/devex-log.md)
+
+The dependency lockfile is committed. `npm run check:security` is a small source-policy check, not a security audit. No deployed custom contracts exist at this milestone.

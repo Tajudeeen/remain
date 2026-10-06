@@ -1,0 +1,53 @@
+name: Binance read-only feasibility
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Discover stocks first, then check a held-stock RFQ route
+        type: choice
+        required: true
+        default: discover
+        options: [discover, feasibility]
+permissions:
+  contents: read
+concurrency:
+  group: binance-read-only
+  cancel-in-progress: false
+jobs:
+  smoke:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+      - name: Discover public stock metadata
+        if: inputs.mode == 'discover'
+        run: npm run discover:binance
+        env:
+          BINANCE_WEB3_API_KEY: ${{ secrets.BINANCE_WEB3_API_KEY }}
+          BINANCE_WEB3_SECRET_KEY: ${{ secrets.BINANCE_WEB3_SECRET_KEY }}
+      - name: Check held-stock RFQ feasibility without signing
+        if: inputs.mode == 'feasibility'
+        run: npm run smoke:binance
+        env:
+          BINANCE_WEB3_API_KEY: ${{ secrets.BINANCE_WEB3_API_KEY }}
+          BINANCE_WEB3_SECRET_KEY: ${{ secrets.BINANCE_WEB3_SECRET_KEY }}
+          REMAIN_WALLET_ADDRESS: ${{ vars.REMAIN_WALLET_ADDRESS }}
+          REMAIN_RWA_TOKEN_ADDRESS: ${{ vars.REMAIN_RWA_TOKEN_ADDRESS }}
+          REMAIN_SELL_AMOUNT_RAW: ${{ vars.REMAIN_SELL_AMOUNT_RAW }}
+      - name: Save sanitized feasibility evidence
+        if: always() && inputs.mode == 'feasibility'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: read-only-feasibility-${{ github.run_id }}
+          path: evidence/*.json
+          retention-days: 7
+          if-no-files-found: ignore
