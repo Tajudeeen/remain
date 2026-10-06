@@ -27,6 +27,22 @@ jobs:
       - run: npm run rehearse:plan
       - run: npm run rehearse:orders
       - run: npm run rehearse:receipt
+      - name: Build fixture deployment image
+        run: docker build -t remain-rehearsal:${{ github.sha }} .
+      - name: Smoke fixture deployment image
+        env:
+          REMAIN_BUILD_SHA: ${{ github.sha }}
+        run: |
+          docker run -d --name remain-ci -p 3000:3000 \
+            -e REMAIN_ALLOWED_HOSTS=localhost \
+            -e REMAIN_BUILD_SHA="$REMAIN_BUILD_SHA" \
+            remain-rehearsal:${{ github.sha }}
+          trap 'docker rm -f remain-ci >/dev/null 2>&1 || true' EXIT
+          for attempt in 1 2 3 4 5; do
+            if curl --fail --silent http://localhost:3000/healthz >/dev/null; then break; fi
+            sleep 1
+          done
+          REMAIN_BASE_URL=http://localhost:3000 npm run smoke:deployed
       - name: Install isolated browser verifier
         run: npx --yes agent-browser@0.38.2 install --with-deps
       - name: Verify synthetic interface in a real browser

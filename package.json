@@ -21,7 +21,9 @@
     "rehearse:receipt": "node scripts/rehearse-receipt.ts",
     "dev": "node scripts/serve-rehearsal.ts",
     "check:web": "node --check web/app.js",
-    "test:web": "npm exec --yes --package=agent-browser@0.38.2 -- node scripts/verify-browser.ts"
+    "test:web": "npm exec --yes --package=agent-browser@0.38.2 -- node scripts/verify-browser.ts",
+    "serve": "node scripts/serve-rehearsal.ts",
+    "smoke:deployed": "node scripts/smoke-deployed.ts"
   },
   "devDependencies": {
     "@types/node": "24.19.1",

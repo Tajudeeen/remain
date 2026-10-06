@@ -69,6 +69,67 @@ test('HTTP rehearsal returns fixture result with restrictive headers', async () 
   assert.ok(response.headers.get('content-security-policy')!.includes("script-src 'self'"));
   assert.ok(!response.headers.has('access-control-allow-origin'));
 }));
+test('health endpoint exposes only fixture readiness and build identity', async () => withServer(async (base) => {
+  const response = await fetch(`${base}/healthz`);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    status: 'ok',
+    service: 'remain-rehearsal',
+    mode: 'TEST_FIXTURE',
+    executionEnabled: false,
+    liveGate: 'BLOCKED',
+    buildSha: 'unknown'
+  });
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  const head = await fetch(`${base}/healthz`, { method: 'HEAD' });
+  assert.equal(head.status, 200); assert.equal(await head.text(), '');
+}));
+
+test('explicit deployed host accepts same-origin https while other hosts remain blocked', async () => {
+  const server = createRehearsalServer({ allowedHosts: ['demo.remain.test'], buildSha: 'abcdef1' });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const address = server.address(); assert.ok(address && typeof address === 'object');
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const body = JSON.stringify(valid);
+      const req = request({
+        host: '127.0.0.1',
+        port: address.port,
+        path: '/api/rehearse',
+        method: 'POST',
+        headers: {
+          Host: 'demo.remain.test',
+          Origin: 'https://demo.remain.test',
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body)
+        }
+      }, (response) => {
+        assert.equal(response.statusCode, 200);
+        let data = '';
+        response.setEncoding('utf8');
+        response.on('data', (chunk) => { data += chunk; });
+        response.on('end', () => {
+          const result = JSON.parse(data) as Awaited<ReturnType<typeof rehearsePlan>>;
+          assert.equal(result.mode, 'TEST_FIXTURE'); assert.equal(result.executionEnabled, false); resolve();
+        });
+      });
+      req.on('error', reject); req.end(body);
+    });
+    await new Promise<void>((resolve, reject) => {
+      const req = request({ host: '127.0.0.1', port: address.port, path: '/healthz', headers: { Host: 'evil.example' } }, (response) => {
+        assert.equal(response.statusCode, 403); response.resume(); response.on('end', resolve);
+      });
+      req.on('error', reject); req.end();
+    });
+  } finally {
+    await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
+});
+
+test('invalid explicit deployed hosts fail closed before listening', () => {
+  assert.throws(() => createRehearsalServer({ allowedHosts: ['https://demo.remain.test'] }), /INVALID_REQUEST/);
+  assert.throws(() => createRehearsalServer({ allowedHosts: ['..'] }), /INVALID_REQUEST/);
+});
 test('all UI assets serve and arbitrary filesystem and credential paths are absent', async () => withServer(async (base) => {
   for (const path of ['/', '/app.js', '/styles.css', '/logo.png']) assert.equal((await fetch(base + path)).status, 200);
   for (const path of ['/AGENTS.md', '/.env.local', '/src/signing.ts', '/%2e%2e/.env.local', '/api/submit', '/api/rehearse?mode=live']) assert.equal((await fetch(base + path)).status, 404);

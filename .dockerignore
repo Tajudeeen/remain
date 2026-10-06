@@ -1,0 +1,14 @@
+.git
+.github
+node_modules
+dist
+coverage
+evidence
+state
+.env
+.env.*
+!.env.example
+docs/assets
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
