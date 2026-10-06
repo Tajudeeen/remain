@@ -6,7 +6,7 @@ Remain works backward from a USDT cash target to a bounded partial sale of a tok
 
 ## Current state
 
-Milestone 0 feasibility kit. Execution is disabled. There is no trading UI or deployed product yet. Tests use synthetic data. Live Binance feasibility remains blocked until credentials and a supported held stock are configured. See [milestone status](docs/milestone-status.md).
+Milestone 0 feasibility kit. Execution is disabled. There is no trading UI or deployed product yet. Tests use synthetic data. The first live discovery run was blocked by Binance compliance code 40304. A successful discovery and held-stock RFQ check are still required. See [milestone status](docs/milestone-status.md) and [access troubleshooting](docs/access-troubleshooting.md).
 
 This repo stays private until the owner approves public release. Nothing here is financial advice or a claim of Binance endorsement.
 
@@ -47,7 +47,7 @@ npm run smoke:binance
 
 Smoke reads chain support, stock metadata, market state and holdings, requests a stock-to-USDT RFQ quote and builds an unsigned payload. It requires inspectable EIP-712 structure. It never approves, signs, submits or broadcasts. Evidence lands in ignored `evidence/` with private file permissions. This gate proves read-only feasibility only. Semantic order verification, signature safety, settlement and live trades are later gates.
 
-GitHub has a manual **Binance read-only feasibility** workflow with `discover` and `feasibility` modes once the workflow reaches `main`. Automated CI never receives Binance secrets. The manual workflow rejects missing configuration before networking. Public discovery output contains only selected public token metadata. Smoke artifacts contain hashes and checks, never wallets, balances or raw payloads. Do not share an artifact as a settlement receipt.
+GitHub has a manual **Binance read-only feasibility** workflow with `discover` and `feasibility` modes on `main`. It offers `github-hosted` or an owner-configured `self-hosted` runner with label `remain-feasibility`. Use only a host authorized for Binance's service. Automated CI never receives Binance secrets. The manual workflow rejects missing configuration before networking and stops on compliance errors. Both modes preserve sanitized evidence even when they fail. Public discovery output contains only selected public token metadata. Smoke artifacts contain hashes and checks, never wallets, balances or raw payloads. Do not share an artifact as a settlement receipt.
 
 ## Plan and evidence
 

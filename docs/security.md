@@ -26,6 +26,8 @@ Every future signature needs exact chain, token, amount, receiver, spender/verif
 
 Automated tests use synthetic fixtures and no live credentials. Live reports whitelist endpoint paths, latency, response hashes and safe errors. They omit request queries, wallet, balances, quote IDs, raw responses and typed data. Local evidence directory and credential files are ignored. Discovery emits only whitelisted public token metadata. GitHub manual artifacts have seven-day retention.
 
+The manual job offers an owner-provisioned self-hosted runner with custom label remain-feasibility. It can only run main, and self-hosted selection also requires the repository to remain private. No runner or host has been provisioned by this code. Automated pull-request CI never uses self-hosted runners or Binance credentials. Compliance errors are hard failures and never retried. Exact access restrictions require Binance confirmation, not application workarounds.
+
 ## Break and rebuild loop
 
 For every later feature: state the invariant, reproduce a counterexample, add a failing test, implement the smallest fix, rerun the entire gate, commit and check remote CI. An incident that affects signing or fills disables execution until reproduced and verified fixed.

@@ -15,7 +15,9 @@ Real findings and unanswered questions. No fabricated live measurements.
 
 ## Live observations
 
-None yet. Credentials have not been configured in this workspace. No API success, issuer comparison, liquidity measurement, simulation or settlement is claimed.
+2026-10-06 04:26 UTC: [live discovery run 37413704037](https://github.com/Tajudeeen/remain/actions/runs/37413704037) reached the signed stock-list request and returned business code 40304. No quote, build, signature or trade was performed. Credentials were present in the GitHub job, but their validity is not established by the failure. The generic log originally hid the useful compliance classification. The follow-up adds documented compliance-code mapping and persists redacted discovery evidence on failures. Real successful stock coverage, latency, issuer comparison and settlement remain pending.
+
+The official [full documentation](https://web3.binance.com/en/dev-docs/llms-full.txt), compliance errors section, describes 40304 as a compliance restriction without a more specific rule. [Service restrictions](https://web3.binance.com/en/dev-docs/web3-api-prohibited-regions) state that both portal and API enforce IP location checks. A runner-location issue is a hypothesis, not a verified root cause. Never record the failure as a bad signature or claim changing a host solved it without a successful live result.
 
 ## Measurement protocol
 

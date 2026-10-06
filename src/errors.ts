@@ -2,6 +2,8 @@ export type ErrorCode =
   | 'CONFIG_MISSING' | 'INVALID_INPUT' | 'READ_ONLY_VIOLATION'
   | 'AUTH_KEY_INVALID' | 'AUTH_SIGNATURE_INVALID' | 'AUTH_CLOCK_DRIFT'
   | 'AUTH_PERMISSION_DENIED' | 'RATE_LIMITED' | 'UPSTREAM_TIMEOUT'
+  | 'ACCESS_REGION_RESTRICTED' | 'ACCESS_PROXY_REJECTED'
+  | 'ACCESS_IP_RESTRICTED' | 'ACCESS_COMPLIANCE_RESTRICTED'
   | 'UPSTREAM_UNAVAILABLE' | 'UPSTREAM_REJECTED' | 'UPSTREAM_SCHEMA_INVALID'
   | 'UNSUPPORTED_ASSET' | 'INSUFFICIENT_POSITION' | 'MARKET_BLOCKED'
   | 'QUOTE_EXPIRED' | 'RFQ_UNAVAILABLE' | 'RFQ_OPAQUE';
@@ -14,6 +16,10 @@ const messages: Record<ErrorCode, string> = {
   AUTH_SIGNATURE_INVALID: 'Binance rejected the request signature. Check signing configuration.',
   AUTH_CLOCK_DRIFT: 'Binance rejected the timestamp or nonce. Check clock synchronization.',
   AUTH_PERMISSION_DENIED: 'The API key does not have permission for this operation.',
+  ACCESS_REGION_RESTRICTED: 'Binance blocked this request location. Stop and check operator and host eligibility with Binance.',
+  ACCESS_PROXY_REJECTED: 'Binance rejected the connection as a proxy or VPN. Use an authorized direct connection or contact Binance support.',
+  ACCESS_IP_RESTRICTED: 'Binance flagged unusual IP activity. Stop and contact Binance support before another live attempt.',
+  ACCESS_COMPLIANCE_RESTRICTED: 'Binance blocked this request under a compliance rule. Check operator eligibility, approved host location and developer-project access with Binance. The exact rule is not established by this code.',
   RATE_LIMITED: 'Binance rate-limited this request. Retry later.',
   UPSTREAM_TIMEOUT: 'The Binance request timed out. No transaction was submitted.',
   UPSTREAM_UNAVAILABLE: 'Binance is temporarily unavailable. No transaction was submitted.',
@@ -44,6 +50,12 @@ export function safeError(error: unknown): { code: ErrorCode; message: string; u
 }
 
 export function upstreamError(status: number, code?: number): RemainError {
+  // Gateway compliance codes can arrive inside HTTP 200. Never retry or
+  // misclassify them as transient failures or ordinary API permissions.
+  if (code === 40301) return new RemainError('ACCESS_REGION_RESTRICTED', code);
+  if (code === 40302) return new RemainError('ACCESS_PROXY_REJECTED', code);
+  if (code === 40303) return new RemainError('ACCESS_IP_RESTRICTED', code);
+  if (code === 40304) return new RemainError('ACCESS_COMPLIANCE_RESTRICTED', code);
   if (code === 40101) return new RemainError('AUTH_KEY_INVALID', code);
   if (code === 40102) return new RemainError('AUTH_SIGNATURE_INVALID', code);
   if (code === 40103) return new RemainError('AUTH_CLOCK_DRIFT', code);
