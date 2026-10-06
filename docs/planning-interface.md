@@ -19,7 +19,7 @@ The visualization shows actual fixture plan output rather than a precomputed UI 
 
 ## State and error boundaries
 
-Editing any input clears the result and disables download. In-flight requests are aborted and a generation counter prevents late responses from rendering into newer settings. Duplicate requests cannot move funds because the server has no mutation capability. Native labels, input constraints, status announcements, keyboard controls, reduced-motion support and a skip link are present.
+Changing an input clears the result and disables download. The submitted fields are snapshotted and an input fingerprint prevents delayed or duplicate notifications for unchanged values from cancelling a valid plan. In-flight requests are aborted on a real change and a generation counter prevents late responses from rendering into newer settings. Duplicate requests cannot move funds because the server has no mutation capability. Native labels, input constraints, status announcements, keyboard controls, reduced-motion support and a skip link are present.
 
 The review window is 15 seconds from the synthetic balance snapshot, shorter than nominal quote expiry. Expiration changes the verdict to a historical snapshot. Download remains available for historical inspection and never authorizes execution. The record is explicitly `SYNTHETIC_PLANNING_RECORD`; its nested plan checksum detects edits, not truth, a wallet signature or settlement.
 

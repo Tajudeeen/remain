@@ -6,6 +6,7 @@ let version = 0;
 let controller;
 let record;
 let freshnessTimer;
+let inputFingerprint = JSON.stringify(input());
 const explanations = {
   FLOOR_BREACH: 'The retained floor leaves no stock available to sell.',
   CLOSED_MARKET_PERMISSION_REQUIRED: 'Closed-market planning needs your explicit permission.',
@@ -30,6 +31,11 @@ function clearPreview(text = 'Settings changed. Calculate a new plan to inspect 
   bar.setAttribute('aria-label', 'No current sell plan calculated');
 }
 function invalidate() {
+  const fingerprint = JSON.stringify(input());
+  // Number fields and browser automation can emit a delayed/duplicate input
+  // notification after blur. An unchanged intent must not cancel its plan.
+  if (fingerprint === inputFingerprint) return;
+  inputFingerprint = fingerprint;
   version++; controller?.abort(); controller = undefined;
   $('plan-button').disabled = false; $('plan-preview').setAttribute('aria-busy', 'false');
   $('retain-value').textContent = `${$('retain').value}%`; $('floor-units').textContent = $('retain').value;
@@ -93,12 +99,13 @@ function render(result) {
 function cashPercent(bps) { return `${Math.floor(bps / 100)}.${String(bps % 100).padStart(2, '0')}`; }
 form.addEventListener('submit', async (event) => {
   event.preventDefault(); if (!form.reportValidity()) return;
+  const submitted = input(); inputFingerprint = JSON.stringify(submitted);
   controller?.abort(); const active = new AbortController(); controller = active;
   const current = ++version; clearPreview('Checking the synthetic quotes against your rules.');
   $('plan-button').disabled = true; $('plan-preview').setAttribute('aria-busy', 'true'); message('Checking your cash target and retained floor…');
   const timeout = setTimeout(() => active.abort(), 4000);
   try {
-    const response = await fetch('/api/rehearse', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input()), signal: active.signal, credentials: 'omit', cache: 'no-store' });
+    const response = await fetch('/api/rehearse', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(submitted), signal: active.signal, credentials: 'omit', cache: 'no-store' });
     if (!response.ok) throw new Error(response.status === 429 ? 'Please wait a minute before another rehearsal.' : 'Couldn’t calculate this rehearsal. Check your inputs and try again.');
     const result = await response.json();
     if (current !== version) return;

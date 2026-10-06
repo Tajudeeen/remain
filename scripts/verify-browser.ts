@@ -63,6 +63,10 @@ try {
   await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Plan available'");
   // An older response must not overwrite settings changed during a request.
   stage = 'response race'; await browser('eval', "window.remainRealFetch = window.fetch; window.fetch = async (...args) => { const response = await window.remainRealFetch(...args); await new Promise(resolve => setTimeout(resolve, 500)); return response; }");
+  stage = 'duplicate input event'; await browser('click', '#plan-button');
+  await browser('eval', "document.querySelector('#cash-target').dispatchEvent(new Event('input', { bubbles: true }))");
+  await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Plan available'");
+  stage = 'response race';
   await browser('click', '#plan-button'); await browser('fill', '#cash-target', '30');
   await browser('wait', '700');
   await check("document.querySelector('#retained-number').textContent === '—' && document.querySelector('#download').disabled && !document.querySelector('#plan-button').disabled");
@@ -76,7 +80,7 @@ try {
   }
   const errors = await browser('errors');
   assert.deepEqual((errors as { errors?: unknown[] }).errors ?? [], [], 'Unexpected browser errors');
-  console.log('Browser rehearsal passed: keyboard entry, planning, hard blocks, changed-input invalidation, checksum download, expiry, request race and five responsive widths. TEST_FIXTURE only.');
+  console.log('Browser rehearsal passed: keyboard entry, planning, hard blocks, duplicate input events, changed-input invalidation, checksum download, expiry, request race and five responsive widths. TEST_FIXTURE only.');
 } catch (error) {
   console.error(`Browser rehearsal failed during ${stage}.`);
   await mkdir('evidence', { recursive: true });
