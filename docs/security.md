@@ -6,6 +6,8 @@ Binance API secret stays in the Node process or protected workflow secrets. Publ
 
 The current client performs read-only GET requests at one fixed Binance origin. `swap` is allowed only for unsigned payload building. There is no allowance, wallet signature, POST order or transaction-broadcast capability.
 
+Milestone 1 adds standalone planning logic with an injected quote provider. Its returned intent/quotes contain private wallet and position information in memory and must not be dumped into public logs. The rehearsal prints selected synthetic fields only. Fee metadata and VERIFIED_ORDER labels are adapter assertions, not cryptographic attestations. Plan checksums do not authenticate an upstream provider or prevent a malicious recomputed checksum. Execution remains false on every result.
+
 ## Protections and limits
 
 | Threat | Protection now | Remaining work |
