@@ -26,6 +26,7 @@ jobs:
       - run: npm run test:coverage
       - run: npm run rehearse:plan
       - run: npm run rehearse:orders
+      - run: npm run rehearse:receipt
       - name: Install isolated browser verifier
         run: npx --yes agent-browser@0.38.2 install --with-deps
       - name: Verify synthetic interface in a real browser
