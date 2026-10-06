@@ -18,7 +18,7 @@ The hero is the cash-to-partial-sale interaction and inspectable proof. The main
 
 ## Design direction
 
-Dark graphite, warm off-white and Binance-inspired yellow. One distinctive abstract no-text mark about preserved exposure and a small released slice, legible at favicon size. No copied Binance logo or implication of official endorsement. Design begins after real feasibility, with original visual assets and mobile/wallet accessibility tests. No logo or UI has been created in this milestone.
+Dark graphite, warm off-white and Binance-inspired yellow. One distinctive abstract no-text mark about preserved exposure and a small released slice, legible at favicon size. No copied Binance logo or implication of official endorsement. The owner authorized a synthetic planning interface on 2026-10-06 while access remains blocked. It includes an original generated mark, a responsive cash composer and retained-position visualization. Wallet UI and live feasibility still require their own evidence.
 
 ## Architecture constraints
 

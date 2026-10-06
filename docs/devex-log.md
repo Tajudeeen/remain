@@ -21,6 +21,10 @@ The official [full documentation](https://web3.binance.com/en/dev-docs/llms-full
 
 ## Measurement protocol
 
+Owner-reported local observation, 2026-10-06 05:23:34 UTC: discovery run `ac3580b8-1e20-4ad5-b8f7-9a895b6f8dda` returned the same 40304 compliance rejection. This weakens an explanation limited to GitHub hosting, but does not identify the compliance rule or prove valid credentials. No successful endpoint, stock coverage or latency measurement was established. The owner was given a concrete support request with project ID, timestamp and code. Operator approval and access review remain unresolved.
+
+The owner authorized independent interface work while access is blocked. The interface displays TEST_FIXTURE, labels the position fictional and keeps execution disabled. No fixture price, impact, fee, market status, coverage or quote result is recorded as a Binance observation.
+
 Run discovery, then held-stock feasibility. Record run IDs, permitted endpoint paths, status, latency and redacted evidence. Record chain/ticker/issuer coverage and empty-list cases. Compare issuers only if two real BSC wrappers for the same underlying are discoverable. Preserve API errors as classified outcomes. Distinguish documentation ambiguities from actual runtime failures.
 
 Questions for Binance support: full RFQ typed-data schema per vendor, minimum-output/fee enforceability, spender contracts, market reason-code taxonomy, idempotency behavior, cancellation semantics, partial fills, and availability of meaningful RFQ simulation.

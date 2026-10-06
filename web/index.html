@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151715">
+  <meta name="description" content="Remain cash-planning rehearsal. Explore a cash target and retained stock exposure with synthetic data. Live trading is disabled.">
+  <title>Remain | Raise cash. Stay invested.</title>
+  <link rel="icon" href="/logo.png" type="image/png">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#cash-target">Skip to cash planner</a>
+  <header class="topbar wrap">
+    <a class="brand" href="/" aria-label="Remain home"><img src="/logo.png" width="38" height="38" alt=""><span>remain<span class="brand-dot">.</span></span></a>
+    <nav aria-label="Page navigation"><a href="#planner">Planner</a><a href="#how-it-works">How it works</a></nav>
+    <span class="network"><span class="dot"></span>BSC · Rehearsal</span>
+  </header>
+  <main class="wrap">
+    <div class="mode-banner"><span class="mode-tag">TEST_FIXTURE</span><p>You’re exploring a fictional position. No wallet, live quotes or trades.</p><span class="access-status">Binance access blocked</span></div>
+    <section class="intro" aria-labelledby="intro-title">
+      <div><p class="eyebrow">RAISE CASH. STAY INVESTED.</p><h1 id="intro-title">A little cash.<br>A lot still invested.</h1></div>
+      <p class="intro-copy">Start with the cash you need.<br>Set how much stock you want to keep.<br>Let BellGuard check the plan.</p>
+    </section>
+    <section id="planner" class="planner" aria-label="Cash-target planner">
+      <div class="composer">
+        <div class="section-top"><span class="step">01 / YOUR INTENT</span><span class="fixture-chip">Synthetic position</span></div>
+        <div class="position"><div class="position-icon" aria-hidden="true">R</div><div><h2>Demo Stock</h2><p>R-DEMO · fictional stock wrapper</p></div><div class="holding"><strong>100</strong><span>demo units held</span></div></div>
+        <form id="plan-form">
+          <label class="field-label" for="cash-target">How much cash do you need?</label>
+          <div class="cash-input"><span aria-hidden="true">$</span><input id="cash-target" name="cashTarget" type="number" inputmode="decimal" min="0.01" max="10000" step="0.01" value="25" required aria-describedby="cash-help"><span class="currency">USDT</span></div>
+          <p id="cash-help" class="field-help">Fictional rate: 1 demo unit = 1 USDT. Zero fees.</p>
+          <div class="retain-label"><label class="field-label" for="retain">Keep at least this much stock</label><output id="retain-value" for="retain">70%</output></div>
+          <input id="retain" name="retainPercent" class="range" type="range" min="0" max="100" step="1" value="70" aria-describedby="retain-help">
+          <div class="range-labels" aria-hidden="true"><span>0%</span><span>100%</span></div>
+          <p id="retain-help" class="field-help">Your floor is <span id="floor-units">70</span> demo units. Up to <span id="available-units">30</span> units can leave.</p>
+          <div class="guard-controls">
+            <div><label for="market">Underlying market scenario</label><select id="market" name="market"><option value="regular">Regular session</option><option value="closed">Market closed</option><option value="pause">Market paused</option></select></div>
+            <div><label for="impact">Maximum price impact</label><div class="small-input"><input id="impact" name="maxImpactPercent" type="number" inputmode="decimal" min="0" max="5" step="0.01" value="0.50" required aria-describedby="impact-help"><span>%</span></div></div>
+          </div>
+          <p id="impact-help" class="field-help">The fixture reports 0.20% impact. A lower cap blocks it.</p>
+          <label class="permission"><input id="closed-permission" name="allowClosedMarket" type="checkbox"><span>Allow a closed-market rehearsal<small>Paused markets always block, even with this permission.</small></span></label>
+          <button id="plan-button" class="primary" type="submit"><span>Find my cash plan</span><span aria-hidden="true">↗</span></button>
+          <p id="form-message" class="form-message" role="status" aria-live="polite">Planning only. No funds move.</p>
+        </form>
+      </div>
+      <div class="preview" id="plan-preview" aria-busy="false">
+        <div class="section-top"><span class="step">02 / WHAT REMAINS</span><span id="verdict-pill" class="verdict-pill">Awaiting plan</span></div>
+        <div class="retained-number"><span id="retained-number">—</span><span class="percent-sign">%</span></div>
+        <p id="retained-caption" class="retained-caption">of your demo stock would remain</p>
+        <div id="position-bar" class="position-bar" role="img" aria-label="No sell plan calculated yet"></div>
+        <div class="bar-legend"><span><i class="legend-retain"></i>Retained stock</span><span><i class="legend-cash"></i>Released slice</span></div>
+        <div class="plan-figures"><div><span>Stock debit</span><strong id="stock-debit">—</strong><small>demo units, including fees</small></div><div><span>Minimum cash</span><strong id="minimum-cash">—</strong><small>synthetic USDT</small></div></div>
+        <div class="guard-report"><div class="guard-heading"><span class="guard-icon" aria-hidden="true">◉</span><h3>BellGuard</h3><span id="freshness" class="freshness">No result yet</span></div><p id="verdict-copy">Set a cash target. We’ll check the retained floor, market state and quote limits.</p><ul id="guard-details" class="guard-details"></ul></div>
+        <div class="preview-actions"><button id="download" class="secondary" type="button" disabled>Download planning record <span aria-hidden="true">↓</span></button><p>A checksum detects edits. It doesn’t prove a trade.</p></div>
+        <div class="live-lock"><span aria-hidden="true">○</span><p>Live wallet and execution are disabled.<br><span>Binance API access must pass before live integration.</span></p></div>
+      </div>
+    </section>
+    <section class="scenario-strip" aria-label="Try a planning scenario"><p>Try the edges.</p><button type="button" data-scenario="safe">25 USDT · keep 70% <span aria-hidden="true">↗</span></button><button type="button" data-scenario="floor">40 USDT · keep 70% <span aria-hidden="true">↗</span></button><button type="button" data-scenario="closed">Closed market <span aria-hidden="true">↗</span></button></section>
+    <section id="how-it-works" class="explanation" aria-labelledby="how-title"><div><p class="eyebrow">THE REMAIN APPROACH</p><h2 id="how-title">The target comes first.<br>The sell amount follows.</h2></div><ol><li><span>01</span><div><h3>Name your cash need</h3><p>You choose the USDT target and the stock exposure you want to preserve.</p></div></li><li><span>02</span><div><h3>Inspect a bounded plan</h3><p>The solver checks quote candidates. BellGuard rejects a broken floor or market rule.</p></div></li><li><span>03</span><div><h3>Know what is proven</h3><p>This rehearsal tests planning with fictional data. Live signing and settlement are future gates.</p></div></li></ol></section>
+  </main>
+  <footer class="wrap footer"><div class="footer-brand">remain.<span>Raise cash. Stay invested.</span></div><p>Independent project on BNB Chain.<br>Binance-inspired palette. No endorsement implied.</p><p>Planning rehearsal · TEST_FIXTURE<br>No custody. No signatures. No settlement proof.</p></footer>
+  <noscript><p class="noscript">Enable JavaScript to use the planning rehearsal. Live trading is disabled.</p></noscript>
+</body>
+</html>

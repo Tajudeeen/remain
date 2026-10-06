@@ -6,7 +6,7 @@ Updated 2026-10-06. Submission target: 2026-10-11 12:00 UTC per the supplied bri
 | --- | --- | --- | --- |
 | 0: API feasibility | Signing client, discovery, read-only stock-to-USDT RFQ harness, CI | Local suite, remote CI, real authenticated route with inspectable payload | Code implemented; live discovery BLOCKED by Binance compliance code 40304 |
 | 1: Cash solver and BellGuard | Standalone planning engine, integer conversion, immutable trace/checksum and rehearsal | Adversarial tests and exhaustive small-domain oracle; live vendor adapter later | Planning module implemented; live integration BLOCKED by gate 0 |
-| 2: Original interface and wallet flow | Pending | Browser tests, mobile/accessibility, signature field verification | BLOCKED |
+| 2: Original interface and wallet flow | Synthetic planning interface and local rehearsal server implemented; live wallet flow pending | Real-browser fixture tests, mobile/accessibility; live signature field verification later | Independent rehearsal implemented; live wallet/integration BLOCKED by gate 0 |
 | 3: Order durability and settlement | Pending | Idempotency, cancellation/expiry, reconciliation, approved tiny live trade | BLOCKED |
 | 4: Receipt and provenance | Pending | Canonical evidence, independent verifier, fraud/tamper tests | BLOCKED |
 | 5: Hardening and deployment | Pending | End-to-end failures, runbooks, security review, deployed smoke tests | BLOCKED |
@@ -36,3 +36,5 @@ Gate 0 completion does not authorize trading or prove signature semantics. Those
 On 2026-10-06 the owner requested continued next-milestone work after the live failure was explained. Milestone 1 was scoped to a standalone planning engine so its arithmetic, policies and bounded search could be fully built and tested independently. This changes the code-work sequence, not the live access or execution gates. No UI, live quote adapter, signature, approval or trade has been enabled. See [planning engine](planning-engine.md).
 
 `docs/build-plan.md` preserves the original blueprint. This status file is authoritative for implemented capabilities. A JSON checksum is not a formal proof, a structural check is not a signature audit, and a projected token floor does not control concurrent wallet activity. No premium-to-TradFi claim is possible from RWA referencePrice alone.
+
+At 2026-10-06 05:23:34 UTC, the owner reported local discovery run `ac3580b8-1e20-4ad5-b8f7-9a895b6f8dda`, also blocked by upstreamCode 40304. This is owner-provided evidence, not a run independently executed here. At 05:41 UTC the owner explicitly requested the next milestone while away from their laptop. Gate 2 now permits a TEST_FIXTURE planning rehearsal without live wallet, API access, signature or order endpoints. The actual solver is exercised through a strictly bounded local HTTP boundary. This changes the work sequence and does not close the live gate. See [interface contract](planning-interface.md).
