@@ -1,10 +1,22 @@
 # Binance compliance rejection: 40304
 
+## Stock catalog with unavailable market metadata
+
+The owner supplied run `a19fb351-ae16-4280-b12e-8659e276baeb`, started `2026-10-06T19:09:34.511Z`, with `validationCheck: DISCOVERY_MARKET_STATUS`. This owner-reported run passed the HTTP/envelope checks and reached a BSC stock record whose `statusInfo.marketStatus` was not a string. Its actual type and value remain unknown; the diagnostic does not establish a null field, numeric enum or new mapping.
+
+Discovery now separates validated stock identity from advisory catalog market metadata. Invalid identities still reject the catalog. Unreadable market metadata preserves the identity, emits `marketMetadataStatus: unavailable`, sets both `marketStatus` and `openState` to null, and returns fixed `marketIssues` labels with type names only. No missing or unexpected value is inferred to mean open or closed. Recognized status strings use the documented six-value enum.
+
+A catalog containing any unavailable market record returns `status: partial` and exits 1. Valid records remain visible. `scope: STOCK_IDENTITY_DISCOVERY_ONLY`, notes and `executionEnabled: false` explicitly prevent confusing discovery with tradability, feasibility or a trade. Even a fully readable discovery is not authorization to execute.
+
+Feasibility uses the token list for selected-stock identity, then requires the separate `/rwa/underlying-market` response to pass strict market checks before wallet, quote or unsigned-build requests. Missing/malformed fresh data, unknown enums, paused markets, maintenance and asset restrictions stop that path. Catalog status never replaces this fresh check.
+
+After updating the PC checkout, rerun discovery without modifying valid credentials. Share the sanitized `status`, `unavailableMarketCount`, relevant public stock entries and `marketIssues`. The catalog issues include only received type names, not raw market values. Quotes and inspectable RFQ payloads remain unverified.
+
 ## Latest owner-reported discovery result
 
 On 2026-10-06 the owner supplied discovery run `7c80fd96-18b2-4687-92ec-bae8263ed4df`, which returned `UPSTREAM_SCHEMA_INVALID` without an upstream code. This is an owner-reported result, not a request independently executed here. It means a local validation check failed. It does not establish successful authentication, clearance of the earlier compliance rule, a valid stock list, or a quote. HTTP 200 non-JSON pages and malformed API envelopes can reach this error too.
 
-The previous generic error hid which check failed. Discovery now emits an additional fixed `validationCheck` label. It never emits raw response bodies, arbitrary provider field names, credentials, signatures or wallet material. These labels diagnose rejection without relaxing validation:
+The previous generic error hid which check failed. Errors now emit an additional fixed `validationCheck` label. Advisory catalog market failures instead appear in `marketIssues` on a partial catalog. Neither path emits raw response bodies, arbitrary provider field names, credentials, signatures or wallet material:
 
 | Label | Rejected expectation |
 | --- | --- |
@@ -18,6 +30,7 @@ The previous generic error hid which check failed. Discovery now emits an additi
 | `DISCOVERY_SYMBOL`, `DISCOVERY_TICKER`, `DISCOVERY_ISSUER` | String token identity metadata |
 | `DISCOVERY_DECIMALS`, `DISCOVERY_ADDRESS` | Bounded decimals and a valid nonzero token contract |
 | `DISCOVERY_STATUS`, `DISCOVERY_MARKET_STATUS`, `DISCOVERY_OPEN_STATE` | Status object with a string market status and boolean open state |
+| `MARKET_RECORD`, `MARKET_STATUS`, `MARKET_OPEN_STATE` | Strict fresh market response required by feasibility |
 
 Update your existing checkout with `git pull --ff-only origin main` while on `main`, then run `npm run discover:binance` from the repository directory. Keep credentials in `.env.local`, not only `.env`. Do not copy the blank template over a file that already contains credentials. Share only the sanitized report from the new run. Do not share raw API responses or `.env.local`. If a check fails, investigate that specific shape against the official [RWA REST schema](https://web3.binance.com/en/dev-docs/catalog/web3-wallet/api/rest-api/rwa-data); do not coerce an unobserved alternative shape merely to obtain a pass.
 

@@ -2,6 +2,12 @@
 
 Real findings and unanswered questions. No fabricated live measurements.
 
+## Owner-reported catalog market-field mismatch, 2026-10-06
+
+Run `a19fb351-ae16-4280-b12e-8659e276baeb`, started `2026-10-06T19:09:34.511Z`, reached `DISCOVERY_MARKET_STATUS` in the owner's PC checkout. This identifies a non-string catalog market field after envelope and preceding stock-identity checks. The actual field type/value and which token triggered it are still unknown. This is owner-provided evidence, not a call independently made in this workspace.
+
+The follow-up separates identity enumeration from market readiness. Discovery retains validated stock identities, emits unavailable market fields as null with fixed type-only issues, and keeps partial catalogs nonzero/exit 1. The selected-stock feasibility path still requires a separately fetched, strictly validated market response before quoting or building. No numeric status mapping, guessed default, raw-response logging or execution was introduced. A fresh catalog run and held-stock feasibility observation are pending.
+
 ## Owner-reported schema rejection, 2026-10-06
 
 Discovery run `7c80fd96-18b2-4687-92ec-bae8263ed4df` was supplied by the owner with `UPSTREAM_SCHEMA_INVALID` and no numeric upstream code. The exact response body and failed validation field are unknown. This does not prove authentication or stock coverage, and does not close Gate 0. A source review against the current RWA REST reference found no confirmed parser mismatch: it documents numeric `code: 0`, numeric `timestamp`, array `data`, string token decimals and boolean `statusInfo.openState`. Existing parsing accepts that documented shape.

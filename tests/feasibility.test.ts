@@ -86,6 +86,59 @@ for (const code of ['MARKET_PAUSED', 'MARKET_MAINTENANCE', 'ASSET_PAUSED', 'ASSE
 }
 test('closed market is readable, not assumed executable', () => assert.doesNotThrow(() => checkMarket({ openState: false, marketStatus: 'closed', reasonCode: 'MARKET_CLOSED' })));
 test('missing market state fails closed', () => assert.throws(() => checkMarket({})));
+
+test('catalog status is advisory; fresh selected-stock market data is mandatory', async () => {
+  const f = fixtures({ '/api/v1/dex/market/rwa/tokens': [{
+    binanceChainId: '56', tokenContractAddress: token, assetType: 1, platformId: 'ondo',
+    decimals: 18, tokenSymbol: 'FIXTUREon', underlyingTicker: 'FIXTURE',
+    statusInfo: { marketStatus: null, openState: true }
+  }] });
+  const report = await runFeasibility(env, f.reader);
+  assert.equal(report.status, 'passed');
+  assert.equal(report.mode, 'TEST_FIXTURE');
+  assert.equal(report.executionEnabled, false);
+  assert.equal(f.calls[2], '/api/v1/dex/market/rwa/underlying-market');
+  assert.ok(f.calls.indexOf('/api/v1/dex/market/rwa/underlying-market') < f.calls.indexOf('/api/v1/dex/aggregator/quote'));
+});
+
+for (const decimals of [['18'], { toString: () => '18' }]) {
+  test('malformed stock decimals cannot be coerced into an identity', async () => {
+    const f = fixtures({ '/api/v1/dex/market/rwa/tokens': [{
+      binanceChainId: '56', tokenContractAddress: token, assetType: 1, platformId: 'ondo',
+      decimals, tokenSymbol: 'FIXTUREon', underlyingTicker: 'FIXTURE', statusInfo: status
+    }] });
+    const report = await runFeasibility(env, f.reader);
+    assert.equal(report.status, 'blocked');
+    assert.equal(report.error?.code, 'UPSTREAM_SCHEMA_INVALID');
+    assert.equal(f.calls.length, 2);
+  });
+}
+
+for (const [freshStatus, code, check] of [
+  [null, 'UPSTREAM_SCHEMA_INVALID', 'MARKET_RECORD'],
+  [{ openState: true, marketStatus: null }, 'UPSTREAM_SCHEMA_INVALID', 'MARKET_STATUS'],
+  [{ openState: true, marketStatus: 1 }, 'UPSTREAM_SCHEMA_INVALID', 'MARKET_STATUS'],
+  [{ openState: true, marketStatus: { toString: () => 'regular' } }, 'UPSTREAM_SCHEMA_INVALID', 'MARKET_STATUS'],
+  [{ openState: 'true', marketStatus: 'regular' }, 'UPSTREAM_SCHEMA_INVALID', 'MARKET_OPEN_STATE'],
+  [{ openState: true, marketStatus: 'unexpected-state' }, 'UPSTREAM_SCHEMA_INVALID', 'MARKET_STATUS'],
+  [{ openState: false, marketStatus: 'pause', reasonCode: 'MARKET_PAUSED' }, 'MARKET_BLOCKED', undefined],
+  [{ ...status, reasonCode: 'MARKET_MAINTENANCE' }, 'MARKET_BLOCKED', undefined],
+  [{ ...status, reasonCode: 'ASSET_LIMITED' }, 'MARKET_BLOCKED', undefined]
+] as const) {
+  test(`fresh market rejection ${code}/${check} stops before wallet, quote or build`, async () => {
+    const f = fixtures({ '/api/v1/dex/market/rwa/underlying-market': {
+      binanceChainId: '56', tokenContractAddress: token, statusInfo: freshStatus
+    } });
+    const report = await runFeasibility(env, f.reader);
+    assert.equal(report.status, 'blocked');
+    assert.equal(report.executionEnabled, false);
+    assert.equal(report.error?.code, code);
+    assert.equal(report.error?.validationCheck, check);
+    assert.equal(f.calls.length, 3);
+    assert.ok(!f.calls.some((path) => path.includes('balance') || path.endsWith('/quote') || path.endsWith('/swap')));
+    assert.equal(JSON.stringify(report).includes('unexpected-state'), false);
+  });
+}
 test('malformed address and zero address reject', () => {
   assert.throws(() => address('0x123')); assert.throws(() => address(`0x${'0'.repeat(40)}`));
 });
