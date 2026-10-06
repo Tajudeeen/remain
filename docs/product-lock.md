@@ -25,3 +25,5 @@ Dark graphite, warm off-white and Binance-inspired yellow. One distinctive abstr
 Server-only Binance signing. Browser-owned wallet signatures. Fixed chain and token identities. Integer/fixed-point arithmetic. Quote and build payload bound to wallet, chain, exact amounts, receiver, spender, nonce and deadline before any signature. Durable order state. No need for a custom smart contract unless existing RFQ enforcement cannot satisfy a necessary invariant.
 
 The future cash solver must use executable minimum output after fees, bounded request budgets and honest near-minimum claims. It cannot guarantee the stock market price when the underlying market is closed. Approval requirements and minimum-output enforceability are vendor-specific findings, not assumptions.
+
+Milestone 1 now implements the standalone arithmetic/policy/search contract against an injected provider. It minimizes observed total stock debit including stock fees. Its metadata is a provider assertion and does not replace the still-pending real Binance order adapter. The live access gate continues to block execution.

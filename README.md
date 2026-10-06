@@ -6,7 +6,7 @@ Remain works backward from a USDT cash target to a bounded partial sale of a tok
 
 ## Current state
 
-Milestone 0 feasibility kit. Execution is disabled. There is no trading UI or deployed product yet. Tests use synthetic data. The first live discovery run was blocked by Binance compliance code 40304. A successful discovery and held-stock RFQ check are still required. See [milestone status](docs/milestone-status.md) and [access troubleshooting](docs/access-troubleshooting.md).
+Milestone 0 feasibility kit plus Milestone 1's standalone cash solver and BellGuard. Execution is disabled. There is no trading UI or deployed product yet. Tests use synthetic data. The first live discovery run was blocked by Binance compliance code 40304. A successful discovery and held-stock RFQ check are still required before live integration. See [milestone status](docs/milestone-status.md) and [access troubleshooting](docs/access-troubleshooting.md).
 
 This repo stays private until the owner approves public release. Nothing here is financial advice or a claim of Binance endorsement.
 
@@ -21,6 +21,14 @@ npm run test:coverage
 ```
 
 The kit includes exact-byte HMAC signing, a read-only endpoint allowlist, bounded responses and retries, input/schema validation, synthetic adversarial tests and sanitized evidence reports. No wallet-signing or trade-submission methods exist.
+
+## Cash-planning rehearsal
+
+```sh
+npm run rehearse:plan
+```
+
+This synthetic rehearsal raises a 25 USDT target while preserving a token floor, rejects an unreachable 40 USDT target and blocks a closed market without permission. It uses no API keys, HTTP requests or wallet. The planning engine handles exact integer units, cash and stock fee bounds, quote search budgets, stale facts, cancellation and immutable evidence. It selects the smallest safe total debit observed, never claims a globally minimal fill and always disables execution. Read the [planning contract and limitations](docs/planning-engine.md) before integrating it.
 
 ## Live discovery and feasibility
 
@@ -54,6 +62,7 @@ GitHub has a manual **Binance read-only feasibility** workflow with `discover` a
 - [Build blueprint](docs/build-plan.md)
 - [Product lock](docs/product-lock.md)
 - [Security boundaries](docs/security.md)
+- [Planning engine](docs/planning-engine.md)
 - [Developer experience log](docs/devex-log.md)
 
 The dependency lockfile is committed. `npm run check:security` is a small source-policy check, not a security audit. No deployed custom contracts exist at this milestone.

@@ -5,7 +5,7 @@ Updated 2026-10-06. Submission target: 2026-10-11 12:00 UTC per the supplied bri
 | Gate | Implementation | Evidence needed | Status |
 | --- | --- | --- | --- |
 | 0: API feasibility | Signing client, discovery, read-only stock-to-USDT RFQ harness, CI | Local suite, remote CI, real authenticated route with inspectable payload | Code implemented; live discovery BLOCKED by Binance compliance code 40304 |
-| 1: Cash solver and BellGuard | Pending | Property tests, bounded quote search, enforced minimum output and retained-token floor | BLOCKED by gate 0 |
+| 1: Cash solver and BellGuard | Standalone planning engine, integer conversion, immutable trace/checksum and rehearsal | Adversarial tests and exhaustive small-domain oracle; live vendor adapter later | Planning module implemented; live integration BLOCKED by gate 0 |
 | 2: Original interface and wallet flow | Pending | Browser tests, mobile/accessibility, signature field verification | BLOCKED |
 | 3: Order durability and settlement | Pending | Idempotency, cancellation/expiry, reconciliation, approved tiny live trade | BLOCKED |
 | 4: Receipt and provenance | Pending | Canonical evidence, independent verifier, fraud/tamper tests | BLOCKED |
@@ -32,5 +32,7 @@ Local and remote checks green, then a real authenticated smoke result with suppo
 Gate 0 completion does not authorize trading or prove signature semantics. Those require vendor field binding, actual approval/settlement analysis and explicit owner approval later.
 
 ## Blueprint clarifications
+
+On 2026-10-06 the owner requested continued next-milestone work after the live failure was explained. Milestone 1 was scoped to a standalone planning engine so its arithmetic, policies and bounded search could be fully built and tested independently. This changes the code-work sequence, not the live access or execution gates. No UI, live quote adapter, signature, approval or trade has been enabled. See [planning engine](planning-engine.md).
 
 `docs/build-plan.md` preserves the original blueprint. This status file is authoritative for implemented capabilities. A JSON checksum is not a formal proof, a structural check is not a signature audit, and a projected token floor does not control concurrent wallet activity. No premium-to-TradFi claim is possible from RWA referencePrice alone.

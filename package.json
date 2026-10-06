@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Raise cash. Stay invested. Milestone-zero feasibility kit.",
+  "description": "Raise cash. Stay invested. Read-only feasibility and bounded cash planning engine.",
   "engines": {
     "node": ">=24 <25"
   },
@@ -15,7 +15,8 @@
     "check:security": "node scripts/check-security.ts",
     "verify": "npm run typecheck && npm test && npm run build && npm run check:security",
     "smoke:binance": "node --env-file-if-exists=.env.local scripts/smoke-binance.ts",
-    "discover:binance": "node --env-file-if-exists=.env.local scripts/discover-binance.ts"
+    "discover:binance": "node --env-file-if-exists=.env.local scripts/discover-binance.ts",
+    "rehearse:plan": "node scripts/rehearse-plan.ts"
   },
   "devDependencies": {
     "@types/node": "24.19.1",

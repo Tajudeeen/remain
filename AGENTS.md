@@ -7,7 +7,8 @@ Remain is a cash-target tokenized-stock product with BellGuard risk checks. The 
 - Read docs/milestone-status.md and docs/product-lock.md before changes.
 - Each milestone requires implementation, adversarial tests, local verification, a commit, a remote push and green remote checks. Live gates need live evidence too.
 - Fixture tests are not live integration evidence. Keep TEST_FIXTURE labels.
-- Milestone 0 remains blocked until a real stock-to-USDT RFQ route is observed with inspectable typed data. Never skip a blocked gate.
+- Milestone 0's live gate remains blocked until a real stock-to-USDT RFQ route is observed with inspectable typed data. Never represent a blocked live gate as passed.
+- The owner requested continuation on 2026-10-06 after the live rejection was explained. Milestone 1 may proceed as a standalone, tested planning engine with an injected quote provider. Its live integration remains blocked by gate 0. This authorization does not enable execution or bypass access restrictions.
 - Do not add a UI, execution, agents or smart contracts before the feasibility gate is satisfied.
 - No secrets, private keys, seeds, raw signed payloads or wallet balances in committed files or public logs.
 - Never sign, approve, submit, broadcast or make live trades without explicit user approval.
