@@ -42,6 +42,25 @@ test('business failure under HTTP 200 still blocks', async () => {
   await assert.rejects(client(async () => Response.json({ code: 40001, data: [], timestamp: now })).get(endpoint), expectCode('UPSTREAM_REJECTED'));
 });
 
+for (const [upstreamCode, expected] of [[40301, 'ACCESS_REGION_RESTRICTED'], [40302, 'ACCESS_PROXY_REJECTED'], [40303, 'ACCESS_IP_RESTRICTED'], [40304, 'ACCESS_COMPLIANCE_RESTRICTED']] as const) {
+  for (const status of [200, 403, 503]) {
+    test(`compliance ${upstreamCode} under HTTP ${status} stops without retry or raw data`, async () => {
+      let calls = 0;
+      let sleeps = 0;
+      const c = client(async () => { calls++; return Response.json({ code: upstreamCode, msg: 'secret-echo-fixture', data: { private: 'secret-echo-fixture' } }, { status }); }, { sleep: async () => { sleeps++; } });
+      await assert.rejects(c.get(endpoint), (error) => {
+        const safe = safeError(error);
+        assert.equal(safe.code, expected);
+        assert.equal(safe.upstreamCode, upstreamCode);
+        assert.equal(JSON.stringify(safe).includes('secret-echo-fixture'), false);
+        return true;
+      });
+      assert.equal(calls, 1);
+      assert.equal(sleeps, 0);
+    });
+  }
+}
+
 test('429 Retry-After is respected with fresh nonce', async () => {
   let calls = 0; const waits: number[] = []; const nonces: string[] = [];
   const c = client(async (_url, init) => {

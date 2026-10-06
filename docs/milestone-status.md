@@ -4,7 +4,7 @@ Updated 2026-10-06. Submission target: 2026-10-11 12:00 UTC per the supplied bri
 
 | Gate | Implementation | Evidence needed | Status |
 | --- | --- | --- | --- |
-| 0: API feasibility | Signing client, discovery, read-only stock-to-USDT RFQ harness, CI | Local suite, remote CI, real authenticated route with inspectable payload | Code implemented; live gate BLOCKED by missing credentials/configuration |
+| 0: API feasibility | Signing client, discovery, read-only stock-to-USDT RFQ harness, CI | Local suite, remote CI, real authenticated route with inspectable payload | Code implemented; live discovery BLOCKED by Binance compliance code 40304 |
 | 1: Cash solver and BellGuard | Pending | Property tests, bounded quote search, enforced minimum output and retained-token floor | BLOCKED by gate 0 |
 | 2: Original interface and wallet flow | Pending | Browser tests, mobile/accessibility, signature field verification | BLOCKED |
 | 3: Order durability and settlement | Pending | Idempotency, cancellation/expiry, reconciliation, approved tiny live trade | BLOCKED |
@@ -24,6 +24,8 @@ Updated 2026-10-06. Submission target: 2026-10-11 12:00 UTC per the supplied bri
 - Fixture reports have TEST_FIXTURE labels. Reports contain no raw wallet state or order payload.
 
 ## Gate 0 closure criteria
+
+Live discovery run [37413704037](https://github.com/Tajudeeen/remain/actions/runs/37413704037), 2026-10-06 04:26 UTC: installation and all 74 original tests passed, then discovery returned upstreamCode 40304. The stock quote/build step did not run. Required credential values were available to the workflow, but this rejection does not prove their validity, permissions or approval. The exact compliance rule and runner location were not established. See [access troubleshooting](access-troubleshooting.md).
 
 Local and remote checks green, then a real authenticated smoke result with supported held stock, matching RFQ quote and inspectable unsigned typed data. Record sanitized live artifact and reproducible run identifier. Investigate schema drift with Binance support. Do not weaken validation just to obtain a green run.
 

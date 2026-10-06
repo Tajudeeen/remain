@@ -1,5 +1,15 @@
 import { discoverStocks } from '../src/discovery.ts';
 import { safeError } from '../src/errors.ts';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 
-try { console.log(JSON.stringify(await discoverStocks(process.env), null, 2)); }
-catch (error) { console.error(JSON.stringify({ status: 'blocked', executionEnabled: false, error: safeError(error) })); process.exitCode = 1; }
+const runId = randomUUID();
+const startedAt = new Date().toISOString();
+let report;
+try { report = { runId, startedAt, status: 'passed', ...await discoverStocks(process.env) }; }
+catch (error) { report = { runId, startedAt, status: 'blocked', mode: 'LIVE_READ_ONLY', executionEnabled: false, error: safeError(error) }; process.exitCode = 1; }
+// Only allowlisted public metadata or safe classified errors are persisted.
+await mkdir('evidence', { recursive: true, mode: 0o700 });
+const evidenceFile = `evidence/binance-discovery-${runId}.json`;
+await writeFile(evidenceFile, JSON.stringify(report, null, 2) + '\n', { mode: 0o600, flag: 'wx' });
+console.log(JSON.stringify({ ...report, evidenceFile }, null, 2));
