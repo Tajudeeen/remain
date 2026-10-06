@@ -33,3 +33,7 @@ The next authorized independent module uses a real local SQLite journal with syn
 Run discovery, then held-stock feasibility. Record run IDs, permitted endpoint paths, status, latency and redacted evidence. Record chain/ticker/issuer coverage and empty-list cases. Compare issuers only if two real BSC wrappers for the same underlying are discoverable. Preserve API errors as classified outcomes. Distinguish documentation ambiguities from actual runtime failures.
 
 Questions for Binance support: full RFQ typed-data schema per vendor, minimum-output/fee enforceability, spender contracts, market reason-code taxonomy, idempotency behavior, cancellation semantics, partial fills, and availability of meaningful RFQ simulation.
+
+## Submission preparation, 2026-10-06
+
+The official organizer pages were read again before preparation. The live BSC supported-stock requirement remains unfulfilled. An owner-authored final report is mandatory; the organizer explicitly rejects AI-generated reports. `docs/submission/devex-worksheet.md` organizes observed errors and missing measurements for the owner. It is not the final report and invents no first-success time, latency, issuer comparison or live settlement result. The supplied report form could not be retrieved, so its exact questions still need owner review.

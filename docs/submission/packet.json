@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "project": "Remain",
+  "mode": "TEST_FIXTURE",
+  "executionEnabled": false,
+  "snapshotAt": "2026-10-06T08:26:53Z",
+  "deployment": {
+    "url": "https://remain-cash.netlify.app/",
+    "buildSha": "b3089947eec2a670e7ef6140d22622239094139e",
+    "netlifyDeployId": "6ac4b08671bf7a60c694865b"
+  },
+  "evidence": {
+    "verificationWorkflow": "https://github.com/Tajudeeen/remain/actions/runs/37435789151",
+    "httpsSmokeWorkflow": "https://github.com/Tajudeeen/remain/actions/runs/37436134911"
+  },
+  "artifacts": [
+    "docs/submission/requirements.md",
+    "docs/submission/evidence-index.md",
+    "docs/submission/demo-script.md",
+    "docs/submission/devex-worksheet.md",
+    "docs/submission/release-checklist.md"
+  ],
+  "gates": {
+    "liveFeasibility": "BLOCKED",
+    "supportedStock": "BLOCKED",
+    "mainnetSettlement": "BLOCKED",
+    "registration": "PENDING",
+    "eligibility": "PENDING",
+    "ownerDevexReport": "PENDING",
+    "demoVideo": "PENDING",
+    "publicSource": "PENDING",
+    "signedOutLinks": "PENDING"
+  }
+}

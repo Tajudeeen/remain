@@ -34,3 +34,13 @@ Local `npm run verify`, `npm run test:coverage` and `npm run rehearse:orders` pa
 Milestone 4 adds strict TEST_FIXTURE proof receipts and independent verification. Branch run 37427029024 and PR run 37427034323 passed the complete suite, including `npm run rehearse:receipt` and the existing real-browser regression. PR #7 was squash-merged as commit `71fae6169e12d5e0829b19011758f0d692f70d4a`. Receipt verification recomputes fixture settlement and integrity bindings; it does not authenticate the evidence source or establish a live trade.
 
 Milestone 5 adds deployment hardening for the fixture rehearsal: explicit host allowlisting, same-origin checks for HTTP/HTTPS, a narrow `/healthz` contract, validated public-bind startup configuration, a non-root container, a reusable external deployment smoke verifier and a manual GitHub deployment-smoke workflow. CI now builds the container, starts it with execution disabled and runs `npm run smoke:deployed` against the running service before browser regression. The connected Vercel context returned no deployable team, so no external Vercel URL is claimed. Gate 5 remains incomplete until a real public HTTPS deployment passes the same smoke verifier.
+
+## Current preparation checks, 2026-10-06
+
+Gate 5 subsequently passed on Netlify. Its exact deployed commit, HTTPS smoke and entry-flow browser evidence are recorded in [Netlify deployment evidence](netlify-deployment.md). The older pending statements above describe the state at the time of those checks.
+
+Gate 6 adds 29 tests around the private fixture packet and tracked-history screen, bringing the suite to 315 tests. The packet rejects promoted live/release claims, invalid URLs, duplicate evidence, invalid timestamps, missing fields and artifact path traversal. The release-status CLI returns exit 1 for the internally valid but submission-blocked fixture packet.
+
+History tests use real disposable Git repositories. They detect a deleted credential from an earlier commit without printing its value, detect a reused blob behind a historical tracked credential filename, and prevent shallow history from receiving a pattern pass. These are checks on the screening tool's behavior, not a comprehensive secret audit. The local history report covers only the refs present in the local checkout. CI now fetches full history and archives a sanitized report for its actual commit. Its remote result must pass before merge.
+
+The packet and history tools perform no network requests, publish no source and submit no forms. The deployed frontend is unchanged in this preparation milestone, and its already verified build remains pinned through `[skip netlify]`.
