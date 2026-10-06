@@ -1,4 +1,4 @@
-# Security boundaries: milestone 0
+# Security boundaries
 
 ## Assets and trust
 
@@ -35,3 +35,16 @@ The manual job offers an owner-provisioned self-hosted runner with custom label 
 For every later feature: state the invariant, reproduce a counterexample, add a failing test, implement the smallest fix, rerun the entire gate, commit and check remote CI. An incident that affects signing or fills disables execution until reproduced and verified fixed.
 
 The basic source scanner does not detect all secret forms, supply-chain attacks or logical bugs. Current tests are not formal verification. No independent audit has occurred. Production release requires a separate operational, legal/eligibility and security go/no-go.
+
+
+## Fixture deployment boundary
+
+Gate 5 permits deployment of the synthetic planning rehearsal only. Public binding requires an explicit `REMAIN_ALLOWED_HOSTS` value. Localhost remains accepted for development and container smoke tests. Cross-site browser requests are rejected, arbitrary filesystem paths are not served, request bodies and concurrency remain bounded, and security headers stay mandatory.
+
+The health endpoint reports only service status, TEST_FIXTURE mode, execution disabled, live gate blocked and a validated build SHA. It performs no Binance or wallet calls and exposes no environment values.
+
+The container runs as the non-root `node` user. Local credential files, git metadata, evidence, state and coverage are excluded from the Docker build context. CI builds and starts the image, then runs the same external smoke verifier used for a public deployment.
+
+A public fixture host must not receive Binance API secrets, wallet keys or signing material. The service has no order, signing or submission endpoints. The deployed smoke test explicitly verifies those surfaces remain absent.
+
+The connected Vercel context returned no deployable team for this session, so no Vercel deployment is treated as evidence yet. A future host must pass the external HTTPS smoke check before Gate 5 can be called complete.
