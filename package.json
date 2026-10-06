@@ -19,6 +19,7 @@
     "rehearse:plan": "node scripts/rehearse-plan.ts",
     "rehearse:orders": "node scripts/rehearse-orders.ts",
     "rehearse:receipt": "node scripts/rehearse-receipt.ts",
+    "verify:receipt": "node scripts/verify-receipt.ts",
     "dev": "node scripts/serve-rehearsal.ts",
     "check:web": "node --check web/app.js",
     "test:web": "npm exec --yes --package=agent-browser@0.38.2 -- node scripts/verify-browser.ts",
