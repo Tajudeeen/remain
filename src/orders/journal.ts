@@ -18,6 +18,10 @@ export type OrderSnapshot = {
   providerStatus: ProviderStatus | null; platformOrderId: string | null; txHash: string | null;
   settlement: SettlementResult | null;
 };
+export type JournalArchive = {
+  requestId: string; bindingJSON: string; bindingChecksum: string; revision: number; tailChecksum: string;
+  events: { sequence: number; eventJSON: string; previousHash: string; eventHash: string }[];
+};
 const terminal = new Set<ProviderStatus>(['FILLED', 'FAILED', 'EXPIRED', 'CANCELLED']);
 function event(value: unknown): OrderEvent {
   try {
@@ -137,6 +141,16 @@ export class FixtureOrderJournal {
     });
   }
   get(requestId: string): OrderSnapshot { uuid(requestId); return this.transaction(false, () => this.load(requestId).snapshot); }
+  exportArchive(requestId: string): { journal: JournalArchive; snapshot: OrderSnapshot } {
+    uuid(requestId);
+    return this.transaction(false, () => {
+      const count = this.db.prepare('SELECT count(*) AS n FROM events WHERE request_id=?').get(requestId)?.n;
+      if (typeof count !== 'number' || count > 64) throw new OrderError('INVALID_ORDER');
+      const { snapshot, tail } = this.load(requestId);
+      const events = this.db.prepare('SELECT * FROM events WHERE request_id=? ORDER BY sequence').all(requestId).map(row => ({ sequence: Number(row.sequence), eventJSON: JSON.stringify(event(JSON.parse(String(row.payload)))), previousHash: String(row.previous_hash), eventHash: String(row.event_hash) }));
+      return { journal: { requestId, bindingJSON: JSON.stringify(snapshot.binding), bindingChecksum: bindingChecksum(snapshot.binding), revision: snapshot.revision, tailChecksum: tail, events }, snapshot };
+    });
+  }
   append(requestId: string, expectedRevision: number, value: OrderEvent): OrderSnapshot {
     uuid(requestId); const e = event(value);
     if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0) throw new OrderError('INVALID_EVENT');

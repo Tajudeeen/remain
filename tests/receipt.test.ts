@@ -4,138 +4,53 @@ import { randomUUID } from 'node:crypto';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { rehearsePlan } from '../src/rehearsal/plan.ts';
 import { bindFixturePlan } from '../src/orders/model.ts';
-import { FixtureOrderJournal, type OrderSnapshot } from '../src/orders/journal.ts';
-import type { SettlementEvidence } from '../src/orders/settlement.ts';
-import { buildFixtureProofReceipt, verifyFixtureProofReceipt, ReceiptError, type FixtureProofReceipt } from '../src/receipts/proof.ts';
+import { FixtureOrderJournal, type OrderEvent } from '../src/orders/journal.ts';
+import { rehearsePlan } from '../src/rehearsal/plan.ts';
+import { canonicalChecksum, canonicalJSON, parseReceiptJSON, ReceiptError } from '../src/receipts/canonical.ts';
+import { createFixtureReceipt, serializeReceipt, type FixtureReceipt } from '../src/receipts/receipt.ts';
+import { verifyReceipt } from '../src/receipts/verifier.ts';
 
-async function matchedFixture(): Promise<{ snapshot: OrderSnapshot; evidence: SettlementEvidence; cleanup: () => void }> {
-  const folder = mkdtempSync(join(tmpdir(), 'remain-receipt-test-'));
-  const file = join(folder, 'journal.sqlite');
-  const journal = new FixtureOrderJournal(file);
-  try {
-    const { plan } = await rehearsePlan({ cashTarget: '25', retainPercent: 70, maxImpactPercent: '0.50', market: 'regular', allowClosedMarket: false });
-    const binding = bindFixturePlan(plan, plan.evaluatedAtMs);
-    const requestId = randomUUID();
-    const now = binding.createdAtMs;
-    journal.reserve(requestId, binding);
-    journal.append(requestId, 0, { type: 'ATTEMPT_REHEARSAL', eventId: randomUUID(), atMs: now });
-    const txHash = `0x${'1'.repeat(64)}`;
-    const blockHash = `0x${'2'.repeat(64)}`;
-    const parentHash = `0x${'3'.repeat(64)}`;
-    const venue = '0x3333333333333333333333333333333333333333';
-    journal.append(requestId, 1, { type: 'OBSERVE', eventId: randomUUID(), atMs: now + 1, status: 'FILLED', platformOrderId: 'synthetic-order', txHash });
-    const evidence: SettlementEvidence = {
-      mode: 'TEST_FIXTURE',
-      chain: '56',
-      wallet: binding.wallet,
-      stockToken: binding.stockToken,
-      cashToken: binding.cashToken,
-      orderId: 'synthetic-order',
-      txHash,
-      receiptStatus: 'SUCCESS',
-      blockNumber: '100',
-      blockHash,
-      parentHash,
-      canonicalHash: blockHash,
-      headNumber: '111',
-      confirmationsRequired: 12,
-      before: { blockNumber: '99', blockHash: parentHash, stockRaw: binding.stockBalanceRaw, cashRaw: '0' },
-      after: {
-        blockNumber: '100',
-        blockHash,
-        stockRaw: (BigInt(binding.stockBalanceRaw) - BigInt(binding.stockDebitRaw)).toString(),
-        cashRaw: binding.minimumNetCashRaw
-      },
-      completeBlockTransfers: true,
-      transfers: [
-        { token: binding.stockToken, from: binding.wallet, to: venue, amountRaw: binding.stockDebitRaw, txHash, logIndex: 0, removed: false },
-        { token: binding.cashToken, from: venue, to: binding.wallet, amountRaw: binding.minimumNetCashRaw, txHash, logIndex: 1, removed: false }
-      ]
-    };
-    const snapshot = journal.append(requestId, 2, { type: 'RECONCILE', eventId: randomUUID(), atMs: now + 2, evidence });
-    journal.close();
-    return { snapshot, evidence, cleanup: () => rmSync(folder, { recursive: true, force: true }) };
-  } catch (error) {
-    journal.close();
-    rmSync(folder, { recursive: true, force: true });
-    throw error;
-  }
+const wallet = '0x1111111111111111111111111111111111111111'; const stock = '0x2222222222222222222222222222222222222222'; const venue = '0x3333333333333333333333333333333333333333'; const cash = '0x55d398326f99059ff775485246999027b3197955';
+const h = (n: string) => `0x${n.repeat(64)}`;
+function evidence() { const cashRaw = '25000000000000000000'; return { mode: 'TEST_FIXTURE' as const, chain: '56' as const, wallet, stockToken: stock, cashToken: cash, orderId: 'fixture-order', txHash: h('1'), receiptStatus: 'SUCCESS' as const, blockNumber: '100', blockHash: h('2'), parentHash: h('3'), canonicalHash: h('2'), headNumber: '111', confirmationsRequired: 12 as const, before: { blockNumber: '99', blockHash: h('3'), stockRaw: '100', cashRaw: '0' }, after: { blockNumber: '100', blockHash: h('2'), stockRaw: '75', cashRaw }, completeBlockTransfers: true, transfers: [{ token: stock, from: wallet, to: venue, amountRaw: '25', txHash: h('1'), logIndex: 0, removed: false }, { token: cash, from: venue, to: wallet, amountRaw: cashRaw, txHash: h('1'), logIndex: 1, removed: false }] }; }
+async function makeReceipt(t: test.TestContext): Promise<FixtureReceipt> {
+  const folder = mkdtempSync(join(tmpdir(), 'remain-receipt-')); t.after(() => rmSync(folder, { recursive: true, force: true }));
+  const { plan } = await rehearsePlan({ cashTarget: '25', retainPercent: 70, maxImpactPercent: '0.50', market: 'regular', allowClosedMarket: false });
+  const b = bindFixturePlan(plan, plan.evaluatedAtMs); const j = new FixtureOrderJournal(join(folder, 'journal.sqlite')); const id = randomUUID(); j.reserve(id, b);
+  const event = (type: 'ATTEMPT_REHEARSAL' | 'OBSERVE' | 'RECONCILE', atMs: number): OrderEvent => type === 'ATTEMPT_REHEARSAL' ? { type, eventId: randomUUID(), atMs } : type === 'OBSERVE' ? { type, eventId: randomUUID(), atMs, status: 'FILLED', platformOrderId: 'fixture-order', txHash: h('1') } : { type, eventId: randomUUID(), atMs, evidence: evidence() };
+  j.append(id, 0, event('ATTEMPT_REHEARSAL', b.createdAtMs)); j.append(id, 1, event('OBSERVE', b.createdAtMs + 1)); j.append(id, 2, event('RECONCILE', b.createdAtMs + 2));
+  const receipt = createFixtureReceipt(plan, j, id, b.createdAtMs + 3); j.close(); return receipt;
 }
-
-function clone<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
-}
-
-test('builds and independently verifies a matched fixture receipt', async () => {
-  const fixture = await matchedFixture();
-  try {
-    const receipt = buildFixtureProofReceipt(fixture.snapshot, fixture.evidence, fixture.snapshot.lastAtMs + 1, randomUUID());
-    const result = verifyFixtureProofReceipt(receipt, fixture.evidence);
-    assert.equal(receipt.body.mode, 'TEST_FIXTURE');
-    assert.equal(receipt.body.executionEnabled, false);
-    assert.equal(receipt.body.settlement.status, 'MATCHED_FIXTURE');
-    assert.equal(result.status, 'VALID_FIXTURE');
-    assert.deepEqual(result.reasons, []);
-  } finally {
-    fixture.cleanup();
-  }
+test('canonical profile sorts object keys and rejects ambiguous values', () => {
+  assert.equal(canonicalJSON({ z: 1, a: ['x', true] }), '{"a":["x",true],"z":1}');
+  assert.equal(canonicalChecksum({ a: 1, z: 2 }), canonicalChecksum({ z: 2, a: 1 }));
+  for (const input of ['{"a":1,"a":2}', '{"a":-1}', '{"a":1.2}', '{"a":01}', '{"a":1}x', '{"a":"\\ud800"}']) assert.throws(() => parseReceiptJSON(input), ReceiptError);
+  assert.throws(() => canonicalJSON({ a: -0 }), /INVALID_NUMBER/);
+  assert.throws(() => canonicalJSON({ a: BigInt(1) }), /INVALID_JSON_VALUE/);
 });
-
-test('detects receipt body tampering even when settlement evidence is unchanged', async () => {
-  const fixture = await matchedFixture();
-  try {
-    const receipt = buildFixtureProofReceipt(fixture.snapshot, fixture.evidence, fixture.snapshot.lastAtMs + 1, randomUUID());
-    const tampered = clone(receipt) as { body: { settlement: { actualCashCreditRaw: string } }; checksum: string };
-    tampered.body.settlement.actualCashCreditRaw = (BigInt(tampered.body.settlement.actualCashCreditRaw) + 1n).toString();
-    const result = verifyFixtureProofReceipt(tampered, fixture.evidence);
-    assert.equal(result.status, 'INVALID');
-    assert.ok(result.reasons.includes('RECEIPT_CHECKSUM_MISMATCH'));
-    assert.ok(result.reasons.includes('CASH_CREDIT_MISMATCH'));
-  } finally {
-    fixture.cleanup();
-  }
+test('valid receipt is independently verifiable and serialization is canonical', async (t) => {
+  const receipt = await makeReceipt(t); const result = verifyReceipt(receipt);
+  assert.equal(result.status, 'CONSISTENT_FIXTURE'); assert.equal(result.executionEnabled, false); assert.ok(result.canonicalBytes > 0);
+  const text = serializeReceipt(receipt); assert.equal(text.endsWith('\n'), true); assert.equal(verifyReceipt(parseReceiptJSON(text)).status, 'CONSISTENT_FIXTURE');
+  assert.equal(receipt.summary.settlementStatus, 'MATCHED_FIXTURE'); assert.equal(receipt.summary.stockRemainingRaw, '75'); assert.equal(receipt.summary.netCashReceivedRaw, '25000000000000000000');
 });
-
-test('detects evidence substitution even if a receipt checksum is untouched', async () => {
-  const fixture = await matchedFixture();
-  try {
-    const receipt = buildFixtureProofReceipt(fixture.snapshot, fixture.evidence, fixture.snapshot.lastAtMs + 1, randomUUID());
-    const evidence = clone(fixture.evidence);
-    evidence.canonicalHash = `0x${'4'.repeat(64)}`;
-    const result = verifyFixtureProofReceipt(receipt, evidence);
-    assert.equal(result.status, 'INVALID');
-    assert.ok(result.reasons.includes('SETTLEMENT_REORG_DETECTED'));
-    assert.ok(result.reasons.includes('EVIDENCE_CHECKSUM_MISMATCH'));
-  } finally {
-    fixture.cleanup();
-  }
+function mutable(receipt: FixtureReceipt): FixtureReceipt { return parseReceiptJSON(serializeReceipt(receipt)) as FixtureReceipt; }
+const mutations: [string, (r: FixtureReceipt) => void, string][] = [
+  ['receipt checksum', r => { r.receiptChecksum = 'b'.repeat(64); }, 'RECEIPT_CHECKSUM'],
+  ['plan checksum', r => { const p = JSON.parse(r.planJSON); p.planHash = 'b'.repeat(64); r.planJSON = JSON.stringify(p); }, 'PLAN_CHECKSUM'],
+  ['binding checksum', r => { r.journal.bindingChecksum = 'b'.repeat(64); }, 'BINDING_CHECKSUM'],
+  ['event payload', r => { const e = JSON.parse(r.journal.events[0]!.eventJSON); e.type = 'OUTCOME_UNKNOWN'; r.journal.events[0]!.eventJSON = JSON.stringify(e); }, 'EVENT_HASH'],
+  ['event history truncation', r => { r.journal.events.pop(); r.journal.revision--; }, 'JOURNAL_TAIL'],
+  ['event sequence', r => { r.journal.events[1]!.sequence = 9; }, 'EVENT_SCHEMA'],
+  ['summary stock', r => { r.summary.stockRemainingRaw = '74'; }, 'SUMMARY_MISMATCH'],
+  ['status claim', r => { r.summary.settlementStatus = 'MATCHED_FIXTURE'; const event = JSON.parse(r.journal.events[2]!.eventJSON); event.evidence.canonicalHash = h('4'); r.journal.events[2]!.eventJSON = JSON.stringify(event); }, 'EVENT_HASH'],
+  ['provenance', r => { (r.provenance as { authentication: string }).authentication = 'SIGNED'; }, 'PROVENANCE_MISMATCH'],
+  ['execution flag', r => { (r as { executionEnabled: boolean }).executionEnabled = true; }, 'RECEIPT_SCHEMA']
+];
+for (const [name, mutate, reason] of mutations) test(`verifier rejects ${name}`, async (t) => {
+  const receipt = mutable(await makeReceipt(t)); mutate(receipt); const result = verifyReceipt(receipt); assert.equal(result.status, 'INVALID_RECEIPT'); assert.ok(result.reasons.includes(reason), `${name}: ${result.reasons.join(',')}`);
 });
-
-test('rejects proof creation before settlement is independently matched', async () => {
-  const fixture = await matchedFixture();
-  try {
-    const unmatched = { ...fixture.snapshot, settlement: null } satisfies OrderSnapshot;
-    assert.throws(
-      () => buildFixtureProofReceipt(unmatched, fixture.evidence, fixture.snapshot.lastAtMs + 1, randomUUID()),
-      (error: unknown) => error instanceof ReceiptError && error.code === 'UNVERIFIED_SETTLEMENT'
-    );
-  } finally {
-    fixture.cleanup();
-  }
-});
-
-test('rejects added fields instead of silently accepting ambiguous receipt shapes', async () => {
-  const fixture = await matchedFixture();
-  try {
-    const receipt = buildFixtureProofReceipt(fixture.snapshot, fixture.evidence, fixture.snapshot.lastAtMs + 1, randomUUID());
-    const polluted = clone(receipt) as FixtureProofReceipt & { liveSettlement?: boolean };
-    polluted.liveSettlement = true;
-    const result = verifyFixtureProofReceipt(polluted, fixture.evidence);
-    assert.equal(result.status, 'INVALID');
-    assert.deepEqual(result.reasons, ['INVALID_SCHEMA']);
-  } finally {
-    fixture.cleanup();
-  }
+test('parser rejects duplicate receipt fields before verification', () => {
+  assert.throws(() => parseReceiptJSON('{"mode":"TEST_FIXTURE","mode":"LIVE_READ_ONLY"}'), /DUPLICATE_KEY/);
 });
