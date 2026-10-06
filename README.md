@@ -1,6 +1,6 @@
 # Remain
 
-Netlify deployment uses the existing synthetic planner through a bounded serverless function. See [Netlify deployment](docs/netlify-deployment.md). The source remains private and the hosted demo keeps live execution disabled.
+Hosted rehearsal: [remain-cash.netlify.app](https://remain-cash.netlify.app/). Netlify deployment uses the existing synthetic planner through a bounded serverless function. See [deployment evidence](docs/netlify-deployment.md). The source remains private and the hosted demo keeps live execution disabled.
 
 Raise cash. Stay invested.
 
