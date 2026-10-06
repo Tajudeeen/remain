@@ -1,5 +1,26 @@
 # Binance compliance rejection: 40304
 
+## Latest owner-reported discovery result
+
+On 2026-10-06 the owner supplied discovery run `7c80fd96-18b2-4687-92ec-bae8263ed4df`, which returned `UPSTREAM_SCHEMA_INVALID` without an upstream code. This is an owner-reported result, not a request independently executed here. It means a local validation check failed. It does not establish successful authentication, clearance of the earlier compliance rule, a valid stock list, or a quote. HTTP 200 non-JSON pages and malformed API envelopes can reach this error too.
+
+The previous generic error hid which check failed. Discovery now emits an additional fixed `validationCheck` label. It never emits raw response bodies, arbitrary provider field names, credentials, signatures or wallet material. These labels diagnose rejection without relaxing validation:
+
+| Label | Rejected expectation |
+| --- | --- |
+| `RESPONSE_BODY`, `RESPONSE_BODY_LIMIT` | A response stream within the size limit |
+| `RESPONSE_JSON` | JSON rather than an HTML page or other text |
+| `ENVELOPE_CODE` | Numeric business success code `0` |
+| `ENVELOPE_SUCCESS` | The response must not declare failure |
+| `ENVELOPE_TIMESTAMP` | A finite numeric server timestamp |
+| `ENVELOPE_DATA` | A present `data` field |
+| `DISCOVERY_LIST`, `DISCOVERY_ROW` | An array of token objects |
+| `DISCOVERY_SYMBOL`, `DISCOVERY_TICKER`, `DISCOVERY_ISSUER` | String token identity metadata |
+| `DISCOVERY_DECIMALS`, `DISCOVERY_ADDRESS` | Bounded decimals and a valid nonzero token contract |
+| `DISCOVERY_STATUS`, `DISCOVERY_MARKET_STATUS`, `DISCOVERY_OPEN_STATE` | Status object with a string market status and boolean open state |
+
+Update your existing checkout with `git pull --ff-only origin main` while on `main`, then run `npm run discover:binance` from the repository directory. Keep credentials in `.env.local`, not only `.env`. Do not copy the blank template over a file that already contains credentials. Share only the sanitized report from the new run. Do not share raw API responses or `.env.local`. If a check fails, investigate that specific shape against the official [RWA REST schema](https://web3.binance.com/en/dev-docs/catalog/web3-wallet/api/rest-api/rwa-data); do not coerce an unobserved alternative shape merely to obtain a pass.
+
 ## Verified finding
 
 [Discovery run 37413704037](https://github.com/Tajudeeen/remain/actions/runs/37413704037) failed at 2026-10-06 04:26 UTC after installation and verification passed. Binance returned business code 40304. It was an access rejection before any held-stock quote/build request, signature or submission.
