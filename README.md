@@ -36,7 +36,9 @@ Open the interactive interface without API credentials or a wallet:
 npm run dev
 ```
 
-Visit `http://127.0.0.1:3000`. Enter a cash target, choose a retained floor and test regular, closed or paused market scenarios. BellGuard shows a bounded synthetic result. Changing an input clears the old result. The inspection window expires after 15 seconds. Downloads are labelled synthetic planning records, never settlement receipts. An original textless mark and graphite, cream and Binance-inspired yellow define the interface. Read the [interface contract](docs/planning-interface.md).
+Visit `http://127.0.0.1:3000`. A brief, skippable logo introduction leads to the landing page. Choose “Try the cash planner” to open the dashboard, or use `/#dashboard` directly. The splash skips repeat visits within a tab session and reduced-motion users. Navigation supports browser back/forward and keyboard focus. Both views share a footer with project status, limitations and builder links.
+
+Enter a cash target, choose a retained floor and test regular, closed or paused market scenarios. BellGuard shows a bounded synthetic result. Changing an input clears the old result. The inspection window expires after 15 seconds. Downloads are labelled synthetic planning records, never settlement receipts. An original textless mark and graphite, cream and Binance-inspired yellow define the interface. Read the [interface contract](docs/planning-interface.md).
 
 For automated browser verification, install its pinned development-only browser tool first:
 
