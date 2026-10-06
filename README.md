@@ -6,7 +6,7 @@ Remain works backward from a USDT cash target to a bounded partial sale of a tok
 
 ## Current state
 
-Milestone 0 feasibility kit, Milestone 1's standalone cash solver and BellGuard, Milestone 2's interactive planning rehearsal, and Milestone 3's standalone fixture order journal and settlement checks. Execution is disabled. There is no live wallet flow or deployed trading product. The interface uses an explicitly fictional position and the actual planning engine. GitHub and owner-reported local discovery both returned Binance compliance code 40304. A successful discovery and held-stock RFQ check are still required before live integration. See [milestone status](docs/milestone-status.md) and [access troubleshooting](docs/access-troubleshooting.md).
+Milestone 0 feasibility kit, Milestone 1's standalone cash solver and BellGuard, Milestone 2's interactive planning rehearsal, Milestone 3's standalone fixture order journal and settlement checks, and Milestone 4's canonical fixture proof receipt with an independent verifier. Execution is disabled. There is no live wallet flow or deployed trading product. The interface uses an explicitly fictional position and the actual planning engine. GitHub and owner-reported local discovery both returned Binance compliance code 40304. A successful discovery and held-stock RFQ check are still required before live integration. See [milestone status](docs/milestone-status.md) and [access troubleshooting](docs/access-troubleshooting.md).
 
 This repo stays private until the owner approves public release. Nothing here is financial advice or a claim of Binance endorsement.
 
