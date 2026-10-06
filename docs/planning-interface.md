@@ -46,6 +46,8 @@ This is a loopback rehearsal service. These controls do not establish production
 
 The verifier also enters with the keyboard skip link and downloads a planning record through the actual browser action, checking its fixture labels, disabled execution and nested plan checksum. The checked screenshots are saved under `docs/assets/` for review after CI artifacts expire.
 
+Smooth scrolling is limited to deliberate navigation-link clicks, with reduced-motion support. Native focus and implicit control scrolling stay immediate, preventing a moving form target from interfering with automated or keyboard interaction. The browser verifier checks this mode and confirms the target-change button click submits the form.
+
 ## Original mark
 
 The built-in image generation tool produced `web/logo.png` for this project. A large retained disc and a detached small slice express preserved exposure. It contains no text and is integrated in the header and favicon. It is a raster mark with transparency, not a copied Binance symbol or proof of trademark clearance.
