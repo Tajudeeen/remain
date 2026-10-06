@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { createRehearsalServer } from '../src/rehearsal/server.ts';
+import { digest } from '../src/validation.ts';
 
 // Run through npm run test:web after agent-browser install. Uses a dedicated
 // empty browser session, fictional data and an ephemeral loopback-only port.
@@ -25,6 +27,8 @@ try {
   await browser('open', `http://127.0.0.1:${address.port}`);
   await browser('wait', '--load', 'networkidle');
   await browser('snapshot', '-i');
+  await browser('press', 'Tab');
+  await check("document.activeElement.classList.contains('skip')");
   await check("document.body.innerText.includes('TEST_FIXTURE') && document.querySelector('#plan-button') && document.querySelector('#download').disabled");
   stage = 'safe plan'; await browser('click', '#plan-button');
   await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Plan available'");
@@ -44,6 +48,13 @@ try {
   stage = 'snapshot expiry'; await browser('click', '[data-scenario="safe"]');
   await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Plan available'");
   await mkdir('evidence', { recursive: true });
+  stage = 'planning record download';
+  const download = resolve('evidence/rehearsal-record.json');
+  await browser('download', '#download', download);
+  const downloaded = JSON.parse(await readFile(download, 'utf8')) as { kind: string; mode: string; executionEnabled: boolean; plan: { planHash: string; [key: string]: unknown } };
+  assert.equal(downloaded.kind, 'SYNTHETIC_PLANNING_RECORD'); assert.equal(downloaded.mode, 'TEST_FIXTURE'); assert.equal(downloaded.executionEnabled, false);
+  const { planHash, ...body } = downloaded.plan; assert.equal(planHash, digest(body));
+  stage = 'snapshot expiry';
   // Allow deterministic clock advancement without a blocking sleep.
   await browser('eval', "window.remainRealNow = Date.now; Date.now = () => window.remainRealNow() + 16000");
   await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Snapshot expired'");
@@ -65,7 +76,7 @@ try {
   }
   const errors = await browser('errors');
   assert.deepEqual((errors as { errors?: unknown[] }).errors ?? [], [], 'Unexpected browser errors');
-  console.log('Browser rehearsal passed: planning, hard blocks, changed-input invalidation, expiry, request race and five responsive widths. TEST_FIXTURE only.');
+  console.log('Browser rehearsal passed: keyboard entry, planning, hard blocks, changed-input invalidation, checksum download, expiry, request race and five responsive widths. TEST_FIXTURE only.');
 } catch (error) {
   console.error(`Browser rehearsal failed during ${stage}.`);
   await mkdir('evidence', { recursive: true });

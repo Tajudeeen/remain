@@ -10,6 +10,10 @@ Milestone 0 feasibility kit, Milestone 1's standalone cash solver and BellGuard,
 
 This repo stays private until the owner approves public release. Nothing here is financial advice or a claim of Binance endorsement.
 
+![Synthetic Remain planning interface. No live stock holdings or settlement.](docs/assets/planning-desktop.png)
+
+[Mobile rehearsal screenshot](docs/assets/planning-mobile.png). Both images use fictional data.
+
 ## Local verification
 
 Requires Node.js 24 and npm.

@@ -44,6 +44,8 @@ This is a loopback rehearsal service. These controls do not establish production
 
 `npm run test:web` uses pinned agent-browser 0.38.2 and an isolated browser session against an ephemeral loopback port. It tests the happy path, unreachable cash, changed-input invalidation, closed permission, paused hard block, snapshot expiry and a delayed-response race. It checks document overflow and takes full screenshots at 320, 375, 768, 1024 and 1440 pixels. Review the screenshots for visual quality. These tests are evidence of a synthetic interface, not live Binance execution. GitHub CI repeats this flow without API secrets.
 
+The verifier also enters with the keyboard skip link and downloads a planning record through the actual browser action, checking its fixture labels, disabled execution and nested plan checksum. The checked screenshots are saved under `docs/assets/` for review after CI artifacts expire.
+
 ## Original mark
 
 The built-in image generation tool produced `web/logo.png` for this project. A large retained disc and a detached small slice express preserved exposure. It contains no text and is integrated in the header and favicon. It is a raster mark with transparency, not a copied Binance symbol or proof of trademark clearance.
