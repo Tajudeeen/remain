@@ -26,6 +26,8 @@ assert.equal(healthBody.service, 'remain-rehearsal');
 assert.equal(healthBody.mode, 'TEST_FIXTURE');
 assert.equal(healthBody.executionEnabled, false);
 assert.equal(healthBody.liveGate, 'BLOCKED');
+assert.match(String(healthBody.buildSha), /^[a-f0-9]{40}$/);
+if (process.env.REMAIN_EXPECTED_BUILD_SHA) assert.equal(healthBody.buildSha, process.env.REMAIN_EXPECTED_BUILD_SHA);
 
 const page = await fetch(base, { redirect: 'error', signal: AbortSignal.timeout(5000) });
 assert.equal(page.status, 200);
@@ -45,6 +47,21 @@ assert.equal(planResponse.status, 200);
 const plan = await readJson(planResponse);
 assert.equal(plan.mode, 'TEST_FIXTURE');
 assert.equal(plan.executionEnabled, false);
+const result = plan.plan as { status: string; candidate?: { quote: { inputRaw: string }; verdict: { amounts: { remainingStockRaw: string; minimumNetCashRaw: string } } } };
+assert.equal(result.status, 'PLANNED_FOR_REVIEW');
+assert.equal(result.candidate?.quote.inputRaw, '25');
+assert.equal(result.candidate?.verdict.amounts.remainingStockRaw, '75');
+assert.equal(result.candidate?.verdict.amounts.minimumNetCashRaw, '25000000000000000000');
+
+for (const [extra, expectedStatus] of [[{ executionEnabled: true }, 400], [{ market: 'pause' }, 200]] as const) {
+  const response = await fetch(new URL('/api/rehearse', base), { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...input, ...extra }), redirect: 'error', signal: AbortSignal.timeout(5000) });
+  assert.equal(response.status, expectedStatus);
+  if (expectedStatus === 200) {
+    const value = await readJson(response); assert.equal(value.executionEnabled, false);
+    assert.equal((value.plan as { status: string }).status, 'BLOCKED');
+  }
+}
 
 for (const path of ['/api/submit', '/api/sign', '/api/order']) {
   const response = await fetch(new URL(path, base), { redirect: 'error', signal: AbortSignal.timeout(5000) });
@@ -58,5 +75,5 @@ console.log(JSON.stringify({
   liveGate: 'BLOCKED',
   baseOrigin: base.origin,
   buildSha: healthBody.buildSha,
-  checks: ['health', 'static-page', 'planning-rehearsal', 'execution-endpoints-absent']
+  checks: ['health-build', 'static-page', 'planning-accounting', 'paused-market-guard', 'invalid-input', 'execution-endpoints-absent']
 }, null, 2));
