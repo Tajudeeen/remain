@@ -1,6 +1,14 @@
 const $ = (id) => document.getElementById(id);
 const form = $('plan-form');
 const bar = $('position-bar');
+// Animate deliberate navigation only. Global smooth scrolling can move a
+// form control while focus/automation is trying to click its current bounds.
+for (const link of document.querySelectorAll('nav a[href^="#"]')) link.addEventListener('click', (event) => {
+  const target = document.querySelector(link.getAttribute('href'));
+  if (!target) return;
+  event.preventDefault(); history.replaceState(null, '', link.getAttribute('href'));
+  target.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+});
 const cells = Array.from({ length: 100 }, () => { const cell = document.createElement('span'); cell.className = 'bar-cell'; cell.setAttribute('aria-hidden', 'true'); bar.append(cell); return cell; });
 let version = 0;
 let controller;

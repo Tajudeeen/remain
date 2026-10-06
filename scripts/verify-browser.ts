@@ -27,6 +27,8 @@ try {
   await browser('open', `http://127.0.0.1:${address.port}`);
   await browser('wait', '--load', 'networkidle');
   await browser('snapshot', '-i');
+  await browser('eval', "window.rehearsalSubmits = 0; window.rehearsalEvents = []; document.querySelector('#plan-form').addEventListener('submit', () => window.rehearsalSubmits++); for (const kind of ['click', 'input', 'submit']) document.addEventListener(kind, event => { window.rehearsalEvents.push({kind, target: event.target.id || event.target.tagName}); if(window.rehearsalEvents.length > 16) window.rehearsalEvents.shift(); }, true)");
+  await check("getComputedStyle(document.documentElement).scrollBehavior === 'auto'");
   await browser('press', 'Tab');
   await check("document.activeElement.classList.contains('skip')");
   await check("document.body.innerText.includes('TEST_FIXTURE') && document.querySelector('#plan-button') && document.querySelector('#download').disabled");
@@ -36,6 +38,7 @@ try {
   stage = 'unreachable target'; await browser('fill', '#cash-target', '40');
   await check("document.querySelector('#retained-number').textContent === '—' && document.querySelector('#download').disabled");
   await browser('click', '#plan-button');
+  await check('window.rehearsalSubmits === 2');
   await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Plan blocked'");
   stage = 'closed market'; await browser('click', '[data-scenario="closed"]');
   await browser('wait', '--fn', "document.querySelector('#guard-details').textContent.includes('explicit permission')");
@@ -86,7 +89,7 @@ try {
   await mkdir('evidence', { recursive: true });
   try {
     await browser('screenshot', 'evidence/rehearsal-failure.png', '--full');
-    console.error(JSON.stringify(await browser('eval', "({ verdict: document.querySelector('#verdict-pill').textContent, message: document.querySelector('#form-message').textContent, details: document.querySelector('#guard-details').textContent, cash: document.querySelector('#cash-target').value, market: document.querySelector('#market').value, permission: document.querySelector('#closed-permission').checked })")));
+    console.error(JSON.stringify(await browser('eval', "({ verdict: document.querySelector('#verdict-pill').textContent, message: document.querySelector('#form-message').textContent, details: document.querySelector('#guard-details').textContent, cash: document.querySelector('#cash-target').value, retained: document.querySelector('#retain').value, market: document.querySelector('#market').value, permission: document.querySelector('#closed-permission').checked, submits: window.rehearsalSubmits, events: window.rehearsalEvents })")));
     console.error(JSON.stringify(await browser('errors')));
   } catch { console.error('Could not collect browser failure details.'); }
   throw error;
