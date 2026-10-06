@@ -2,7 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
-const excluded = new Set(['.git', 'node_modules', 'dist', 'coverage', 'evidence']);
+const excluded = new Set(['.git', 'node_modules', 'dist', 'coverage', 'evidence', 'state']);
 const failures: string[] = [];
 async function scan(folder: string): Promise<void> {
   for (const item of await readdir(folder, { withFileTypes: true })) {
@@ -25,7 +25,7 @@ async function scan(folder: string): Promise<void> {
 }
 await scan('.');
 const ignore = await readFile('.gitignore', 'utf8');
-for (const entry of ['.env', '.env.*', '!.env.example', 'evidence/']) {
+for (const entry of ['.env', '.env.*', '!.env.example', 'evidence/', 'state/']) {
   if (!ignore.split('\n').includes(entry)) failures.push(`missing ignore: ${entry}`);
 }
 if (failures.length) {
