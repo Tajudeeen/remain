@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { BINANCE_ORIGIN, signRequest, wirePath, type Query } from './signing.ts';
-import { RemainError, upstreamError } from './errors.ts';
+import { RemainError, schemaError, upstreamError } from './errors.ts';
 
 const READ_ENDPOINTS = new Set([
   '/api/v1/dex/aggregator/supported/chain',
@@ -69,7 +69,7 @@ export class ReadOnlyBinanceClient {
         const raw = await readBounded(response, 2 * 1024 * 1024);
         let body: unknown;
         try { body = JSON.parse(raw); }
-        catch { throw response.ok ? new RemainError('UPSTREAM_SCHEMA_INVALID') : upstreamError(response.status); }
+        catch { throw response.ok ? schemaError('RESPONSE_JSON') : upstreamError(response.status); }
         const value = body && typeof body === 'object' ? body as Record<string, unknown> : {};
         const code = typeof value.code === 'number' ? value.code : undefined;
         if (!response.ok || (code !== undefined && code !== 0)) {
@@ -85,9 +85,10 @@ export class ReadOnlyBinanceClient {
           }
           throw error;
         }
-        if (code !== 0 || value.success === false || typeof value.timestamp !== 'number' || !Number.isFinite(value.timestamp) || !('data' in value)) {
-          throw new RemainError('UPSTREAM_SCHEMA_INVALID');
-        }
+        if (code !== 0) throw schemaError('ENVELOPE_CODE');
+        if (value.success === false) throw schemaError('ENVELOPE_SUCCESS');
+        if (typeof value.timestamp !== 'number' || !Number.isFinite(value.timestamp)) throw schemaError('ENVELOPE_TIMESTAMP');
+        if (!('data' in value)) throw schemaError('ENVELOPE_DATA');
         if (Math.abs(value.timestamp - this.#now()) > 60000) throw new RemainError('AUTH_CLOCK_DRIFT');
         return { data: value.data, timestamp: value.timestamp,
           responseHash: createHash('sha256').update(raw).digest('hex'), latencyMs: this.#now() - started };
@@ -103,7 +104,7 @@ export class ReadOnlyBinanceClient {
 }
 
 async function readBounded(response: Response, limit: number): Promise<string> {
-  if (!response.body) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
+  if (!response.body) throw schemaError('RESPONSE_BODY');
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
   let bytes = 0;
@@ -112,7 +113,7 @@ async function readBounded(response: Response, limit: number): Promise<string> {
       const { value, done } = await reader.read();
       if (done) break;
       bytes += value.byteLength;
-      if (bytes > limit) { await reader.cancel(); throw new RemainError('UPSTREAM_SCHEMA_INVALID'); }
+      if (bytes > limit) { await reader.cancel(); throw schemaError('RESPONSE_BODY_LIMIT'); }
       chunks.push(value);
     }
   } finally { reader.releaseLock(); }

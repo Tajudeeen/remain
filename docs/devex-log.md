@@ -2,6 +2,12 @@
 
 Real findings and unanswered questions. No fabricated live measurements.
 
+## Owner-reported schema rejection, 2026-10-06
+
+Discovery run `7c80fd96-18b2-4687-92ec-bae8263ed4df` was supplied by the owner with `UPSTREAM_SCHEMA_INVALID` and no numeric upstream code. The exact response body and failed validation field are unknown. This does not prove authentication or stock coverage, and does not close Gate 0. A source review against the current RWA REST reference found no confirmed parser mismatch: it documents numeric `code: 0`, numeric `timestamp`, array `data`, string token decimals and boolean `statusInfo.openState`. Existing parsing accepts that documented shape.
+
+The follow-up adds fixed safe `validationCheck` labels at the response/envelope and discovery metadata boundaries, with adversarial regression tests for non-JSON pages, missing fields and malformed token records. No raw body logging, credential logging, shape coercion or live execution was added. A fresh owner run with the updated source is required to identify the rejection. See [diagnostic labels](access-troubleshooting.md).
+
 ## Documentation review, 2026-10-06
 
 | Observation | Product consequence | Evidence or follow-up |

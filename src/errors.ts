@@ -33,20 +33,41 @@ const messages: Record<ErrorCode, string> = {
   RFQ_OPAQUE: 'RFQ data was received but is not inspectable EIP-712 data. Signing remains blocked.'
 };
 
+// Only fixed local labels may be exposed. Never use provider keys, messages or
+// values as diagnostic labels, even if callers bypass TypeScript at runtime.
+const schemaChecks = [
+  'RESPONSE_BODY', 'RESPONSE_BODY_LIMIT', 'RESPONSE_JSON',
+  'ENVELOPE_CODE', 'ENVELOPE_SUCCESS', 'ENVELOPE_TIMESTAMP', 'ENVELOPE_DATA',
+  'DISCOVERY_LIST', 'DISCOVERY_ROW', 'DISCOVERY_SYMBOL', 'DISCOVERY_TICKER',
+  'DISCOVERY_ISSUER', 'DISCOVERY_DECIMALS', 'DISCOVERY_ADDRESS',
+  'DISCOVERY_STATUS', 'DISCOVERY_MARKET_STATUS', 'DISCOVERY_OPEN_STATE'
+] as const;
+export type SchemaCheck = typeof schemaChecks[number];
+function allowedCheck(value: unknown): value is SchemaCheck {
+  return typeof value === 'string' && (schemaChecks as readonly string[]).includes(value);
+}
+
 export class RemainError extends Error {
   readonly code: ErrorCode;
   readonly upstreamCode: number | undefined;
-  constructor(code: ErrorCode, upstreamCode?: number) {
+  readonly validationCheck: SchemaCheck | undefined;
+  constructor(code: ErrorCode, upstreamCode?: number, validationCheck?: SchemaCheck) {
     super(messages[code]);
     this.name = 'RemainError';
     this.code = code;
     this.upstreamCode = upstreamCode;
+    this.validationCheck = code === 'UPSTREAM_SCHEMA_INVALID' && allowedCheck(validationCheck) ? validationCheck : undefined;
   }
 }
 
-export function safeError(error: unknown): { code: ErrorCode; message: string; upstreamCode?: number } {
+export function safeError(error: unknown): { code: ErrorCode; message: string; upstreamCode?: number; validationCheck?: SchemaCheck } {
   const e = error instanceof RemainError ? error : new RemainError('UPSTREAM_SCHEMA_INVALID');
-  return { code: e.code, message: e.message, ...(e.upstreamCode === undefined ? {} : { upstreamCode: e.upstreamCode }) };
+  return { code: e.code, message: e.message, ...(e.upstreamCode === undefined ? {} : { upstreamCode: e.upstreamCode }),
+    ...(e.code === 'UPSTREAM_SCHEMA_INVALID' && allowedCheck(e.validationCheck) ? { validationCheck: e.validationCheck } : {}) };
+}
+
+export function schemaError(check: SchemaCheck): RemainError {
+  return new RemainError('UPSTREAM_SCHEMA_INVALID', undefined, check);
 }
 
 export function upstreamError(status: number, code?: number): RemainError {

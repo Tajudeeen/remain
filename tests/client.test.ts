@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ReadOnlyBinanceClient } from '../src/client.ts';
-import { RemainError, safeError } from '../src/errors.ts';
+import { RemainError, safeError, schemaError, type SchemaCheck } from '../src/errors.ts';
 
 const endpoint = '/api/v1/dex/market/rwa/tokens';
 const now = 1770000000000;
@@ -113,4 +113,48 @@ test('aborted request becomes timeout', async () => {
 });
 test('unexpected errors never expose their raw message', () => {
   assert.ok(!JSON.stringify(safeError(new Error('fixture-secret'))).includes('fixture-secret'));
+});
+
+for (const [body, check] of [
+  [[], 'ENVELOPE_CODE'],
+  [{ code: '0', data: [], timestamp: now }, 'ENVELOPE_CODE'],
+  [{ code: 0, success: false, data: [], timestamp: now }, 'ENVELOPE_SUCCESS'],
+  [{ code: 0, data: [] }, 'ENVELOPE_TIMESTAMP'],
+  [{ code: 0, data: [], timestamp: String(now) }, 'ENVELOPE_TIMESTAMP'],
+  [{ code: 0, timestamp: now }, 'ENVELOPE_DATA']
+] as const) {
+  test(`schema failure identifies ${check} without returning response values`, async () => {
+    let calls = 0;
+    const c = client(async () => { calls++; return Response.json({ ...body, secret: 'never-emit-this-value' }); });
+    await assert.rejects(c.get(endpoint), (error) => {
+      assert.equal(safeError(error).code, 'UPSTREAM_SCHEMA_INVALID');
+      assert.equal(safeError(error).validationCheck, check);
+      assert.equal(JSON.stringify(safeError(error)).includes('never-emit-this-value'), false);
+      return true;
+    });
+    assert.equal(calls, 1);
+  });
+}
+
+test('non-JSON success, absent body and oversized body have separate safe labels', async () => {
+  for (const [response, check] of [
+    [new Response('<html>private-upstream-text</html>'), 'RESPONSE_JSON'],
+    [new Response(null), 'RESPONSE_BODY'],
+    [new Response('x'.repeat(2 * 1024 * 1024 + 1)), 'RESPONSE_BODY_LIMIT']
+  ] as const) {
+    await assert.rejects(client(async () => response).get(endpoint), (error) => {
+      assert.equal(safeError(error).validationCheck, check);
+      assert.equal(JSON.stringify(safeError(error)).includes('private-upstream-text'), false);
+      return true;
+    });
+  }
+});
+
+test('diagnostic labels cannot echo arbitrary text or appear on auth failures', () => {
+  const error = schemaError('private-token-value' as SchemaCheck);
+  assert.equal(safeError(error).validationCheck, undefined);
+  Object.defineProperty(error, 'validationCheck', { value: 'private-mutated-value' });
+  assert.equal(safeError(error).validationCheck, undefined);
+  assert.equal(safeError(new RemainError('AUTH_SIGNATURE_INVALID', 40102, 'ENVELOPE_CODE')).validationCheck, undefined);
+  assert.equal(JSON.stringify(safeError(error)).includes('private-'), false);
 });
