@@ -4,7 +4,7 @@ Updated 2026-10-06. Submission target: 2026-10-11 12:00 UTC per the supplied bri
 
 | Gate | Implementation | Evidence needed | Status |
 | --- | --- | --- | --- |
-| 0: API feasibility | Signing client, discovery, read-only stock-to-USDT RFQ harness, CI | Local suite, remote CI, real authenticated route with inspectable payload | Code implemented; live gate BLOCKED. Earlier compliance 40304; latest owner-reported discovery failed schema validation |
+| 0: API feasibility | Signing client, identity catalog with partial market diagnostics, strict fresh-market/read-only RFQ harness, CI | Local suite, remote CI, real authenticated route with inspectable payload | Code implemented; live gate BLOCKED. Owner report reached stock metadata; updated catalog and held-stock RFQ evidence pending |
 | 1: Cash solver and BellGuard | Standalone planning engine, integer conversion, immutable trace/checksum and rehearsal | Adversarial tests and exhaustive small-domain oracle; live vendor adapter later | Planning module implemented; live integration BLOCKED by gate 0 |
 | 2: Original interface and wallet flow | Synthetic planning interface and local rehearsal server implemented; live wallet flow pending | Real-browser fixture tests, mobile/accessibility; live signature field verification later | Independent rehearsal implemented; live wallet/integration BLOCKED by gate 0 |
 | 3: Order durability and settlement | Standalone fixture SQLite journal, conservative provider states, recovery advice and settlement accounting implemented | Crash/concurrency/tamper tests and synthetic reconciliation; hosted storage, vendor adapter and approved tiny live settlement later | Independent module implemented; live order/settlement BLOCKED by gate 0 |

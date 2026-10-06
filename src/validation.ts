@@ -1,7 +1,12 @@
 import { createHash } from 'node:crypto';
-import { RemainError } from './errors.ts';
+import { RemainError, schemaError } from './errors.ts';
 
 export const BSC_CHAIN = '56';
+const marketStatuses = ['regular', 'premarket', 'postmarket', 'overnight', 'closed', 'pause'] as const;
+export type MarketStatus = typeof marketStatuses[number];
+export function isMarketStatus(value: unknown): value is MarketStatus {
+  return typeof value === 'string' && (marketStatuses as readonly string[]).includes(value);
+}
 // Binance Trading API BSC USDT example. Contract identity must be independently
 // checked before any future signing flow. Decimals are never assumed here.
 export const BSC_USDT = '0x55d398326f99059fF775485246999027B3197955';
@@ -40,15 +45,20 @@ export function readConfig(env: Record<string, string | undefined>): SmokeConfig
 export function findStock(data: unknown, token: string): Record<string, unknown> {
   const found = array(data).map(record).find((v) => v.binanceChainId === BSC_CHAIN && typeof v.tokenContractAddress === 'string' && v.tokenContractAddress.toLowerCase() === token);
   if (!found || found.assetType !== 1 || !['ondo', 'bstock', 'xstocks'].includes(String(found.platformId))) throw new RemainError('UNSUPPORTED_ASSET');
+  if (!['string', 'number'].includes(typeof found.decimals)) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
   const decimals = String(found.decimals);
   if (!/^(0|[1-9][0-9]?)$/.test(decimals) || Number(decimals) > 36 || typeof found.tokenSymbol !== 'string' || typeof found.underlyingTicker !== 'string') throw new RemainError('UPSTREAM_SCHEMA_INVALID');
-  checkMarket(found.statusInfo);
+  // A catalog record identifies the stock; it does not establish tradability.
+  // Feasibility must check the selected stock's fresh underlying-market result
+  // before wallet/quote/build requests. Catalog status is advisory only.
   return found;
 }
 
 export function checkMarket(data: unknown): void {
-  const status = record(data);
-  if (typeof status.openState !== 'boolean' || !['regular', 'premarket', 'postmarket', 'overnight', 'closed', 'pause'].includes(String(status.marketStatus))) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw schemaError('MARKET_RECORD');
+  const status = data as Record<string, unknown>;
+  if (typeof status.openState !== 'boolean') throw schemaError('MARKET_OPEN_STATE');
+  if (!isMarketStatus(status.marketStatus)) throw schemaError('MARKET_STATUS');
   if (status.marketStatus === 'pause' || ['MARKET_PAUSED', 'MARKET_MAINTENANCE', 'ASSET_PAUSED', 'ASSET_LIMITED', 'UNSUPPORTED'].includes(String(status.reasonCode))) throw new RemainError('MARKET_BLOCKED');
   if (status.reasonCode != null && !['TRADING', 'MARKET_CLOSED'].includes(String(status.reasonCode))) throw new RemainError('MARKET_BLOCKED');
 }

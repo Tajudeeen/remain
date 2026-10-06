@@ -83,7 +83,7 @@ No external deployment is claimed yet. The connected Vercel session currently ex
 
 ## Live discovery and feasibility
 
-Latest owner-reported discovery run `7c80fd96-18b2-4687-92ec-bae8263ed4df` failed with `UPSTREAM_SCHEMA_INVALID`. Updated discovery errors include a fixed `validationCheck` label to identify the rejected boundary without printing raw responses or credentials. This is a local validation error, not proof of successful API access. See [access diagnostics](docs/access-troubleshooting.md). The live feasibility gate remains blocked.
+Latest owner-reported discovery run `a19fb351-ae16-4280-b12e-8659e276baeb` reached a BSC stock record but rejected non-string catalog market metadata. Discovery now preserves validated stock identities and labels unreadable market fields as unavailable/null. Partial catalogs exit 1 and do not certify tradability. Feasibility requires a separate fresh selected-stock market response before quoting. See [access diagnostics](docs/access-troubleshooting.md). The live feasibility gate remains blocked.
 
 Apply for a Web3 API key at [Binance developer portal](https://web3.binance.com/en/dev-portal). Keep both credentials outside git. Put these in an ignored local `.env.local`, or GitHub Actions secrets:
 
