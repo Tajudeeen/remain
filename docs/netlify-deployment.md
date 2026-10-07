@@ -2,9 +2,11 @@
 
 The private GitHub repository can deploy to Netlify without making the source public. Netlify publishes only `dist/web`, plus one stateless fixture function. The Node/container server remains available as an alternative.
 
-`fixture.ts` routes `/healthz` and `/api/rehearse` to the existing synthetic planner. It does not import the Binance client, journal, wallet, signing code or RPC. No SQLite persistence is claimed on serverless instances.
+`fixture.ts` routes `/healthz`, `/api/rehearse` and `/api/receipt/verify` to fixture health, the existing synthetic planner and pure receipt inspection. It does not load the Binance client, SQLite journal, wallet, signing code or RPC. No SQLite persistence is claimed on serverless instances.
 
-The adapter accepts only HTTPS origins supplied by Netlify's site context or its platform deployment URL variables. It rejects cross-site requests, mismatched Origin, unexpected methods/content types, encoded bodies, query variants and extra input fields. Body reads are bounded to 4096 bytes and a two-second deadline. Platform rate limiting declares 30 requests per IP/domain per minute. Its enforcement must be verified on the actual host, and is not supplied by an in-memory counter.
+The adapter accepts only HTTPS origins supplied by Netlify's site context or its platform deployment URL variables. It rejects cross-site requests, mismatched Origin, unexpected methods/content types, encoded bodies, query variants and extra input fields. Body reads are bounded to 4096 bytes for planning and 256 KiB for receipt inspection, with a two-second deadline. Platform rate limiting declares 30 requests per IP/domain per minute. Its enforcement must be verified on the actual host, and is not supplied by an in-memory counter.
+
+New builds bundle the documented public `COMMIT_REF` into the fixture function. The old runtime `REMAIN_BUILD_SHA` is only a fallback when no valid build identity was bundled.
 
 Static files and function responses both receive restrictive security headers and no-store caching. There is no SPA fallback that could conceal an absent execution endpoint behind a 200 HTML response.
 
@@ -50,3 +52,15 @@ The root URL now opens a skippable logo introduction, explanatory landing page a
 - The Netlify preview rendered both entry views. Its planning request failed in the cloud browser, and preview health navigation was blocked by the browser client. No preview API pass is claimed. Production verification above is separate.
 
 This documentation-only record uses `[skip netlify]`. The source remains private and all live integration and execution gates remain blocked.
+
+## Receipt workspace release, 2026-10-07 07:30 UTC
+
+[PR #20](https://github.com/Tajudeeen/remain/pull/20) merged as `a1e382a62f0310b4c751ca51aedb4984422d6c12`. Production deploy `6ac5f4b5735bab000820b4e7` published at 07:29:08.794 UTC with that commit. Its metadata confirms one Node.js 24 function with exact health, planning and receipt-verification paths. The runtime health SHA matches the deployed commit without changing the historical environment setting.
+
+- Local verification and coverage passed 453 tests. No local browser pass is claimed because the workspace could not launch/install the runner.
+- [PR verification 37587397123](https://github.com/Tajudeeen/remain/actions/runs/37587397123) and [main verification 37587576556](https://github.com/Tajudeeen/remain/actions/runs/37587576556) passed browser, container, source, history and receipt checks. The receipt UI passed at 320, 375, 768, 1024 and 1440 pixels. CI screenshots at 375 and 1440 were visually inspected.
+- [Independent HTTPS smoke 37587725694](https://github.com/Tajudeeen/remain/actions/runs/37587725694) passed at 07:30:36 UTC. Checks include accounting replay, altered totals, duplicate-field rejection, a 256 KiB body limit, existing planner guards and absent execution endpoints. Health reports `a1e382a62f0310b4c751ca51aedb4984422d6c12`, `TEST_FIXTURE`, execution false and live gate BLOCKED.
+- The production browser at https://remain-cash.netlify.app/#proof loaded and checked the static demo, showing three events, 75 remaining stock raw units and `MATCHED_FIXTURE`, with UNAUTHENTICATED still visible. Extension metadata errors are browser infrastructure messages, separate from the application result.
+- Uploaded bodies are not persisted or logged by the application. Rate-limit saturation was not tested on Netlify. No authenticated receipt, wallet, signature, order or settlement was enabled, and no Binance credentials were added to hosting.
+
+The full live gate now awaits a held-position RFQ/build despite owner-reported metadata success. This release closes only the fixture receipt workspace. This evidence-only update uses `[skip netlify]` to preserve the verified deployed artifact.

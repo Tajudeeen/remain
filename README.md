@@ -69,7 +69,7 @@ This standalone backend rehearsal binds a passing fixture plan, persists an unce
 
 ## Proof receipt rehearsal
 
-The [receipt workspace](https://remain-cash.netlify.app/#proof) adds browser inspection of fixture receipts. Load the fictional demo or select a fixture JSON file, replay its journal/accounting checks and download a bounded inspection result. The source remains UNAUTHENTICATED after a pass. See [workspace contract](docs/receipt-workspace.md). Deployment verification for this release is tracked in the milestone status.
+The [receipt workspace](https://remain-cash.netlify.app/#proof) adds browser inspection of fixture receipts. Load the fictional demo or select a fixture JSON file, replay its journal/accounting checks and download a bounded inspection result. The source remains UNAUTHENTICATED after a pass. Remote browser/container checks and independent HTTPS verification passed. See [workspace contract](docs/receipt-workspace.md) and [deployment record](docs/netlify-deployment.md).
 
 ```sh
 npm run rehearse:receipt

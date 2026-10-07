@@ -18,6 +18,8 @@ The new submission/history checks will generate CI evidence after their commit. 
 
 ## Missing proof
 
+Receipt workspace release: [PR #20](https://github.com/Tajudeeen/remain/pull/20), [main CI 37587576556](https://github.com/Tajudeeen/remain/actions/runs/37587576556) and [HTTPS smoke 37587725694](https://github.com/Tajudeeen/remain/actions/runs/37587725694). Deploy `6ac5f4b5735bab000820b4e7` serves commit `a1e382a62f0310b4c751ca51aedb4984422d6c12`. This establishes fixture receipt consistency and transport behavior only. No live proof gate is closed.
+
 1. Confirm applicable operator/project/host eligibility and supply a supported held position. The owner has reported successful selected-stock market reads, not a funded position or full live feasibility.
 2. Real stock-to-USDT RFQ quote, inspectable typed data and verified vendor field semantics.
 3. Approved tiny BSC mainnet settlement, actual output, remaining units and independent reconciliation.
