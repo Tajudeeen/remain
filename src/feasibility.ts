@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { ReadOnlyBinanceClient, type CallResult } from './client.ts';
 import { RemainError, safeError } from './errors.ts';
-import { BSC_CHAIN, BSC_USDT, array, record, address, digest, readConfig, findStock, checkMarket, walletBalance, pickRfq, inspectRfq } from './validation.ts';
+import { BSC_CHAIN, BSC_USDT, array, record, digest, readConfig, findStock, selectedMarket, walletBalance, pickRfq, inspectRfq } from './validation.ts';
 import type { Query } from './signing.ts';
 
 type Observation = {
@@ -48,9 +48,7 @@ export async function runFeasibility(env: Record<string, string | undefined>, re
     report.checks.push('supported_bsc_stock_identity');
 
     const market = await call('/api/v1/dex/market/rwa/underlying-market', [['binanceChainId', BSC_CHAIN], ['tokenContractAddress', config.token]]);
-    const marketData = record(market.data);
-    if (marketData.binanceChainId !== BSC_CHAIN || address(marketData.tokenContractAddress) !== config.token) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
-    checkMarket(marketData.statusInfo);
+    selectedMarket(market.data, config.token);
     report.checks.push('market_status_read');
 
     let balance: string | undefined;

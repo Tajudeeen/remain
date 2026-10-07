@@ -18,6 +18,7 @@ Remain is a cash-target tokenized-stock product with BellGuard risk checks. The 
 - No secrets, private keys, seeds, raw signed payloads or wallet balances in committed files or public logs.
 - Never sign, approve, submit, broadcast or make live trades without explicit user approval.
 - Read-only quote/build endpoints are permitted for feasibility, never order/submit.
+- The owner's 2026-10-07 continuation authorizes a holding-free selected-stock market diagnostic. It may read current stock identity and fresh token-specific market data only. It requires no wallet, balance, sell amount, quote or build and cannot satisfy the held-position RFQ gate.
 - Run npm run verify and npm run test:coverage before proposing a merge.
 - Any changed signing, wallet or settlement code needs adversarial tests and documented invariants.
 - Preserve user changes. Use apply_patch. No force-push or destructive git operations.

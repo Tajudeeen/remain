@@ -23,6 +23,7 @@ Updated 2026-10-07. Submission target: 2026-10-11 12:00 UTC per the supplied bri
 - Discovery requires only API credentials. Smoke additionally requires public wallet, held stock contract and raw amount.
 - Fixture reports have TEST_FIXTURE labels. Reports contain no raw wallet state or order payload.
 - Local evidence inspection selects the newest saved run by report time, projects only fixed diagnostics, labels historical/fixture/legacy files, bounds reads and rejects malformed candidates. It performs no networking, reads no credentials and always leaves the live gate UNVERIFIED.
+- Holding-free `market:binance` validates an explicitly selected stock against the current catalog and a fresh token-specific market response. It never reads a wallet or requests a quote/build. Market reports retain `liveFeasibility: NOT_ESTABLISHED`; the held-position smoke keeps its balance requirement. A real owner market-check result is pending.
 
 ## Gate 0 closure criteria
 

@@ -2,6 +2,12 @@
 
 Real findings and unanswered questions. No fabricated live measurements.
 
+## Holding-free market diagnostic, 2026-10-07
+
+The owner reported that the configured wallet currently holds no tokenized stock, then authorized continued market-data work. The held-position smoke still requires an actual balance before requesting a quote. Added a separate selected-contract market command requiring only API credentials, current stock identity and fresh underlying-market data. It makes exactly the two kinds of metadata calls and never touches a wallet, amount, quote or build. No successful live call is claimed from the synthetic tests.
+
+Source review found that the prior shared validator coerced `platformId` and `reasonCode` through `String()`. Arrays containing `ondo` or `TRADING` could pass despite violating the documented primitive types. These are verified validator defects reproduced with synthetic regression cases, not observed Binance response shapes. Both fields now require primitive strings when used, and market identity binding is shared across the new diagnostic and existing held-position smoke. Tests prove mismatched/null fresh responses stop before balances or quotes. Market reports and inspection retain limited-scope labels and cannot close Gate 0. A funded held-position RFQ, inspectable unsigned payload and later explicitly approved real settlement remain unverified.
+
 ## Local evidence diagnosis, 2026-10-07
 
 The repository and remote CI were checked again after the catalog patch. No new authenticated report was available in this workspace at that check. The owner then supplied a current-format catalog excerpt: AXTIB (`AXTI`, issuer `bstock`) had `marketStatus: null` and a type-only `DISCOVERY_MARKET_STATUS` issue. AALon and DRSon (`ondo`) had readable `regular`/`true` fields, and the shown LLYon fields were also readable. This is owner-provided excerpt evidence without a run ID, timestamp, full catalog or overall status/count. It confirms the observed null shape for that AXTIB row, not a global issuer defect or independent US-exchange opening state. Real held-stock RFQ/build evidence remains absent.
