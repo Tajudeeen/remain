@@ -30,6 +30,7 @@ jobs:
       - run: npm run rehearse:plan
       - run: npm run rehearse:orders
       - run: npm run rehearse:receipt
+      - run: npm run rehearse:rfq
       - name: Build fixture deployment image
         run: docker build -t remain-rehearsal:${{ github.sha }} .
       - name: Smoke fixture deployment image

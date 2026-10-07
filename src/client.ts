@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { BINANCE_ORIGIN, signRequest, wirePath, type Query } from './signing.ts';
 import { RemainError, schemaError, upstreamError } from './errors.ts';
+import { parseRfqJSON } from './rfq/json.ts';
 
 const READ_ENDPOINTS = new Set([
   '/api/v1/dex/aggregator/supported/chain',
@@ -68,7 +69,7 @@ export class ReadOnlyBinanceClient {
         // Bound responses before parsing. Credentials and raw responses are never logged.
         const raw = await readBounded(response, 2 * 1024 * 1024);
         let body: unknown;
-        try { body = JSON.parse(raw); }
+        try { body = endpoint.endsWith('/quote') || endpoint.endsWith('/swap') ? parseRfqJSON(raw, 2 * 1024 * 1024) : JSON.parse(raw); }
         catch { throw response.ok ? schemaError('RESPONSE_JSON') : upstreamError(response.status); }
         const value = body && typeof body === 'object' ? body as Record<string, unknown> : {};
         const code = typeof value.code === 'number' ? value.code : undefined;
@@ -117,5 +118,6 @@ async function readBounded(response: Response, limit: number): Promise<string> {
       chunks.push(value);
     }
   } finally { reader.releaseLock(); }
-  return Buffer.concat(chunks).toString('utf8');
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)); }
+  catch { throw schemaError('RESPONSE_JSON'); }
 }

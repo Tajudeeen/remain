@@ -212,6 +212,20 @@ test('CLI keeps empty and legacy passed catalogs nonzero', () => withDirectory((
   }
 }));
 
+test('CLI keeps old smoke passes nonzero until current RFQ review is run', () => withDirectory((directory) => {
+  const path = save(directory, { ...smoke, startedAt: new Date().toISOString() }, 'smoke');
+  const result = run(directory, [path]);
+  assert.equal(result.status, 1);
+  assert.equal(JSON.parse(result.stdout).rfqReviewStatus, 'LEGACY_UNREVIEWED');
+}));
+test('CLI rejects duplicate report keys and malformed UTF-8', () => withDirectory((directory) => {
+  const path = save(directory, { ...smoke, startedAt: new Date().toISOString() }, 'smoke');
+  writeFileSync(path, JSON.stringify(smoke).replace('"executionEnabled":false', '"executionEnabled":true,"executionEnabled":false'));
+  assert.equal(run(directory, [path]).status, 2);
+  writeFileSync(path, Buffer.from([0xc3, 0x28]));
+  assert.equal(run(directory, [path]).status, 2);
+}));
+
 test('malformed candidate prevents silently falling back to an older successful report', () => withDirectory((directory) => {
   save(directory, { ...catalog, startedAt: '2020-01-01T00:00:00.000Z' });
   writeFileSync(join(directory, 'evidence', `binance-discovery-${secondRunId}.json`), 'never-emit-secret');

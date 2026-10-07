@@ -24,6 +24,7 @@
     "rehearse:plan": "node scripts/rehearse-plan.ts",
     "rehearse:orders": "node scripts/rehearse-orders.ts",
     "rehearse:receipt": "node scripts/rehearse-receipt.ts",
+    "rehearse:rfq": "node scripts/rehearse-rfq.ts",
     "verify:receipt": "node scripts/verify-receipt.ts",
     "dev": "node scripts/serve-rehearsal.ts",
     "check:web": "node --check web/app.js && node --check web/proof.js",
