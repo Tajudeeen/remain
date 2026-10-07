@@ -2,6 +2,19 @@
 
 Real findings and unanswered questions. No fabricated live measurements.
 
+## Owner-reported successful selected-stock market read, 2026-10-07
+
+The owner supplied run `a2a2b549-f749-4779-892e-cd204f37252d`, started `2026-10-07T06:55:47.742Z`, with `status: passed`, `mode: LIVE_READ_ONLY` and `scope: SELECTED_STOCK_MARKET_READ_ONLY`. It passed current BSC stock identity and fresh selected-stock market checks for the AALon contract from the earlier catalog. The reported market response at `06:55:49.176Z` contained `marketStatus: overnight` and `openState: true`. This is an API observation, not independent exchange-session evidence or trade permission.
+
+| Endpoint | Reported duration | Result |
+| --- | --- | --- |
+| `/api/v1/dex/market/rwa/tokens` | 1,294 ms | Accepted report with selected stock identity validated |
+| `/api/v1/dex/market/rwa/underlying-market` | 236 ms | Accepted report with selected chain/contract and market state validated |
+
+These are one local timing sample per endpoint, not median/p95 measurements, issuer-wide coverage or an execution benchmark. The [sanitized owner observation](observations/owner-market-a2a2b549-f749-4779-892e-cd204f37252d.json) preserves the supplied run ID, timestamps, public contract, checks and response digests. It was copied from chat and was not independently executed or authenticated here. The report shows no compliance/signature rejection on those two local requests; the cause of the historical 40304 rejection and access from other hosts remain unestablished.
+
+The local inspector correctly retained `source: LOCAL_FILE_UNAUTHENTICATED`, `liveGate: UNVERIFIED` and `liveFeasibility: NOT_ESTABLISHED`. Its job is to safely read files, not authenticate them. The owner still reports no stock holding. No wallet balance, RFQ quote/build, signature semantics, approval, submission or settlement has been verified. Gate 0 remains blocked by the held-position RFQ/build requirement, rather than treating this market-only pass as full feasibility.
+
 ## Holding-free market diagnostic, 2026-10-07
 
 The owner reported that the configured wallet currently holds no tokenized stock, then authorized continued market-data work. The held-position smoke still requires an actual balance before requesting a quote. Added a separate selected-contract market command requiring only API credentials, current stock identity and fresh underlying-market data. It makes exactly the two kinds of metadata calls and never touches a wallet, amount, quote or build. No successful live call is claimed from the synthetic tests.

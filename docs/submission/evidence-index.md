@@ -11,13 +11,14 @@ This is a private preparation packet, not a release certificate. The deployment 
 | Durable local journal and receipt checks | `tests/order-journal.test.ts`, `tests/receipt.test.ts`, terminal rehearsals in CI | Not hosted persistence or authenticated chain settlement |
 | Binance discovery rejected | [Live discovery 37413704037](https://github.com/Tajudeeen/remain/actions/runs/37413704037) | 40304; no successful stock list, quote or build |
 | Local discovery also rejected | Owner-provided run `ac3580b8-1e20-4ad5-b8f7-9a895b6f8dda`, 05:23:34 UTC | Reported by owner, not independently executed here |
+| Selected AALon catalog identity and fresh market read reported passed | [Sanitized owner observation](../observations/owner-market-a2a2b549-f749-4779-892e-cd204f37252d.json), run `a2a2b549-f749-4779-892e-cd204f37252d`, 2026-10-07 06:55 UTC | Copied owner local report, not independently authenticated; market-only, no holding/RFQ/build/settlement |
 | Source remains private | GitHub repository and Netlify deployment metadata checked on 2026-10-06 | Judges cannot yet access private source |
 
 The new submission/history checks will generate CI evidence after their commit. No result for that future run is invented here. The history check screens tracked text patterns in the checkout's available refs. It does not establish that secrets are absent from every surface.
 
 ## Missing proof
 
-1. Authorized Binance access, successful stock discovery and one supported held position.
+1. Confirm applicable operator/project/host eligibility and supply a supported held position. The owner has reported successful selected-stock market reads, not a funded position or full live feasibility.
 2. Real stock-to-USDT RFQ quote, inspectable typed data and verified vendor field semantics.
 3. Approved tiny BSC mainnet settlement, actual output, remaining units and independent reconciliation.
 4. Owner-authored report, final video and confirmed registration/eligibility.

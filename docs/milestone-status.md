@@ -4,7 +4,7 @@ Updated 2026-10-07. Submission target: 2026-10-11 12:00 UTC per the supplied bri
 
 | Gate | Implementation | Evidence needed | Status |
 | --- | --- | --- | --- |
-| 0: API feasibility | Signing client, identity catalog with partial market diagnostics, strict fresh-market/read-only RFQ harness, local evidence inspector, CI | Local suite, remote CI, real authenticated route with inspectable payload | Code implemented; live gate BLOCKED. Owner supplied updated catalog excerpt with readable rows and one null market status; complete report and held-stock RFQ evidence pending |
+| 0: API feasibility | Signing client, identity catalog with partial market diagnostics, strict fresh-market/read-only RFQ harness, local evidence inspector, CI | Local suite, remote CI, real authenticated route with inspectable payload | Code implemented; owner-reported AALon catalog identity and fresh market read PASSED on 2026-10-07. Full live gate BLOCKED: held-position RFQ/build evidence pending |
 | 1: Cash solver and BellGuard | Standalone planning engine, integer conversion, immutable trace/checksum and rehearsal | Adversarial tests and exhaustive small-domain oracle; live vendor adapter later | Planning module implemented; live integration BLOCKED by gate 0 |
 | 2: Original interface and wallet flow | Synthetic planning interface and local rehearsal server implemented; live wallet flow pending | Real-browser fixture tests, mobile/accessibility; live signature field verification later | Independent rehearsal implemented; live wallet/integration BLOCKED by gate 0 |
 | 3: Order durability and settlement | Standalone fixture SQLite journal, conservative provider states, recovery advice and settlement accounting implemented | Crash/concurrency/tamper tests and synthetic reconciliation; hosted storage, vendor adapter and approved tiny live settlement later | Independent module implemented; live order/settlement BLOCKED by gate 0 |
@@ -23,9 +23,11 @@ Updated 2026-10-07. Submission target: 2026-10-11 12:00 UTC per the supplied bri
 - Discovery requires only API credentials. Smoke additionally requires public wallet, held stock contract and raw amount.
 - Fixture reports have TEST_FIXTURE labels. Reports contain no raw wallet state or order payload.
 - Local evidence inspection selects the newest saved run by report time, projects only fixed diagnostics, labels historical/fixture/legacy files, bounds reads and rejects malformed candidates. It performs no networking, reads no credentials and always leaves the live gate UNVERIFIED.
-- Holding-free `market:binance` validates an explicitly selected stock against the current catalog and a fresh token-specific market response. It never reads a wallet or requests a quote/build. Market reports retain `liveFeasibility: NOT_ESTABLISHED`; the held-position smoke keeps its balance requirement. A real owner market-check result is pending.
+- Holding-free `market:binance` validates an explicitly selected stock against the current catalog and a fresh token-specific market response. It never reads a wallet or requests a quote/build. Market reports retain `liveFeasibility: NOT_ESTABLISHED`; the held-position smoke keeps its balance requirement. Owner-reported run `a2a2b549-f749-4779-892e-cd204f37252d` passed this limited market check at 2026-10-07 06:55 UTC. It was not independently executed here.
 
 ## Gate 0 closure criteria
+
+The latest [owner market observation](observations/owner-market-a2a2b549-f749-4779-892e-cd204f37252d.json) reports successful stock identity and fresh AALon market data, with `overnight`/`true`, from the owner's PC. This advances the metadata boundary only. The owner has reported no held stock, and no matching stock-to-USDT RFQ or inspectable build is supplied. Full Gate 0 remains BLOCKED. Local-file inspection correctly stays UNVERIFIED.
 
 Live discovery run [37413704037](https://github.com/Tajudeeen/remain/actions/runs/37413704037), 2026-10-06 04:26 UTC: installation and all 74 original tests passed, then discovery returned upstreamCode 40304. The stock quote/build step did not run. Required credential values were available to the workflow, but this rejection does not prove their validity, permissions or approval. The exact compliance rule and runner location were not established. See [access troubleshooting](access-troubleshooting.md).
 

@@ -1,0 +1,49 @@
+{
+  "schema": "remain.owner-observation.v1",
+  "source": "OWNER_PROVIDED_CHAT_REPORT",
+  "independentlyExecutedHere": false,
+  "gate0Closed": false,
+  "copiedReportFields": {
+    "runId": "a2a2b549-f749-4779-892e-cd204f37252d",
+    "startedAt": "2026-10-07T06:55:47.742Z",
+    "status": "passed",
+    "scope": "SELECTED_STOCK_MARKET_READ_ONLY",
+    "mode": "LIVE_READ_ONLY",
+    "executionEnabled": false,
+    "liveFeasibility": "NOT_ESTABLISHED",
+    "checks": [
+      "supported_bsc_stock_identity",
+      "fresh_selected_stock_market_read"
+    ],
+    "observations": [
+      {
+        "endpoint": "/api/v1/dex/market/rwa/tokens",
+        "status": "passed",
+        "responseHash": "87d38ba2ab18cb07abc0dbe1bf2d6cffb8909912393b0a6047a9a04a7afdcd9f",
+        "latencyMs": 1294
+      },
+      {
+        "endpoint": "/api/v1/dex/market/rwa/underlying-market",
+        "status": "passed",
+        "responseHash": "da5bd54082046d6ee2b07adf153ad957f6849e95ad6964a71609ed0e0dadebb9",
+        "latencyMs": 236
+      }
+    ],
+    "token": {
+      "chain": "56",
+      "tokenAddress": "0x02d608506ca0048d0d991a11f1e7fb8cad1e44f8"
+    },
+    "market": {
+      "marketStatus": "overnight",
+      "openState": true,
+      "observedAt": "2026-10-07T06:55:49.176Z"
+    }
+  },
+  "limitations": [
+    "Copied from the owner's local report supplied in chat, not independently executed or authenticated here.",
+    "Response checksums identify reported bytes but do not authenticate a Binance response.",
+    "One reported timing per endpoint, not a latency distribution or service benchmark.",
+    "Market flags are provider observations, not independent exchange-session evidence or trading permission.",
+    "No wallet holding, quote, unsigned RFQ payload, signature, order submission or settlement was checked."
+  ]
+}

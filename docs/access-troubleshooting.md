@@ -1,5 +1,11 @@
 # Binance compliance rejection: 40304
 
+## Successful local market check reported, 2026-10-07
+
+The owner supplied run `a2a2b549-f749-4779-892e-cd204f37252d`, started `2026-10-07T06:55:47.742Z`, with a pass for selected AALon stock identity and fresh underlying-market data. The report observed `overnight`/`true` at `06:55:49.176Z`, with endpoint durations 1,294 ms and 236 ms respectively. This reports successful local reads for these two endpoints, without proving access from another host or establishing the cause of the earlier compliance rejection. See the [copied sanitized observation](observations/owner-market-a2a2b549-f749-4779-892e-cd204f37252d.json).
+
+`liveGate: UNVERIFIED` from the inspector is expected. It describes an unauthenticated local file, not a new API rejection. `liveFeasibility: NOT_ESTABLISHED` is also expected because this command makes no wallet, quote or build request. The next integration evidence requires a real held position and matching read-only RFQ/build. The owner reports no stock holding, so this prerequisite remains open. Do not replace that holding with fabricated values or interpret `openState: true` as trading permission.
+
 ## Market check without a stock holding
 
 The owner confirmed on 2026-10-07 that their wallet currently holds no stock. This does not prevent API market-data reads, but the existing held-position smoke must still verify a real balance before requesting any RFQ. Do not fabricate a holding or fill the sell amount with an arbitrary example.
