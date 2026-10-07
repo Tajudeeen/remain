@@ -24,7 +24,7 @@ test('Netlify deployment preserves health, fixture planning and guard behavior',
   assert.equal(b.executionEnabled, false);
 });
 test('Netlify routes expose only fixture health/planning and platform rate limit', () => {
-  assert.deepEqual(config.path, ['/healthz', '/api/rehearse', '/api/receipt/verify']);
+  assert.deepEqual(config.path, ['/healthz', '/api/rehearse', '/api/receipt/verify', '/api/live/status', '/api/live/inspect']);
   assert.deepEqual(config.rateLimit, { windowLimit: 30, windowSize: 60, aggregateBy: ['ip', 'domain'] });
 });
 const cases: [string, Request, number][] = [

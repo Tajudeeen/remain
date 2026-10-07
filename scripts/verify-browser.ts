@@ -7,13 +7,26 @@ import { randomUUID } from 'node:crypto';
 import { createRehearsalServer } from '../src/rehearsal/server.ts';
 import { digest } from '../src/validation.ts';
 import { inspectFixtureReceipt } from '../src/receipts/inspection.ts';
+import { inspectionChecks } from '../src/integration/readiness.ts';
+import type { SmokeReport } from '../src/feasibility.ts';
 
 // Run through npm run test:web after agent-browser install. Uses a dedicated
 // empty browser session, fictional data and an ephemeral loopback-only port.
 const exec = promisify(execFile); const session = `remain-${randomUUID().slice(0, 8)}`;
 const server = createRehearsalServer();
+const inspectionServer = createRehearsalServer({ inspector: async input => {
+  const report: SmokeReport = { runId: 'browser-fixture', startedAt: new Date().toISOString(), mode: 'TEST_FIXTURE', status: 'blocked', executionEnabled: false,
+    checks: inspectionChecks.slice(0, 3), observations: [], notes: [], error: { code: 'INSUFFICIENT_POSITION', message: 'Fixture only' } };
+  if (input.amountRaw === '100') {
+    report.status = 'passed'; report.checks = [...inspectionChecks]; delete report.error;
+    report.rfqReview = { profile: 'REMAIN_RFQ_REVIEW_V1', structure: 'VALIDATED', unsignedBuild: 'MATCHES_SELECTED_QUOTE', checksumKind: 'SHA256_JSON_NOT_EIP712', artifactChecksum: 'a'.repeat(64), typeCount: 3, fieldCount: 7, domainTypeDeclared: true, signatureSemantics: 'UNVERIFIED', executionEnabled: false };
+  }
+  return report;
+} });
 await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+await new Promise<void>((resolve) => inspectionServer.listen(0, '127.0.0.1', resolve));
 const address = server.address(); assert.ok(address && typeof address === 'object');
+const inspectionAddress = inspectionServer.address(); assert.ok(inspectionAddress && typeof inspectionAddress === 'object');
 let stage = 'initial load';
 async function browser(...args: string[]) {
   const { stdout } = await exec('agent-browser', ['--session', session, '--json', ...args], { timeout: 30000, maxBuffer: 2 * 1024 * 1024 });
@@ -186,6 +199,46 @@ try {
   await browser('wait', '700');
   await check("document.querySelector('#receipt-status').textContent === 'Awaiting receipt' && document.querySelector('#receipt-report').disabled && document.querySelector('#receipt-verify').disabled && document.querySelector('#receipt-result').getAttribute('aria-busy') === 'false'");
   await browser('eval', 'window.fetch = window.remainRealFetch');
+  stage = 'public integration setup';
+  await browser('open', `http://127.0.0.1:${address.port}/#live`);
+  await browser('wait', '--fn', "document.querySelector('#live-server').textContent === 'Local setup required' && !document.querySelector('#live-refresh').disabled");
+  await check("!document.querySelector('#live-view').hidden && document.querySelector('#fixture-banner').hidden && document.querySelector('#live-inspect').disabled");
+  await browser('click', '#wallet-connect');
+  await check("document.querySelector('#live-message').textContent.includes('No browser wallet') && !document.querySelector('#wallet-connect').disabled");
+  for (const width of [320, 375, 768, 1024, 1440]) {
+    await browser('set', 'viewport', String(width), '1000'); await check('document.documentElement.scrollWidth <= window.innerWidth');
+    await browser('screenshot', `evidence/integration-${width}.png`, '--full');
+  }
+  stage = 'local fixture inspector and controlled wallet';
+  await browser('open', `http://127.0.0.1:${inspectionAddress.port}/#live`);
+  await browser('wait', '--fn', "document.querySelector('#live-server').textContent === 'Local read-only inspector ready'");
+  await browser('eval', "window.fixtureWalletMethods=[]; window.fixtureWalletListeners={}; window.fixtureWalletChain='0x1'; window.ethereum={request:async ({method})=>{window.fixtureWalletMethods.push(method); if(method==='eth_chainId')return window.fixtureWalletChain; if(['eth_requestAccounts','eth_accounts'].includes(method))return ['0x1111111111111111111111111111111111111111']; throw new Error('Forbidden wallet method');},on:(name,listener)=>window.fixtureWalletListeners[name]=listener,removeListener:(name)=>delete window.fixtureWalletListeners[name]}");
+  await browser('click', '#wallet-connect');
+  await browser('wait', '--fn', "document.querySelector('#wallet-state').textContent.includes('Choose BNB Smart Chain')");
+  await check("document.querySelector('#live-inspect').disabled");
+  await browser('eval', "window.fixtureWalletChain='0x38'"); await browser('click', '#wallet-connect');
+  await browser('wait', '--fn', "document.querySelector('#wallet-state').textContent === 'BSC account selected'");
+  await browser('fill', '#live-token', '0x2222222222222222222222222222222222222222'); await browser('fill', '#live-amount', '1');
+  await browser('click', '#live-inspect');
+  await browser('wait', '--fn', "!document.querySelector('#live-result').hidden && document.querySelector('#live-error').textContent.includes('INSUFFICIENT_POSITION')");
+  await check("document.querySelector('#live-result-label').textContent.includes('TEST_FIXTURE') && document.querySelector('#live-checks').children.length === 6");
+  await browser('fill', '#live-amount', '100'); await check("document.querySelector('#live-result').hidden"); await browser('click', '#live-inspect');
+  await browser('wait', '--fn', "!document.querySelector('#live-result').hidden && document.querySelector('#live-result-title').textContent === 'Read path inspected. Signing locked.'");
+  await check("document.querySelector('#live-result-label').textContent.includes('TEST_FIXTURE') && document.querySelector('#live-error').textContent.includes('global live gate remains unverified')");
+  stage = 'malformed integration response and recovery';
+  await browser('eval', "window.integrationFetch=window.fetch; window.fetch=async (...args)=>{const r=await window.integrationFetch(...args);if(String(args[0])!=='/api/live/inspect')return r;const body=await r.json();body.executionEnabled=true;return new Response(JSON.stringify(body),{headers:{'content-type':'application/json'}})}");
+  await browser('click', '#live-inspect'); await browser('wait', '--fn', "document.querySelector('#live-message').classList.contains('error') && !document.querySelector('#live-inspect').disabled");
+  await check("document.querySelector('#live-result').hidden"); await browser('eval', 'window.fetch=window.integrationFetch');
+  await browser('click', '#live-inspect'); await browser('wait', '--fn', "!document.querySelector('#live-result').hidden");
+  stage = 'account and in-flight input invalidation';
+  await browser('eval', "window.fixtureWalletListeners.accountsChanged()");
+  await check("document.querySelector('#live-result').hidden && document.querySelector('#live-inspect').disabled && document.querySelector('#wallet-address').textContent === 'No account selected'");
+  await browser('click', '#wallet-connect'); await browser('wait', '--fn', "document.querySelector('#wallet-state').textContent === 'BSC account selected'");
+  await browser('eval', "window.fetch=async (...args)=>{const r=await window.integrationFetch(...args);if(String(args[0])==='/api/live/inspect')await new Promise(resolve=>setTimeout(resolve,500));return r}");
+  await browser('click', '#live-inspect'); await browser('fill', '#live-amount', '101'); await browser('wait', '700');
+  await check("document.querySelector('#live-result').hidden && !document.querySelector('#live-inspect').disabled && document.querySelector('#live-form').getAttribute('aria-busy') === 'false'");
+  await browser('eval', 'window.fetch=window.integrationFetch'); await browser('click', '#wallet-forget');
+  await check("document.querySelector('#live-token').value === '' && document.querySelector('#live-amount').value === '' && document.querySelector('#live-inspect').disabled && window.fixtureWalletMethods.every(method=>['eth_requestAccounts','eth_accounts','eth_chainId'].includes(method))");
   const errors = await browser('errors');
   assert.deepEqual((errors as { errors?: unknown[] }).errors ?? [], [], 'Unexpected browser errors');
   stage = 'direct dashboard link';
@@ -212,4 +265,5 @@ try {
 } finally {
   try { await browser('close'); } catch { console.error('Browser cleanup could not confirm session closure.'); }
   await new Promise<void>((resolve) => server.close(() => resolve()));
+  await new Promise<void>((resolve) => inspectionServer.close(() => resolve()));
 }

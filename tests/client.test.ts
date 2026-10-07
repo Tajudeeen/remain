@@ -9,6 +9,35 @@ const ok = (data: unknown = []): Response => Response.json({ code: 0, success: t
 const client = (fetcher: typeof fetch, options = {}) => new ReadOnlyBinanceClient({ apiKey: 'fixture-key', secretKey: 'fixture-secret', now: () => now, fetcher, sleep: async () => {}, ...options });
 const expectCode = (code: string) => (e: unknown) => e instanceof RemainError && e.code === code;
 
+test('pre-cancelled read never reaches the fetcher', async () => {
+  let calls = 0; await assert.rejects(client(async () => { calls++; return ok(); }).get(endpoint, [], AbortSignal.abort()), expectCode('REQUEST_CANCELLED'));
+  assert.equal(calls, 0);
+});
+test('a noncooperating fetch is bounded by timeout', async () => {
+  await assert.rejects(client(async () => new Promise(() => {}), { timeoutMs: 20 }).get(endpoint), expectCode('UPSTREAM_TIMEOUT'));
+});
+test('a stalled response body is bounded without waiting for cancellation', async () => {
+  let cancelled = false; const stream = new ReadableStream<Uint8Array>({ start(c) { c.enqueue(new TextEncoder().encode('{')); }, cancel() { cancelled = true; return new Promise(() => {}); } });
+  await assert.rejects(client(async () => new Response(stream), { timeoutMs: 20 }).get(endpoint), expectCode('UPSTREAM_TIMEOUT'));
+  assert.equal(cancelled, true); assert.equal(stream.locked, false);
+});
+test('external cancellation during body read remains classified as cancellation', async () => {
+  const controller = new AbortController(); const stream = new ReadableStream<Uint8Array>({ start(c) { c.enqueue(new TextEncoder().encode('{')); } });
+  const pending = client(async () => new Response(stream)).get(endpoint, [], controller.signal);
+  setTimeout(() => controller.abort(), 10); await assert.rejects(pending, expectCode('REQUEST_CANCELLED')); assert.equal(stream.locked, false);
+});
+test('late responses from an abandoned fetch are cancelled', async () => {
+  let resolve!: (response: Response) => void; let cancelled = false;
+  const pending = client(() => new Promise(r => { resolve = r; }), { timeoutMs: 20 }).get(endpoint);
+  await assert.rejects(pending, expectCode('UPSTREAM_TIMEOUT'));
+  resolve(new Response(new ReadableStream({ cancel() { cancelled = true; } }))); await new Promise(r => setTimeout(r, 0)); assert.equal(cancelled, true);
+});
+test('external cancellation interrupts retry backoff before another request', async () => {
+  let calls = 0; const controller = new AbortController();
+  const pending = client(async () => { calls++; return Response.json({ code: 42900 }, { status: 429 }); }, { sleep: async () => { controller.abort(); return new Promise(() => {}); } }).get(endpoint, [], controller.signal);
+  await assert.rejects(pending, expectCode('REQUEST_CANCELLED')); assert.equal(calls, 1);
+});
+
 test('HTTP wire URL and signed path match, redirects and caches disabled', async () => {
   const c = client(async (url, init) => {
     assert.equal(url, 'https://web3.binance.com/build/api/v1/dex/market/rwa/tokens?binanceChainId=56');

@@ -46,17 +46,28 @@ export class ReadOnlyBinanceClient {
     this.#timeoutMs = options.timeoutMs ?? 8000;
   }
 
-  async get(endpoint: string, query: Query = []): Promise<CallResult> {
+  async get(endpoint: string, query: Query = [], signal?: AbortSignal): Promise<CallResult> {
+    if (signal?.aborted) throw new RemainError('REQUEST_CANCELLED');
     if (!READ_ENDPOINTS.has(endpoint)) throw new RemainError('READ_ONLY_VIOLATION');
     const path = wirePath(endpoint, query);
     // Quotes expire quickly. Never retry quote/build calls silently.
     const attempts = endpoint.endsWith('/quote') || endpoint.endsWith('/swap') ? 1 : 3;
     for (let attempt = 0; attempt < attempts; attempt++) {
+      if (signal?.aborted) throw new RemainError('REQUEST_CANCELLED');
       const started = this.#now();
       const controller = new AbortController();
+      const onAbort = () => controller.abort();
+      signal?.addEventListener('abort', onAbort, { once: true });
+      if (signal?.aborted) controller.abort();
+      let abortListener: (() => void) | undefined;
+      const interrupted = new Promise<never>((_resolve, reject) => {
+        abortListener = () => reject(new RemainError(signal?.aborted ? 'REQUEST_CANCELLED' : 'UPSTREAM_TIMEOUT'));
+        controller.signal.addEventListener('abort', abortListener, { once: true });
+        if (controller.signal.aborted) abortListener();
+      });
       const timer = setTimeout(() => controller.abort(), this.#timeoutMs);
       try {
-        const response = await this.#fetcher(BINANCE_ORIGIN + path, {
+        const pending = this.#fetcher(BINANCE_ORIGIN + path, {
           method: 'GET',
           redirect: 'error',
           cache: 'no-store',
@@ -66,8 +77,12 @@ export class ReadOnlyBinanceClient {
             requestPath: path, timestamp: new Date(this.#now()).toISOString()
           })
         });
+        // A noncooperating injected fetcher must not keep the read alive.
+        // Close a response that arrives after the operation was abandoned.
+        void pending.then(response => { if (controller.signal.aborted && response.body && !response.body.locked) void response.body.cancel().catch(() => {}); }, () => {});
+        const response = await Promise.race([pending, interrupted]);
         // Bound responses before parsing. Credentials and raw responses are never logged.
-        const raw = await readBounded(response, 2 * 1024 * 1024);
+        const raw = await readBounded(response, 2 * 1024 * 1024, controller.signal);
         let body: unknown;
         try { body = endpoint.endsWith('/quote') || endpoint.endsWith('/swap') ? parseRfqJSON(raw, 2 * 1024 * 1024) : JSON.parse(raw); }
         catch { throw response.ok ? schemaError('RESPONSE_JSON') : upstreamError(response.status); }
@@ -80,8 +95,7 @@ export class ReadOnlyBinanceClient {
             const delay = response.status === 429 && Number.isFinite(retryAfter) && retryAfter > 0
               ? retryAfter * 1000 : 250 * (2 ** attempt) + Math.floor(Math.random() * 100);
             if (delay > 2000) throw error;
-            clearTimeout(timer);
-            await this.#sleep(delay);
+            await Promise.race([this.#sleep(delay), interrupted]);
             continue;
           }
           throw error;
@@ -94,30 +108,45 @@ export class ReadOnlyBinanceClient {
         return { data: value.data, timestamp: value.timestamp,
           responseHash: createHash('sha256').update(raw).digest('hex'), latencyMs: this.#now() - started };
       } catch (error) {
+        if (signal?.aborted) throw new RemainError('REQUEST_CANCELLED');
         if (error instanceof RemainError) throw error;
         if (controller.signal.aborted) throw new RemainError('UPSTREAM_TIMEOUT');
         // Network failures are not retried automatically at this gate.
         throw new RemainError('UPSTREAM_UNAVAILABLE');
-      } finally { clearTimeout(timer); }
+      } finally {
+        clearTimeout(timer); signal?.removeEventListener('abort', onAbort);
+        if (abortListener) controller.signal.removeEventListener('abort', abortListener);
+      }
     }
     throw new RemainError('UPSTREAM_UNAVAILABLE');
   }
 }
 
-async function readBounded(response: Response, limit: number): Promise<string> {
+async function readBounded(response: Response, limit: number, signal: AbortSignal): Promise<string> {
   if (!response.body) throw schemaError('RESPONSE_BODY');
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
   let bytes = 0;
+  let complete = false; let onAbort: (() => void) | undefined;
+  const interrupted = new Promise<never>((_resolve, reject) => {
+    onAbort = () => reject(new RemainError('UPSTREAM_TIMEOUT'));
+    signal.addEventListener('abort', onAbort, { once: true });
+    if (signal.aborted) onAbort();
+  });
   try {
     while (true) {
-      const { value, done } = await reader.read();
+      const { value, done } = await Promise.race([reader.read(), interrupted]);
       if (done) break;
       bytes += value.byteLength;
-      if (bytes > limit) { await reader.cancel(); throw schemaError('RESPONSE_BODY_LIMIT'); }
+      if (bytes > limit) throw schemaError('RESPONSE_BODY_LIMIT');
       chunks.push(value);
     }
-  } finally { reader.releaseLock(); }
+    complete = true;
+  } finally {
+    if (onAbort) signal.removeEventListener('abort', onAbort);
+    if (!complete) void reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
   try { return new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)); }
   catch { throw schemaError('RESPONSE_JSON'); }
 }

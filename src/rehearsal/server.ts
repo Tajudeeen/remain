@@ -2,13 +2,17 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { readFile } from 'node:fs/promises';
 import { rehearsePlan, parsePlanningRequest, RehearsalError } from './plan.ts';
 import { inspectFixtureReceipt } from '../receipts/inspection.ts';
-import { RECEIPT_MAX_BYTES } from '../receipts/canonical.ts';
+import { RECEIPT_MAX_BYTES, parseReceiptJSON } from '../receipts/canonical.ts';
+import { inspectionInput, readinessStatus, projectInspection, type LocalInspector } from '../integration/readiness.ts';
+import { RemainError } from '../errors.ts';
 
 const assets = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']], ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']], ['/logo.png', ['logo.png', 'image/png']],
   ['/proof.js', ['proof.js', 'text/javascript; charset=utf-8']],
   ['/response.js', ['response.js', 'text/javascript; charset=utf-8']],
+  ['/live.js', ['live.js', 'text/javascript; charset=utf-8']],
+  ['/wallet.js', ['wallet.js', 'text/javascript; charset=utf-8']],
   ['/demo-receipt.json', ['demo-receipt.json', 'application/json; charset=utf-8']]
 ]);
 
@@ -17,6 +21,8 @@ export type RehearsalServerOptions = Readonly<{
   allowedHosts?: readonly string[];
   buildSha?: string;
   bodyReadTimeoutMs?: number;
+  inspector?: LocalInspector;
+  inspectionTimeoutMs?: number;
 }>;
 
 function headers(response: ServerResponse): void {
@@ -87,6 +93,8 @@ export function createRehearsalServer(options: RehearsalServerOptions = {}) {
   const deployedBuild = buildId(options.buildSha);
   const bodyReadTimeoutMs = options.bodyReadTimeoutMs ?? 2000;
   if (!Number.isInteger(bodyReadTimeoutMs) || bodyReadTimeoutMs < 1 || bodyReadTimeoutMs > 5000) throw new RehearsalError('INVALID_REQUEST');
+  const inspectionTimeoutMs = options.inspectionTimeoutMs ?? 20000;
+  if (!Number.isInteger(inspectionTimeoutMs) || inspectionTimeoutMs < 1 || inspectionTimeoutMs > 20000) throw new RehearsalError('INVALID_REQUEST');
   // One global budget is intentionally simple and memory-bounded for a fixture
   // service. It is not an authenticated production trading backend.
   let windowStarted = Date.now(); let requests = 0; let inFlight = 0;
@@ -98,6 +106,15 @@ export function createRehearsalServer(options: RehearsalServerOptions = {}) {
       request.headers['sec-fetch-site'] === 'cross-site' ||
       request.headers.origin && request.headers.origin !== `http://${host}` && request.headers.origin !== `https://${host}`
     ) { json(response, 403, { code: 'ORIGIN_REJECTED' }); return; }
+    const bound = server.address();
+    const loopback = bound && typeof bound !== 'string' && ['127.0.0.1', '::1'].includes(bound.address) &&
+      /^(?:localhost|127\.0\.0\.1)(?::[0-9]{1,5})?$/.test(host) &&
+      ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(request.socket.remoteAddress ?? '');
+    const inspectionAvailable = Boolean(options.inspector && loopback);
+    if (request.url === '/api/live/status') {
+      if (!['GET', 'HEAD'].includes(request.method ?? '')) { json(response, 405, { code: 'METHOD_REJECTED' }); return; }
+      json(response, 200, readinessStatus(inspectionAvailable), request.method === 'HEAD'); return;
+    }
 
     if (request.url === '/healthz') {
       if (request.method !== 'GET' && request.method !== 'HEAD') { response.setHeader('Allow', 'GET, HEAD'); json(response, 405, { code: 'METHOD_REJECTED' }); return; }
@@ -122,10 +139,13 @@ export function createRehearsalServer(options: RehearsalServerOptions = {}) {
       } catch { json(response, 503, { code: 'ASSET_UNAVAILABLE' }); }
       return;
     }
-    if (request.url !== '/api/rehearse' && request.url !== '/api/receipt/verify') { json(response, 404, { code: 'NOT_FOUND' }); return; }
+    if (request.url !== '/api/rehearse' && request.url !== '/api/receipt/verify' && request.url !== '/api/live/inspect') { json(response, 404, { code: 'NOT_FOUND' }); return; }
     const receipt = request.url === '/api/receipt/verify';
+    const live = request.url === '/api/live/inspect';
     const limit = receipt ? RECEIPT_MAX_BYTES : 4096;
     if (request.method !== 'POST') { response.setHeader('Allow', 'POST'); json(response, 405, { code: 'METHOD_REJECTED' }); return; }
+    if (live && !inspectionAvailable) { json(response, 503, { code: 'LOCAL_SETUP_REQUIRED' }); return; }
+    if (live && !request.headers.origin) { json(response, 403, { code: 'ORIGIN_REJECTED' }); return; }
     if (!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers['content-type'] ?? '')) { json(response, 415, { code: 'CONTENT_TYPE_REJECTED' }); return; }
     if (request.headers['content-encoding'] && request.headers['content-encoding'] !== 'identity') { json(response, 415, { code: 'ENCODING_REJECTED' }); return; }
     const length = request.headers['content-length'];
@@ -139,10 +159,26 @@ export function createRehearsalServer(options: RehearsalServerOptions = {}) {
     try {
       const body = await readBody(request, limit, bodyReadTimeoutMs);
       controller.signal.throwIfAborted();
+      if (live) {
+        const input = inspectionInput(parseReceiptJSON(body));
+        const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(inspectionTimeoutMs)]);
+        let onAbort: (() => void) | undefined;
+        const interrupted = new Promise<never>((_resolve, reject) => {
+          onAbort = () => reject(new RemainError('REQUEST_CANCELLED'));
+          signal.addEventListener('abort', onAbort, { once: true }); if (signal.aborted) onAbort();
+        });
+        try {
+          const report = await Promise.race([options.inspector!(input, signal), interrupted]);
+          if (signal.aborted) throw new RemainError('REQUEST_CANCELLED');
+          json(response, 200, projectInspection(report));
+        } finally { if (onAbort) signal.removeEventListener('abort', onAbort); }
+        return;
+      }
       if (receipt) { json(response, 200, inspectFixtureReceipt(body)); return; }
       const input = parsePlanningRequest(body);
       json(response, 200, await rehearsePlan(input, controller.signal));
     } catch (error) {
+      if (live && error instanceof RemainError && error.code === 'REQUEST_CANCELLED') { json(response, 408, { code: 'REQUEST_CANCELLED' }); return; }
       const tooLarge = error instanceof RehearsalError && error.code === 'BODY_TOO_LARGE';
       const timedOut = error instanceof RehearsalError && error.code === 'BODY_TIMEOUT';
       if (!request.complete) response.setHeader('Connection', 'close');

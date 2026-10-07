@@ -1,5 +1,5 @@
 export type ErrorCode =
-  | 'CONFIG_MISSING' | 'INVALID_INPUT' | 'READ_ONLY_VIOLATION'
+  | 'CONFIG_MISSING' | 'INVALID_INPUT' | 'READ_ONLY_VIOLATION' | 'REQUEST_CANCELLED'
   | 'AUTH_KEY_INVALID' | 'AUTH_SIGNATURE_INVALID' | 'AUTH_CLOCK_DRIFT'
   | 'AUTH_PERMISSION_DENIED' | 'RATE_LIMITED' | 'UPSTREAM_TIMEOUT'
   | 'ACCESS_REGION_RESTRICTED' | 'ACCESS_PROXY_REJECTED'
@@ -12,6 +12,7 @@ const messages: Record<ErrorCode, string> = {
   CONFIG_MISSING: 'Required protected configuration is missing. Check variable names in .env.example.',
   INVALID_INPUT: 'A configuration value is invalid. Check the public wallet, token address and raw input amount.',
   READ_ONLY_VIOLATION: 'This milestone allows read-only Binance endpoints only.',
+  REQUEST_CANCELLED: 'The read-only inspection was cancelled. No transaction was submitted.',
   AUTH_KEY_INVALID: 'Binance rejected the API key. Check its status in the developer portal.',
   AUTH_SIGNATURE_INVALID: 'Binance rejected the request signature. Check signing configuration.',
   AUTH_CLOCK_DRIFT: 'Binance rejected the timestamp or nonce. Check clock synchronization.',

@@ -75,3 +75,10 @@ Gate 10 reproduced eight actual receipt-page failures before implementation, the
 [PR CI 37604799132](https://github.com/Tajudeeen/remain/actions/runs/37604799132), [push CI 37604793574](https://github.com/Tajudeeen/remain/actions/runs/37604793574) and [main CI 37605083803](https://github.com/Tajudeeen/remain/actions/runs/37605083803) passed the complete gate. Real-browser CI tested altered planner values, unknown receipt states, rejection before rendering, retry and expiry despite clock rollback. The original user journeys and five-width checks still passed.
 
 [External HTTPS smoke 37605083674](https://github.com/Tajudeeen/remain/actions/runs/37605083674) matched `8e3609e4c0c29131b08f42666ed2936d8e2f5d0b` and passed the new served-module check with the existing fixture API surface. Production browser checks completed both the normal planner and demo receipt flows. See [release evidence](netlify-deployment.md#browser-response-release-2026-10-07-1006-utc). Browser input consistency is not server authentication, live quote proof, vendor enforcement, audited security or mainnet settlement.
+
+
+## Prepared integration, 2026-10-07
+
+Gate 11 passes 693 local tests, full verification and coverage. The local inspector and wallet adapter are exercised with fictional injected data. The hosted adapter returns a fixed unconfigured status and rejects inspection without importing the local credential factory. Tests cover loopback binding, origin/host rejection, bounded input, redaction, forged passes, read cancellation, stalled streams, late response cancellation, account changes and timeout recovery. See [integration invariants](integration-workspace.md).
+
+The workspace browser runner could not start its daemon, so it establishes no local browser pass. The complete browser acceptance script has been extended for the public setup page at five widths and controlled fixture-wallet/local-inspector flows. Its remote result and production deployment evidence remain pending before release completion. No actual wallet was connected or live Binance request performed by the agent.
