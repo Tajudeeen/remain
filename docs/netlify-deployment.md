@@ -64,3 +64,37 @@ This documentation-only record uses `[skip netlify]`. The source remains private
 - Uploaded bodies are not persisted or logged by the application. Rate-limit saturation was not tested on Netlify. No authenticated receipt, wallet, signature, order or settlement was enabled, and no Binance credentials were added to hosting.
 
 The full live gate now awaits a held-position RFQ/build despite owner-reported metadata success. This release closes only the fixture receipt workspace. This evidence-only update uses `[skip netlify]` to preserve the verified deployed artifact.
+
+## Request-boundary release, 2026-10-07 09:34 UTC
+
+[PR #23](https://github.com/Tajudeeen/remain/pull/23) merged as
+`b241ad8d2f15cf7489a7079c04998bea87f5d8c4`. Production deploy
+`6ac611f78be59c00081c215e` published at 09:33:59.081 UTC with that commit.
+Netlify metadata confirmed the exact SHA, private source and one Node.js 24
+function with health, planning and receipt-verification paths.
+
+- Full local verification and coverage passed 603 tests. The Node HTTP smoke
+  passed from a shared server/test execution context. An earlier attempt from
+  separate tool executions could not reach the local listener and was not
+  counted as passed. No local browser pass is claimed.
+- [PR CI 37601135508](https://github.com/Tajudeeen/remain/actions/runs/37601135508),
+  [push CI 37601130817](https://github.com/Tajudeeen/remain/actions/runs/37601130817)
+  and [main CI 37601461126](https://github.com/Tajudeeen/remain/actions/runs/37601461126)
+  passed full source/history, container and real-browser fixture checks.
+- [Independent HTTPS smoke 37601461211](https://github.com/Tajudeeen/remain/actions/runs/37601461211)
+  passed at 09:34:03 UTC. Its new automatic gate first matched the exact pushed
+  main SHA in public health, then checked normal accounting, ambiguous planner
+  fields, coerced market input, receipt integrity and absent execution routes.
+- The production browser opened the landing page and submitted the normal
+  25-cash/70%-floor form. It returned 25 stock debit, minimum 25.00 synthetic
+  USDT and 75 retained units. [The production screenshot](images/request-boundary-20261007.jpg)
+  captures that fictional result after its 15-second review window expired,
+  with the expiry warning visible. It is a historical fixture snapshot.
+- Slow uploads, cancellation cleanup and concurrency-slot release are local
+  HTTP/stream regression evidence. Netlify rate-limit saturation and broad
+  denial of service resistance were not tested. No hosted credentials,
+  wallet, signing, approvals, order submission, RPC or live trade was added.
+
+Gate 9 is complete for the existing TEST_FIXTURE service. Gate 0 and vendor
+signature semantics remain open. This evidence-only update uses
+`[skip netlify]` to preserve the exact verified production artifact.

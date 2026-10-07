@@ -44,3 +44,26 @@ Gate 6 adds 29 tests around the private fixture packet and tracked-history scree
 History tests use real disposable Git repositories. They detect a deleted credential from an earlier commit without printing its value, detect a reused blob behind a historical tracked credential filename, and prevent shallow history from receiving a pattern pass. These are checks on the screening tool's behavior, not a comprehensive secret audit. The local history report covers only the refs present in the local checkout. CI now fetches full history and archives a sanitized report for its actual commit. Its remote result must pass before merge.
 
 The packet and history tools perform no network requests, publish no source and submit no forms. The deployed frontend is unchanged in this preparation milestone, and its already verified build remains pinned through `[skip netlify]`.
+
+## Request-boundary hardening, 2026-10-07
+
+Gate 8's RFQ review passed [PR CI 37590665078](https://github.com/Tajudeeen/remain/actions/runs/37590665078)
+and [push CI 37590661010](https://github.com/Tajudeeen/remain/actions/runs/37590661010),
+with 576 local tests. Vendor signature semantics remain UNVERIFIED.
+
+Gate 9 reproduced nine failures before changes, then passed 603 local tests,
+coverage, full verification, history screening and shared-context HTTP smoke.
+The data-record guard, Node server, Netlify adapter and deployment-wait module
+each have 100% line coverage. Test scenarios include duplicate escaped keys,
+enum coercion, getters/prototypes, stalled streams, aborted uploads, four
+concurrent read deadlines, cleanup and old/unsafe deployment health.
+
+[PR CI 37601135508](https://github.com/Tajudeeen/remain/actions/runs/37601135508),
+[main CI 37601461126](https://github.com/Tajudeeen/remain/actions/runs/37601461126)
+and [external HTTPS smoke 37601461211](https://github.com/Tajudeeen/remain/actions/runs/37601461211)
+passed. The deployed build is `b241ad8d2f15cf7489a7079c04998bea87f5d8c4`.
+The production browser also confirmed the normal form/accounting result.
+See [deployment evidence](netlify-deployment.md#request-boundary-release-2026-10-07-0934-utc).
+These checks establish fixture regression and transport behavior, not live
+RFQ feasibility, trusted vendor enforcement, authenticated settlement or a
+formal security audit.
