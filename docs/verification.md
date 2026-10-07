@@ -67,3 +67,11 @@ See [deployment evidence](netlify-deployment.md#request-boundary-release-2026-10
 These checks establish fixture regression and transport behavior, not live
 RFQ feasibility, trusted vendor enforcement, authenticated settlement or a
 formal security audit.
+
+## Browser response hardening, 2026-10-07
+
+Gate 10 reproduced eight actual receipt-page failures before implementation, then passed 653 local tests, full verification, coverage, history screening and exact-commit HTTP smoke. New cases cover contradictory success reports, oversized responses, ambiguous/truncated JSON, split UTF-8, stalled streams, cancellation without waiting for a source hook, lock release, intent/amount mismatch, fixed errors and retry/clear recovery. The response module has 100% line coverage, 93.07% branch coverage and 95.45% function coverage.
+
+[PR CI 37604799132](https://github.com/Tajudeeen/remain/actions/runs/37604799132), [push CI 37604793574](https://github.com/Tajudeeen/remain/actions/runs/37604793574) and [main CI 37605083803](https://github.com/Tajudeeen/remain/actions/runs/37605083803) passed the complete gate. Real-browser CI tested altered planner values, unknown receipt states, rejection before rendering, retry and expiry despite clock rollback. The original user journeys and five-width checks still passed.
+
+[External HTTPS smoke 37605083674](https://github.com/Tajudeeen/remain/actions/runs/37605083674) matched `8e3609e4c0c29131b08f42666ed2936d8e2f5d0b` and passed the new served-module check with the existing fixture API surface. Production browser checks completed both the normal planner and demo receipt flows. See [release evidence](netlify-deployment.md#browser-response-release-2026-10-07-1006-utc). Browser input consistency is not server authentication, live quote proof, vendor enforcement, audited security or mainnet settlement.
