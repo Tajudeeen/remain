@@ -98,3 +98,16 @@ function with health, planning and receipt-verification paths.
 Gate 9 is complete for the existing TEST_FIXTURE service. Gate 0 and vendor
 signature semantics remain open. This evidence-only update uses
 `[skip netlify]` to preserve the exact verified production artifact.
+
+## Browser-response release, 2026-10-07 10:06 UTC
+
+[PR #25](https://github.com/Tajudeeen/remain/pull/25) merged as `8e3609e4c0c29131b08f42666ed2936d8e2f5d0b`. Netlify production deploy `6ac61970871cbf0008eb5b2a` published at 10:05:51.462 UTC with that exact commit. The source remains private and the hosted surface remains TEST_FIXTURE with live execution disabled.
+
+- Full local verification and coverage passed 653 tests. Eight actual-page regressions failed before implementation and passed after it. The response module reached 100% line coverage. The shared-context local HTTP smoke passed for local commit `b30ef74c9d672e4b34cb2e9fc97cf9b5b61f67bc`. No local real-browser pass is claimed.
+- [PR CI 37604799132](https://github.com/Tajudeeen/remain/actions/runs/37604799132), [push CI 37604793574](https://github.com/Tajudeeen/remain/actions/runs/37604793574) and [main CI 37605083803](https://github.com/Tajudeeen/remain/actions/runs/37605083803) passed all 653 tests, coverage, history/source checks, container smoke and real-browser checks. The new browser checks rejected altered planner amounts and unknown receipt states, recovered through retry and expired a snapshot despite wall-clock rollback. Existing navigation, download and five-width checks also passed.
+- [Independent HTTPS smoke 37605083674](https://github.com/Tajudeeen/remain/actions/runs/37605083674) matched the exact merged SHA at 10:05:54 UTC and passed at 10:05:57 UTC. It verified the new browser response module was served, along with existing planning, receipt, request-rejection and absent-execution checks.
+- The production browser at `https://remain-cash.netlify.app/#proof` loaded the fictional receipt and showed three events, matched fixture accounting, 75 retained stock raw units and 25000000000000000000 net cash raw units. The source remained UNAUTHENTICATED. [The production screenshot](images/browser-response-20261007.jpg) captures this fixture inspection, not an authenticated trade.
+- The same production browser then completed the 25-cash, 70%-floor planner at `https://remain-cash.netlify.app/#dashboard`, showing 25 stock debit, 75 retained units and minimum 25.00 synthetic USDT after browser response validation.
+- Oversize/stalled response and unresponsive-cancellation claims are local stream/VM regression evidence. Malformed-response UI recovery and clock rollback are real-browser CI evidence. No production load test or malicious-server authentication guarantee is claimed. No Binance credentials, wallet, signature, allowance, submission, RPC or live trade were added.
+
+Gate 10 is complete for the fixture browser response boundary. Gate 0, vendor signature semantics and actual submission readiness remain blocked. This evidence-only update uses `[skip netlify]` to preserve the exact verified production artifact.
