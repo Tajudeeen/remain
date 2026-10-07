@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 import { RemainError, schemaError } from './errors.ts';
+import { reviewTypedData } from './rfq/typed-data.ts';
+import { snapshotRfq } from './rfq/json.ts';
 
 export const BSC_CHAIN = '56';
 const marketStatuses = ['regular', 'premarket', 'postmarket', 'overnight', 'closed', 'pause'] as const;
@@ -103,28 +105,12 @@ export function pickRfq(data: unknown, config: Pick<SmokeConfig, 'token' | 'amou
   return sorted[0]!;
 }
 
-export function inspectRfq(data: unknown): { vendor: string; typedDataHash: string; verifyingContract: string } {
-  const built = record(data);
+export function inspectRfq(data: unknown): ReturnType<typeof reviewTypedData> & { vendor: string } {
+  let built: Record<string, unknown>;
+  try { built = record(snapshotRfq(data)); } catch { throw new RemainError('RFQ_OPAQUE'); }
   if (built.executionMode !== 'RFQ') throw new RemainError('RFQ_UNAVAILABLE');
   const rfq = record(built.rfq);
-  if (!['PcsXRfq', 'InchFusion', 'CowSwap'].includes(String(rfq.vendor))) throw new RemainError('RFQ_OPAQUE');
-  let typed: unknown = rfq.typedDataToSign;
-  if (typeof typed === 'string') {
-    try { typed = JSON.parse(typed); } catch { throw new RemainError('RFQ_OPAQUE'); }
-  }
-  try {
-    const object = record(typed);
-    const domain = record(object.domain);
-    const types = record(object.types);
-    const message = record(object.message);
-    if (!(domain.chainId === 56 || domain.chainId === '56' || domain.chainId === '0x38') || typeof object.primaryType !== 'string' || !Array.isArray(types[object.primaryType]) || Object.keys(message).length === 0) throw new RemainError('RFQ_OPAQUE');
-    const fields = array(types[object.primaryType]);
-    if (fields.length === 0) throw new RemainError('RFQ_OPAQUE');
-    const names = new Set<string>();
-    for (const entry of fields.map(record)) {
-      if (typeof entry.name !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(entry.name) || typeof entry.type !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*(?:\[[0-9]*\])*$/.test(entry.type) || names.has(entry.name) || !Object.hasOwn(message, entry.name)) throw new RemainError('RFQ_OPAQUE');
-      names.add(entry.name);
-    }
-    return { vendor: String(rfq.vendor), typedDataHash: digest(object), verifyingContract: address(domain.verifyingContract) };
-  } catch { throw new RemainError('RFQ_OPAQUE'); }
+  if (typeof rfq.vendor !== 'string' || !['PcsXRfq', 'InchFusion', 'CowSwap'].includes(rfq.vendor)) throw new RemainError('RFQ_OPAQUE');
+  if ((rfq.signingScheme !== undefined && rfq.signingScheme !== 'EIP712') || (rfq.txType !== undefined && rfq.txType !== 'EIP712')) throw new RemainError('RFQ_OPAQUE');
+  return { vendor: rfq.vendor, ...reviewTypedData(rfq.typedDataToSign) };
 }

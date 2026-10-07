@@ -129,6 +129,8 @@ npm run smoke:binance
 
 Smoke reads chain support, stock metadata, market state and holdings, requests a stock-to-USDT RFQ quote and builds an unsigned payload. It requires inspectable EIP-712 structure. It never approves, signs, submits or broadcasts. Evidence lands in ignored `evidence/` with private file permissions. This gate proves read-only feasibility only. Semantic order verification, signature safety, settlement and live trades are later gates.
 
+Gate 8 adds bounded recursive type/value validation, duplicate-key rejection and unsigned build-to-quote binding. Run `npm run rehearse:rfq` without credentials for the fictional tamper rehearsal. Smoke reports expose a redacted `rfqReview` with signature semantics UNVERIFIED and execution disabled. Older saved reports require a rerun. Read the [RFQ inspection contract and remaining vendor checks](docs/rfq-review.md).
+
 GitHub has a manual **Binance read-only feasibility** workflow with `discover` and `feasibility` modes on `main`. It offers `github-hosted` or an owner-configured `self-hosted` runner with label `remain-feasibility`. Use only a host authorized for Binance's service. Automated CI never receives Binance secrets. The manual workflow rejects missing configuration before networking and stops on compliance errors. Both modes preserve sanitized evidence even when they fail. Public discovery output contains only selected public token metadata. Smoke artifacts contain hashes and checks, never wallets, balances or raw payloads. Do not share an artifact as a settlement receipt.
 
 ## Plan and evidence

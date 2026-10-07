@@ -110,5 +110,19 @@ export function inspectEvidence(value: unknown, kind: EvidenceKind, now = Date.n
   const checks = report.checks;
   if (report.status !== 'passed' || !Array.isArray(checks) || checks.length !== smokeChecks.length ||
     !smokeChecks.every((check, index) => checks[index] === check)) fail();
-  return { ...base, checks: [...smokeChecks], nextStep: 'REVIEW_READ_ONLY_RFQ_EVIDENCE_AND_SIGNATURE_SEMANTICS' as const };
+  if (report.rfqReview === undefined) return { ...base, checks: [...smokeChecks], rfqReviewStatus: 'LEGACY_UNREVIEWED' as const,
+    nextStep: 'RERUN_CURRENT_READ_ONLY_RFQ_REVIEW' as const };
+  const review = object(report.rfqReview);
+  if (review.profile !== 'REMAIN_RFQ_REVIEW_V1' || review.structure !== 'VALIDATED' || review.unsignedBuild !== 'MATCHES_SELECTED_QUOTE' ||
+    review.checksumKind !== 'SHA256_JSON_NOT_EIP712' || review.signatureSemantics !== 'UNVERIFIED' || review.executionEnabled !== false ||
+    typeof review.artifactChecksum !== 'string' || !/^[a-f0-9]{64}$/.test(review.artifactChecksum) ||
+    typeof review.typeCount !== 'number' || !Number.isInteger(review.typeCount) || review.typeCount < 1 || review.typeCount > 32 ||
+    typeof review.fieldCount !== 'number' || !Number.isInteger(review.fieldCount) || review.fieldCount < review.typeCount || review.fieldCount > 256 ||
+    typeof review.domainTypeDeclared !== 'boolean') fail();
+  return { ...base, checks: [...smokeChecks], rfqReviewStatus: 'REPORTED_REVIEW_UNAUTHENTICATED' as const,
+    rfqReview: { profile: 'REMAIN_RFQ_REVIEW_V1' as const, structure: 'VALIDATED' as const, unsignedBuild: 'MATCHES_SELECTED_QUOTE' as const,
+      checksumKind: 'SHA256_JSON_NOT_EIP712' as const, artifactChecksum: review.artifactChecksum,
+      typeCount: review.typeCount, fieldCount: review.fieldCount, domainTypeDeclared: review.domainTypeDeclared,
+      signatureSemantics: 'UNVERIFIED' as const, executionEnabled: false as const },
+    nextStep: 'REVIEW_READ_ONLY_RFQ_EVIDENCE_AND_SIGNATURE_SEMANTICS' as const };
 }

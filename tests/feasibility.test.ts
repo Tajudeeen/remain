@@ -1,14 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { runFeasibility, type Reader } from '../src/feasibility.ts';
-import { address, uint, checkMarket, inspectRfq, BSC_USDT } from '../src/validation.ts';
+import { address, uint, checkMarket, inspectRfq } from '../src/validation.ts';
+import { fixtureQuote, fixtureBuild } from './fixtures/rfq.ts';
 
 const wallet = '0x1111111111111111111111111111111111111111';
 const token = '0x2222222222222222222222222222222222222222';
 const env = { BINANCE_WEB3_API_KEY: 'fixture-key', BINANCE_WEB3_SECRET_KEY: 'fixture-secret', REMAIN_WALLET_ADDRESS: wallet, REMAIN_RWA_TOKEN_ADDRESS: token, REMAIN_SELL_AMOUNT_RAW: '100' };
 const status = { openState: true, marketStatus: 'regular', reasonCode: null };
 const typed = { domain: { chainId: 56, verifyingContract: token }, primaryType: 'Order', types: { Order: [{ name: 'amount', type: 'uint256' }] }, message: { amount: '100' } };
-const rfq = { executionMode: 'RFQ', rfq: { vendor: 'PcsXRfq', typedDataToSign: typed } };
 
 function fixtures(overrides: Record<string, unknown> = {}, staleQuote = false): { reader: Reader; calls: string[] } {
   const calls: string[] = [];
@@ -17,8 +17,8 @@ function fixtures(overrides: Record<string, unknown> = {}, staleQuote = false): 
     '/api/v1/dex/market/rwa/tokens': [{ binanceChainId: '56', tokenContractAddress: token, assetType: 1, platformId: 'ondo', decimals: 18, tokenSymbol: 'FIXTUREon', underlyingTicker: 'FIXTURE', statusInfo: status }],
     '/api/v1/dex/market/rwa/underlying-market': { binanceChainId: '56', tokenContractAddress: token, statusInfo: status },
     '/api/v1/dex/balance/all-token-balances-by-address': [{ tokenAssets: [{ binanceChainId: '56', tokenContractAddress: token, address: wallet, rawBalance: '200', isRiskToken: false }] }],
-    '/api/v1/dex/aggregator/quote': [{ binanceChainId: '56', executionMode: 'RFQ', fromTokenAmount: '100', toTokenAmount: '25000000000000000000', quoteId: 'fixture-quote', vendorName: 'PcsXRfq', fromToken: { tokenContractAddress: token }, toToken: { tokenContractAddress: BSC_USDT } }],
-    '/api/v1/dex/aggregator/swap': rfq,
+    '/api/v1/dex/aggregator/quote': [fixtureQuote()],
+    '/api/v1/dex/aggregator/swap': fixtureBuild(),
     ...overrides
   };
   const reader: Reader = { async get(endpoint) {
@@ -79,6 +79,29 @@ test('RFQ build query disables approval and fixes protection limits', async () =
     return f.reader.get(path, query);
   } });
   assert.equal(report.status, 'passed');
+});
+
+test('quote that ages out during the unsigned build cannot pass', async () => {
+  const f = fixtures(); const before = Date.now; let clock = before();
+  Date.now = () => clock;
+  try {
+    const report = await runFeasibility(env, { async get(path, query) {
+      const result = await f.reader.get(path, query);
+      if (path.endsWith('/swap')) clock += 20000;
+      return result;
+    } });
+    assert.equal(report.status, 'blocked'); assert.equal(report.error?.code, 'QUOTE_EXPIRED');
+    assert.equal(report.rfqReview, undefined); assert.equal(report.executionEnabled, false);
+  } finally { Date.now = before; }
+});
+test('selected quote snapshot cannot be changed by the subsequent build read', async () => {
+  const route = fixtureQuote(); const build = fixtureBuild();
+  const f = fixtures({ '/api/v1/dex/aggregator/quote': [route], '/api/v1/dex/aggregator/swap': build });
+  const report = await runFeasibility(env, { async get(path, query) {
+    if (path.endsWith('/swap')) { route.toTokenAmount = '1'; build.routerResult.toTokenAmount = '1'; }
+    return f.reader.get(path, query);
+  } });
+  assert.equal(report.status, 'blocked'); assert.equal(report.error?.validationCheck, 'RFQ_BUILD_BINDING');
 });
 
 for (const code of ['MARKET_PAUSED', 'MARKET_MAINTENANCE', 'ASSET_PAUSED', 'ASSET_LIMITED', 'UNSUPPORTED', 'UNKNOWN_STATE']) {

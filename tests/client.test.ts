@@ -158,3 +158,20 @@ test('diagnostic labels cannot echo arbitrary text or appear on auth failures', 
   assert.equal(safeError(new RemainError('AUTH_SIGNATURE_INVALID', 40102, 'ENVELOPE_CODE')).validationCheck, undefined);
   assert.equal(JSON.stringify(safeError(error)).includes('private-'), false);
 });
+
+for (const path of ['/api/v1/dex/aggregator/quote', '/api/v1/dex/aggregator/swap']) {
+  test(`${path} rejects duplicate envelope and nested order keys without retry`, async () => {
+    for (const raw of [`{"code":1,"code":0,"timestamp":${now},"data":[]}`,
+      `{"code":0,"timestamp":${now},"data":{"message":{"amount":"1","\\u0061mount":"2"}}}`]) {
+      let calls = 0;
+      await assert.rejects(client(async () => { calls++; return new Response(raw); }).get(path), error => {
+        assert.equal(safeError(error).validationCheck, 'RESPONSE_JSON'); return true;
+      });
+      assert.equal(calls, 1);
+    }
+  });
+}
+test('malformed UTF-8 is rejected instead of silently replaced', async () => {
+  const raw = Buffer.concat([Buffer.from(`{"code":0,"timestamp":${now},"data":"`), Buffer.from([0xc3, 0x28]), Buffer.from('"}')]);
+  await assert.rejects(client(async () => new Response(raw)).get(endpoint), error => safeError(error).validationCheck === 'RESPONSE_JSON');
+});

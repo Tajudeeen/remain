@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { ReadOnlyBinanceClient, type CallResult } from './client.ts';
 import { RemainError, safeError } from './errors.ts';
-import { BSC_CHAIN, BSC_USDT, array, record, digest, readConfig, findStock, selectedMarket, walletBalance, pickRfq, inspectRfq } from './validation.ts';
+import { BSC_CHAIN, BSC_USDT, array, record, readConfig, findStock, selectedMarket, walletBalance, pickRfq } from './validation.ts';
+import { reviewRfqBuild, type RfqReview } from './rfq/review.ts';
+import { snapshotRfq } from './rfq/json.ts';
 import type { Query } from './signing.ts';
 
 type Observation = {
@@ -13,6 +15,7 @@ export type SmokeReport = {
   status: 'passed' | 'blocked'; executionEnabled: false;
   observations: Observation[]; checks: string[]; error?: ReturnType<typeof safeError>;
   notes: string[];
+  rfqReview?: RfqReview;
 };
 export type Reader = { get(endpoint: string, query?: Query): Promise<CallResult> };
 
@@ -70,7 +73,7 @@ export async function runFeasibility(env: Record<string, string | undefined>, re
       ['fromTokenAddress', config.token], ['toTokenAddress', BSC_USDT], ['userWalletAddress', config.wallet]
     ];
     const quoted = await call('/api/v1/dex/aggregator/quote', query);
-    const route = pickRfq(quoted.data, config);
+    const route = record(snapshotRfq(pickRfq(quoted.data, config)));
     report.checks.push('matching_stock_to_usdt_rfq');
     const age = Date.now() - quoted.timestamp;
     if (age < -5000 || age >= 20000) throw new RemainError('QUOTE_EXPIRED');
@@ -79,10 +82,12 @@ export async function runFeasibility(env: Record<string, string | undefined>, re
       ...query, ['quoteId', String(route.quoteId)], ['slippagePercent', '0.5'],
       ['autoSlippage', 'false'], ['approveTransaction', 'false'], ['priceImpactProtectionPercent', '0.5']
     ]);
-    const inspection = inspectRfq(built.data);
+    const finalAge = Date.now() - quoted.timestamp;
+    if (finalAge < -5000 || finalAge >= 20000 || Math.abs(Date.now() - built.timestamp) > 20000) throw new RemainError('QUOTE_EXPIRED');
+    report.rfqReview = reviewRfqBuild(built.data, route, config);
     report.checks.push('inspectable_bsc_eip712_structure');
     // Only hashes leave the process. No wallet, balances, quoteId or raw payload.
-    report.notes.push(`RFQ structure digest: ${inspection.typedDataHash}. Vendor digest: ${digest(inspection.vendor)}.`);
+    report.notes.push('Unsigned build matches the selected quote. Signed wallet, receiver, tokens, debit, minimum net output, fees, spender, nonce and deadline remain UNVERIFIED.');
     report.status = 'passed';
   } catch (error) { report.error = safeError(error); }
   return report;

@@ -2,6 +2,7 @@ import { lstat, open, readdir } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { inspectEvidence, type EvidenceKind } from '../src/evidence-inspection.ts';
+import { parseRfqJSON } from '../src/rfq/json.ts';
 
 const pattern = /^binance-(discovery|smoke|market)-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.json$/i;
 const evidenceDirectory = resolve('evidence');
@@ -27,7 +28,8 @@ async function load(file: string) {
       size += read.bytesRead;
     }
     if (size > maxBytes) throw new Error();
-    const summary = inspectEvidence(JSON.parse(bytes.subarray(0, size).toString('utf8')), match[1]!.toLowerCase() as EvidenceKind);
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes.subarray(0, size));
+    const summary = inspectEvidence(parseRfqJSON(text, maxBytes), match[1]!.toLowerCase() as EvidenceKind);
     if (summary.runId.toLowerCase() !== match[2]!.toLowerCase()) throw new Error();
     return { ...summary, evidenceFile: `evidence/${basename(file)}` };
   } finally { await handle.close(); }
@@ -55,6 +57,7 @@ try {
   // result for blocked, partial, fixture, historical or legacy reports.
   if (summary.reportStatus !== 'passed' || summary.reportedMode !== 'LIVE_READ_ONLY' || summary.freshness !== 'recent' ||
     ('catalogFormat' in summary && summary.catalogFormat === 'legacy') ||
+    ('rfqReviewStatus' in summary && summary.rfqReviewStatus === 'LEGACY_UNREVIEWED') ||
     ('stockCount' in summary && summary.stockCount === 0)) process.exitCode = 1;
 } catch {
   console.log(JSON.stringify({ inspectionStatus: 'blocked', code: 'LOCAL_EVIDENCE_INVALID_OR_MISSING',
