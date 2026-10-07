@@ -8,7 +8,7 @@ Remain works backward from a USDT cash target to a bounded partial sale of a tok
 
 ## Current state
 
-Milestone 0 feasibility kit, Milestone 1's standalone cash solver and BellGuard, Milestone 2's interactive planning rehearsal, Milestone 3's standalone fixture order journal and settlement checks, and Milestone 4's canonical fixture proof receipt with an independent verifier. Execution is disabled. There is no live wallet flow or deployed trading product. The interface uses an explicitly fictional position and the actual planning engine. GitHub and owner-reported local discovery both returned Binance compliance code 40304. A successful discovery and held-stock RFQ check are still required before live integration. See [milestone status](docs/milestone-status.md) and [access troubleshooting](docs/access-troubleshooting.md).
+Milestone 0 feasibility kit, Milestone 1's standalone cash solver and BellGuard, Milestone 2's interactive planning rehearsal, Milestone 3's standalone fixture order journal and settlement checks, and Milestone 4's canonical fixture proof receipt with an independent verifier. Execution is disabled. There is no live wallet flow or deployed trading product. The interface uses an explicitly fictional position and the actual planning engine. After historical compliance/schema rejections, the owner reported a successful AALon stock-identity and fresh-market read on 2026-10-07. A real held-position RFQ/build remains required before live integration. See [milestone status](docs/milestone-status.md) and [access troubleshooting](docs/access-troubleshooting.md).
 
 This repo stays private until the owner approves public release. Nothing here is financial advice or a claim of Binance endorsement.
 
@@ -83,7 +83,9 @@ The Netlify fixture deployment passed an independent external HTTPS smoke. See [
 
 ## Live discovery and feasibility
 
-Latest owner-reported discovery run `a19fb351-ae16-4280-b12e-8659e276baeb` reached a BSC stock record but rejected non-string catalog market metadata. Discovery now preserves validated stock identities and labels unreadable market fields as unavailable/null. Partial catalogs exit 1 and do not certify tradability. Feasibility requires a separate fresh selected-stock market response before quoting. See [access diagnostics](docs/access-troubleshooting.md). The live feasibility gate remains blocked.
+Latest owner-reported market run `a2a2b549-f749-4779-892e-cd204f37252d`, started 2026-10-07 06:55:47 UTC, passed current stock identity and fresh selected-stock market checks for AALon. It reported `overnight`/`true`; observed endpoint durations were 1,294 ms for the catalog and 236 ms for the fresh market read. This is one owner-provided local sample, not independently executed or authenticated here. See [sanitized observation](docs/observations/owner-market-a2a2b549-f749-4779-892e-cd204f37252d.json).
+
+Discovery preserves validated stock identities and labels unreadable catalog market fields as unavailable/null. Partial catalogs exit 1 and do not certify tradability. Held-position feasibility still requires a separate fresh selected-stock market response, real balance, matching RFQ and inspectable unsigned build. The owner reports no stock holding, so the full live gate remains blocked. See [access diagnostics](docs/access-troubleshooting.md).
 
 Apply for a Web3 API key at [Binance developer portal](https://web3.binance.com/en/dev-portal). Keep both credentials outside git. Put these in an ignored local `.env.local`, or GitHub Actions secrets:
 

@@ -5,7 +5,7 @@ const artifactPaths = [
 ] as const;
 
 const blockedGates = {
-  liveFeasibility: 'A successful authenticated discovery and held-stock RFQ build are still missing.',
+  liveFeasibility: 'A complete held-position stock-to-USDT RFQ/build and independently reviewed live evidence are still missing.',
   supportedStock: 'No real bStock, Ondo or xStock is central to the deployed fixture flow.',
   mainnetSettlement: 'No approved BSC mainnet sale and independently reconciled settlement are proven.'
 } as const;
