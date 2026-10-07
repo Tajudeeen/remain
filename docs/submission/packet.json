@@ -3,15 +3,15 @@
   "project": "Remain",
   "mode": "TEST_FIXTURE",
   "executionEnabled": false,
-  "snapshotAt": "2026-10-06T08:26:53Z",
+  "snapshotAt": "2026-10-07T07:30:40Z",
   "deployment": {
     "url": "https://remain-cash.netlify.app/",
-    "buildSha": "b3089947eec2a670e7ef6140d22622239094139e",
-    "netlifyDeployId": "6ac4b08671bf7a60c694865b"
+    "buildSha": "a1e382a62f0310b4c751ca51aedb4984422d6c12",
+    "netlifyDeployId": "6ac5f4b5735bab000820b4e7"
   },
   "evidence": {
-    "verificationWorkflow": "https://github.com/Tajudeeen/remain/actions/runs/37435789151",
-    "httpsSmokeWorkflow": "https://github.com/Tajudeeen/remain/actions/runs/37436134911"
+    "verificationWorkflow": "https://github.com/Tajudeeen/remain/actions/runs/37587576556",
+    "httpsSmokeWorkflow": "https://github.com/Tajudeeen/remain/actions/runs/37587725694"
   },
   "artifacts": [
     "docs/submission/requirements.md",

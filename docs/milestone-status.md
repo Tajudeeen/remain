@@ -11,7 +11,7 @@ Updated 2026-10-07. Submission target: 2026-10-11 12:00 UTC per the supplied bri
 | 4: Receipt and provenance | Canonical TEST_FIXTURE receipt, recomputed settlement verification and tamper checks implemented | Canonical evidence, independent verifier, fraud/tamper tests; authenticated live provenance later | Independent fixture module implemented; live provenance BLOCKED by gate 0 |
 | 5: Hardening and deployment | Public-host policy, fixture health contract, non-root container and stateless Netlify adapter implemented | 286 tests, full remote CI, browser checks and independent external HTTPS smoke | COMPLETE for TEST_FIXTURE deployment; live service remains BLOCKED by gate 0 |
 | 6: Submission and public release | Private preparation packet, strict fixture-readiness check and tracked-history pattern screen | Green remote checks for this tooling; live mainnet proof, owner report/video, eligibility and public-release approval still required | Preparation implemented; actual submission and public release BLOCKED |
-| 7: Receipt workspace | Separate app route, fictional source receipt, stateless inspection adapter and downloadable result | 453 local tests and coverage; remote CI/browser and external HTTPS release checks pending | IMPLEMENTED locally; deployment verification pending. Live provenance remains BLOCKED |
+| 7: Receipt workspace | Separate app route, fictional source receipt, stateless inspection adapter and downloadable result | 453 local tests and coverage, green PR/main CI with browser/container checks, external HTTPS smoke 37587725694 and production browser | COMPLETE for TEST_FIXTURE receipt inspection. Live provenance remains BLOCKED |
 
 ## Implemented in gate 0
 

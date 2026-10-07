@@ -20,6 +20,10 @@ The source fixture includes an invented fill and invented transfer/block evidenc
 
 Tests cover tampered summaries/provenance/checksum text, duplicate fields, deep structures, upload bounds, hostile origin, UTF-8/encoding failures, stream cancellation and both adapters. Browser verification covers the full demo/upload/API/report flow, downloads, rejection, retry, clearing/races, direct navigation and overflow at five widths. External deployment verification checks the deployed source fixture and endpoint, tampering, duplicate fields and size rejection.
 
-Local verification passed 453 tests and coverage. The local browser could not start and its installation was blocked by environment permissions/TLS trust, so no local browser pass is claimed. Remote CI and external HTTPS evidence must be recorded before counting this release complete.
+Local verification passed 453 tests and coverage. The local browser could not start and its installation was blocked by environment permissions/TLS trust, so no local browser pass is claimed. [PR CI 37587397123](https://github.com/Tajudeeen/remain/actions/runs/37587397123) and [main CI 37587576556](https://github.com/Tajudeeen/remain/actions/runs/37587576556) passed all checks, including the full browser and container smoke. Browser screenshots at 375 and 1440 pixels were downloaded and visually inspected. [External HTTPS smoke 37587725694](https://github.com/Tajudeeen/remain/actions/runs/37587725694) passed at 07:30:36 UTC, with health SHA matching deployed commit `a1e382a62f0310b4c751ca51aedb4984422d6c12`. The production browser independently loaded and checked the demo, showing three events, 75 stock raw units, matched fixture accounting and the unauthenticated boundary. See [deployment record](netlify-deployment.md).
 
 Netlify's documented public `COMMIT_REF` is bundled at build time into the function build identity. This prevents the historical `REMAIN_BUILD_SHA` runtime setting from labelling a new release with an old commit. That SHA identifies an artifact, never authenticity of the receipt contents. Documentation: https://docs.netlify.com/build/configure-builds/environment-variables/.
+
+Production browser capture, 2026-10-07. Fictional receipt result with the unauthenticated boundary visible:
+
+![Production fixture receipt inspection](images/receipt-workspace-20261007.jpg)
