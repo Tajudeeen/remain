@@ -66,5 +66,7 @@ Live held-position RFQ, vendor semantics and settlement remain pending.
 Local verification on 2026-10-07 passed `npm run verify` and coverage with
 603 tests, zero failures and no skipped tests. The data-record guard, Node
 server, Netlify adapter and deployment-wait module each have 100% line
-coverage. These are fixture results. Remote CI and a published exact-build
-HTTPS smoke are still required before marking the release complete.
+coverage. These are fixture results. [PR #23](https://github.com/Tajudeeen/remain/pull/23),
+[main CI 37601461126](https://github.com/Tajudeeen/remain/actions/runs/37601461126)
+and [exact-build HTTPS smoke 37601461211](https://github.com/Tajudeeen/remain/actions/runs/37601461211)
+passed. See the [production release record](netlify-deployment.md#request-boundary-release-2026-10-07-0934-utc).
