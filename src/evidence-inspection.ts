@@ -1,7 +1,7 @@
 import { isErrorCode, isSchemaCheck, type ErrorCode } from './errors.ts';
 import { isMarketStatus } from './validation.ts';
 
-export type EvidenceKind = 'discovery' | 'smoke';
+export type EvidenceKind = 'discovery' | 'smoke' | 'market';
 export class EvidenceInspectionError extends Error {
   constructor() { super('Local evidence could not be safely inspected.'); }
 }
@@ -46,6 +46,7 @@ export function inspectEvidence(value: unknown, kind: EvidenceKind, now = Date.n
     kind, runId: report.runId, startedAt: report.startedAt, reportStatus: report.status as 'passed' | 'partial' | 'blocked',
     reportedMode: report.mode, ageSeconds, freshness: ageSeconds > 900 ? 'historical' as const : 'recent' as const,
     liveGate: 'UNVERIFIED' as const, executionEnabled: false as const };
+  if (kind === 'market' && (report.scope !== 'SELECTED_STOCK_MARKET_READ_ONLY' || report.liveFeasibility !== 'NOT_ESTABLISHED')) fail();
   if (report.status === 'blocked') {
     const error = object(report.error);
     if (!isErrorCode(error.code)) fail();
@@ -53,6 +54,23 @@ export function inspectEvidence(value: unknown, kind: EvidenceKind, now = Date.n
     return { ...base, error: { code: error.code,
       ...(isSchemaCheck(error.validationCheck) ? { validationCheck: error.validationCheck } : {}) },
       nextStep: errorAdvice(error.code) };
+  }
+  if (kind === 'market') {
+    const checks = report.checks;
+    if (report.status !== 'passed' || !Array.isArray(checks) || checks.length !== 2 ||
+      checks[0] !== 'supported_bsc_stock_identity' || checks[1] !== 'fresh_selected_stock_market_read') fail();
+    const token = object(report.token);
+    const market = object(report.market);
+    if (token.chain !== '56' || typeof token.tokenAddress !== 'string' || !/^0x[0-9a-f]{40}$/i.test(token.tokenAddress) || /^0x0{40}$/i.test(token.tokenAddress)) fail();
+    if (!isMarketStatus(market.marketStatus) || market.marketStatus === 'pause' || typeof market.openState !== 'boolean') fail();
+    if (typeof market.observedAt !== 'string' || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(market.observedAt)) fail();
+    const observed = Date.parse(market.observedAt);
+    if (!Number.isFinite(observed) || new Date(observed).toISOString() !== market.observedAt || observed > now + 300_000) fail();
+    return { ...base, scope: 'SELECTED_STOCK_MARKET_READ_ONLY' as const, liveFeasibility: 'NOT_ESTABLISHED' as const,
+      token: { chain: '56' as const, tokenAddress: token.tokenAddress.toLowerCase() },
+      market: { marketStatus: market.marketStatus, openState: market.openState, observedAt: market.observedAt },
+      marketObservationAgeSeconds: Math.max(0, Math.floor((now - observed) / 1000)),
+      checks: [...checks], nextStep: 'HELD_POSITION_RFQ_STILL_REQUIRED' as const };
   }
   // Older passed catalogs do not contain the new identity-only scope. Keep
   // them visible as historical format without treating their rows as current.

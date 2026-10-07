@@ -3,7 +3,7 @@ import { constants } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { inspectEvidence, type EvidenceKind } from '../src/evidence-inspection.ts';
 
-const pattern = /^binance-(discovery|smoke)-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.json$/i;
+const pattern = /^binance-(discovery|smoke|market)-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.json$/i;
 const evidenceDirectory = resolve('evidence');
 const maxBytes = 2 * 1024 * 1024;
 

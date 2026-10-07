@@ -18,6 +18,43 @@ const unknownStock = { ...stock, marketMetadataStatus: 'unavailable', marketStat
 const smoke = { ...base, checks: ['authenticated_bsc_aggregator', 'supported_bsc_stock_identity', 'market_status_read',
   'wallet_balance_covers_input', 'matching_stock_to_usdt_rfq', 'inspectable_bsc_eip712_structure'],
   observations: [{ private: 'never-emit-secret' }], notes: ['never-emit-secret'] };
+const marketReport = { ...base, scope: 'SELECTED_STOCK_MARKET_READ_ONLY', liveFeasibility: 'NOT_ESTABLISHED',
+  token: { chain: '56', tokenAddress: stock.tokenAddress, secret: 'never-emit-secret' },
+  market: { marketStatus: 'regular', openState: true, observedAt: base.startedAt, secret: 'never-emit-secret' },
+  checks: ['supported_bsc_stock_identity', 'fresh_selected_stock_market_read'], notes: ['never-emit-secret'] };
+
+test('market inspection preserves its limited scope and never promotes it to RFQ feasibility', () => {
+  const summary = inspectEvidence(marketReport, 'market', now + 70_000);
+  assert.equal(summary.liveGate, 'UNVERIFIED');
+  assert.ok('liveFeasibility' in summary);
+  assert.equal(summary.liveFeasibility, 'NOT_ESTABLISHED');
+  assert.equal(summary.nextStep, 'HELD_POSITION_RFQ_STILL_REQUIRED');
+  assert.equal(summary.marketObservationAgeSeconds, 70);
+  assert.equal(JSON.stringify(summary).includes('never-emit-secret'), false);
+});
+
+test('unsafe market scope, missing checks, unknown flags and future observation are rejected', () => {
+  for (const report of [
+    { ...marketReport, scope: 'LIVE_FEASIBILITY' }, { ...marketReport, liveFeasibility: 'PASSED' },
+    { ...marketReport, checks: [] }, { ...marketReport, status: 'partial' },
+    { ...marketReport, token: { ...marketReport.token, chain: '1' } },
+    { ...marketReport, token: { ...marketReport.token, tokenAddress: '0x' + '0'.repeat(40) } },
+    { ...marketReport, market: { ...marketReport.market, marketStatus: null } },
+    { ...marketReport, market: { ...marketReport.market, marketStatus: 'pause' } },
+    { ...marketReport, market: { ...marketReport.market, openState: 'true' } },
+    { ...marketReport, market: { ...marketReport.market, observedAt: new Date(now + 300_001).toISOString() } },
+    { ...marketReport, market: { ...marketReport.market, observedAt: '2026-02-30T01:00:00.000Z' } }
+  ]) assert.throws(() => inspectEvidence(report, 'market', now), EvidenceInspectionError);
+});
+
+test('blocked market report remains inspectable only with the limited scope', () => {
+  const report = { ...marketReport, status: 'blocked', error: { code: 'UPSTREAM_SCHEMA_INVALID', validationCheck: 'MARKET_IDENTITY' } };
+  const summary = inspectEvidence(report, 'market', now);
+  assert.equal(summary.reportStatus, 'blocked');
+  assert.ok('error' in summary);
+  assert.equal(summary.error.validationCheck, 'MARKET_IDENTITY');
+  assert.throws(() => inspectEvidence({ ...report, liveFeasibility: undefined }, 'market', now), EvidenceInspectionError);
+});
 
 test('local evidence projection never certifies the live gate or echoes unknown fields', () => {
   for (const [report, kind] of [[catalog, 'discovery'], [smoke, 'smoke']] as const) {

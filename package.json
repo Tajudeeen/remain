@@ -19,6 +19,7 @@
     "screen:history": "node scripts/screen-history.ts",
     "smoke:binance": "node --env-file-if-exists=.env.local scripts/smoke-binance.ts",
     "discover:binance": "node --env-file-if-exists=.env.local scripts/discover-binance.ts",
+    "market:binance": "node --env-file-if-exists=.env.local scripts/check-binance-market.ts",
     "inspect:binance": "node scripts/inspect-binance.ts",
     "rehearse:plan": "node scripts/rehearse-plan.ts",
     "rehearse:orders": "node scripts/rehearse-orders.ts",

@@ -123,7 +123,9 @@ for (const [freshStatus, code, check] of [
   [{ openState: true, marketStatus: 'unexpected-state' }, 'UPSTREAM_SCHEMA_INVALID', 'MARKET_STATUS'],
   [{ openState: false, marketStatus: 'pause', reasonCode: 'MARKET_PAUSED' }, 'MARKET_BLOCKED', undefined],
   [{ ...status, reasonCode: 'MARKET_MAINTENANCE' }, 'MARKET_BLOCKED', undefined],
-  [{ ...status, reasonCode: 'ASSET_LIMITED' }, 'MARKET_BLOCKED', undefined]
+  [{ ...status, reasonCode: 'ASSET_LIMITED' }, 'MARKET_BLOCKED', undefined],
+  [{ ...status, reasonCode: ['TRADING'] }, 'MARKET_BLOCKED', undefined],
+  [{ ...status, reasonCode: { toString: () => 'TRADING' } }, 'MARKET_BLOCKED', undefined]
 ] as const) {
   test(`fresh market rejection ${code}/${check} stops before wallet, quote or build`, async () => {
     const f = fixtures({ '/api/v1/dex/market/rwa/underlying-market': {
@@ -139,6 +141,24 @@ for (const [freshStatus, code, check] of [
     assert.equal(JSON.stringify(report).includes('unexpected-state'), false);
   });
 }
+test('nonprimitive catalog issuer cannot reach fresh market, wallet or quote', async () => {
+  const f = fixtures({ '/api/v1/dex/market/rwa/tokens': [{ binanceChainId: '56', tokenContractAddress: token,
+    assetType: 1, platformId: ['ondo'], decimals: 18, tokenSymbol: 'FIXTURE', underlyingTicker: 'FIXTURE' }] });
+  const report = await runFeasibility(env, f.reader);
+  assert.equal(report.error?.code, 'UNSUPPORTED_ASSET');
+  assert.equal(f.calls.length, 2);
+});
+test('fresh market identity mismatch blocks held-position feasibility before balances or quotes', async () => {
+  for (const data of [null, { binanceChainId: '1', tokenContractAddress: token, statusInfo: status },
+    { binanceChainId: '56', tokenContractAddress: wallet, statusInfo: status }]) {
+    const f = fixtures({ '/api/v1/dex/market/rwa/underlying-market': data });
+    const report = await runFeasibility(env, f.reader);
+    assert.equal(report.error?.code, 'UPSTREAM_SCHEMA_INVALID');
+    assert.equal(report.error?.validationCheck, data === null ? 'MARKET_RESPONSE' : 'MARKET_IDENTITY');
+    assert.equal(f.calls.length, 3);
+    assert.ok(!f.calls.some((path) => path.includes('balance') || path.endsWith('/quote') || path.endsWith('/swap')));
+  }
+});
 test('malformed address and zero address reject', () => {
   assert.throws(() => address('0x123')); assert.throws(() => address(`0x${'0'.repeat(40)}`));
 });

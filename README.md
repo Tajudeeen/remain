@@ -96,13 +96,22 @@ First discover supported public stock metadata. This requires only those two cre
 npm run discover:binance
 ```
 
+If you do not hold a stock yet, check one discovered token's fresh market data instead of running the held-position smoke. Pass the public stock contract explicitly:
+
+```sh
+npm run market:binance -- 0xYOUR_DISCOVERED_STOCK_CONTRACT
+npm run inspect:binance
+```
+
+This uses only the API key and secret. Your wallet and raw sell amount are ignored. It validates the selected BSC stock identity, then the token-specific fresh market response, and saves `evidence/binance-market-<run-id>.json`. Unknown, paused, restricted, stale or mismatched responses remain blocked. A pass means this limited market read succeeded, with `scope: SELECTED_STOCK_MARKET_READ_ONLY`, `liveFeasibility: NOT_ESTABLISHED` and execution disabled. Closed-market data can be readable without granting trading permission. It makes no balance, quote, build, signing or submission call. See [holding-free market checks](docs/access-troubleshooting.md#market-check-without-a-stock-holding).
+
 Inspect the newest local discovery or smoke report without credentials or networking:
 
 ```sh
 npm run inspect:binance
 ```
 
-The inspector chooses the report's start time, marks old reports historical, summarizes fixed validation labels and caps affected stock samples at five. It never echoes arbitrary error text, notes, raw payloads or balances. Files are untrusted local claims, so every summary keeps `liveGate: UNVERIFIED`. Exit 1 preserves blocked, partial, fixture, historical, legacy or empty-catalog status. Exit 2 means missing/unsafe evidence. Exit 0 only means a recent self-reported pass was inspected, not that Gate 0 closed. To inspect a specific saved report, pass its path after `--`. See [local evidence inspection](docs/access-troubleshooting.md#inspect-the-newest-local-result).
+The inspector chooses the newest discovery, market or smoke report by start time, marks old reports historical, summarizes fixed validation labels and caps affected stock samples at five. It never echoes arbitrary error text, notes, raw payloads or balances. Files are untrusted local claims, so every summary keeps `liveGate: UNVERIFIED`. Exit 1 preserves blocked, partial, fixture, historical, legacy or empty-catalog status. Exit 2 means missing/unsafe evidence. Exit 0 only means a recent self-reported pass was inspected, not that Gate 0 closed. Market summaries show observation age separately and leave held-position RFQ pending. To inspect a specific saved report, pass its path after `--`. See [local evidence inspection](docs/access-troubleshooting.md#inspect-the-newest-local-result).
 
 Then configure these three non-secret values locally or in GitHub Actions repository variables:
 

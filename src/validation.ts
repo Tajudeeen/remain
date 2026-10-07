@@ -44,7 +44,7 @@ export function readConfig(env: Record<string, string | undefined>): SmokeConfig
 
 export function findStock(data: unknown, token: string): Record<string, unknown> {
   const found = array(data).map(record).find((v) => v.binanceChainId === BSC_CHAIN && typeof v.tokenContractAddress === 'string' && v.tokenContractAddress.toLowerCase() === token);
-  if (!found || found.assetType !== 1 || !['ondo', 'bstock', 'xstocks'].includes(String(found.platformId))) throw new RemainError('UNSUPPORTED_ASSET');
+  if (!found || found.assetType !== 1 || typeof found.platformId !== 'string' || !['ondo', 'bstock', 'xstocks'].includes(found.platformId)) throw new RemainError('UNSUPPORTED_ASSET');
   if (!['string', 'number'].includes(typeof found.decimals)) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
   const decimals = String(found.decimals);
   if (!/^(0|[1-9][0-9]?)$/.test(decimals) || Number(decimals) > 36 || typeof found.tokenSymbol !== 'string' || typeof found.underlyingTicker !== 'string') throw new RemainError('UPSTREAM_SCHEMA_INVALID');
@@ -59,8 +59,23 @@ export function checkMarket(data: unknown): void {
   const status = data as Record<string, unknown>;
   if (typeof status.openState !== 'boolean') throw schemaError('MARKET_OPEN_STATE');
   if (!isMarketStatus(status.marketStatus)) throw schemaError('MARKET_STATUS');
-  if (status.marketStatus === 'pause' || ['MARKET_PAUSED', 'MARKET_MAINTENANCE', 'ASSET_PAUSED', 'ASSET_LIMITED', 'UNSUPPORTED'].includes(String(status.reasonCode))) throw new RemainError('MARKET_BLOCKED');
-  if (status.reasonCode != null && !['TRADING', 'MARKET_CLOSED'].includes(String(status.reasonCode))) throw new RemainError('MARKET_BLOCKED');
+  if (status.marketStatus === 'pause') throw new RemainError('MARKET_BLOCKED');
+  if (status.reasonCode != null && (typeof status.reasonCode !== 'string' || !['TRADING', 'MARKET_CLOSED'].includes(status.reasonCode))) throw new RemainError('MARKET_BLOCKED');
+}
+
+// Shared by the holding-free diagnostic and held-position feasibility path.
+// Matching chain and token are mandatory before interpreting market metadata.
+export function selectedMarket(data: unknown, token: string): { marketStatus: MarketStatus; openState: boolean } {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw schemaError('MARKET_RESPONSE');
+  const market = data as Record<string, unknown>;
+  let contract: string;
+  try { contract = address(market.tokenContractAddress); }
+  catch { throw schemaError('MARKET_IDENTITY'); }
+  if (market.binanceChainId !== BSC_CHAIN || contract !== token) throw schemaError('MARKET_IDENTITY');
+  checkMarket(market.statusInfo);
+  const status = record(market.statusInfo);
+  // checkMarket has validated these fields without coercion.
+  return { marketStatus: status.marketStatus as MarketStatus, openState: status.openState as boolean };
 }
 
 export function walletBalance(data: unknown, wallet: string, token: string): string | undefined {

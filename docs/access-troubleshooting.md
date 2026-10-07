@@ -1,5 +1,23 @@
 # Binance compliance rejection: 40304
 
+## Market check without a stock holding
+
+The owner confirmed on 2026-10-07 that their wallet currently holds no stock. This does not prevent API market-data reads, but the existing held-position smoke must still verify a real balance before requesting any RFQ. Do not fabricate a holding or fill the sell amount with an arbitrary example.
+
+Run the new holding-free check on the owner's approved direct connection. Keep API credentials in the existing ignored `.env.local`. Wallet, held-stock token and raw amount can stay blank. Select a public stock contract from your current discovery output, not a ticker or an inferred wrapper:
+
+```sh
+git pull --ff-only origin main
+env -u BINANCE_WEB3_API_KEY -u BINANCE_WEB3_SECRET_KEY npm run market:binance -- 0xYOUR_DISCOVERED_STOCK_CONTRACT
+npm run inspect:binance
+```
+
+The `env -u` form is for Git Bash. This is a diagnostic selection, not a recommendation to buy that token or a claim of ownership. Exactly one nonzero contract argument is accepted. The command needs only API credentials. It validates the stock through the current BSC RWA list and then requests `/rwa/underlying-market` bound to that exact chain and contract. The official [RWA schema](https://web3.binance.com/en/dev-docs/catalog/web3-wallet/api/rest-api/rwa-data) documents these token-specific query fields and six market-status values. Catalog market state remains advisory. Identity and reason codes are checked without coercing objects or arrays into strings.
+
+Fresh unknown/malformed market data, halted or restricted states, identity mismatches and stale envelope timestamps block the result. A closed but otherwise valid response can pass this read-only check. `passed` means only that selected-token market metadata was read and validated, never that the underlying exchange is independently verified open, that an order is executable, or that BellGuard authorized a sale. Endpoint observation `passed` records accepted transport/envelope/timestamp data, while the report's checks separately record semantic validation. No prices or premium-to-TradFi claims are emitted.
+
+Every report keeps `scope: SELECTED_STOCK_MARKET_READ_ONLY`, `liveFeasibility: NOT_ESTABLISHED` and `executionEnabled: false`. It writes sanitized `evidence/binance-market-<run-id>.json`, with endpoint checks, response checksums, selected public contract and validated market flags. There are no wallet, balance, quote, build, approval, signature, submit or broadcast requests. Checksums are local response digests, not authenticated attestations. Injected-reader and mocked-fetch tests are synthetic evidence. Successful live market output still needs the owner's real PC run, and held-position RFQ/build evidence remains required for Gate 0.
+
 ## Inspect the newest local result
 
 Run from the updated Remain repository directory on your own PC:
@@ -12,13 +30,13 @@ npm run inspect:binance
 
 The `env -u` command is for Git Bash. It clears inherited credentials for that invocation so Node reads the existing `.env.local`. It does not edit the file. PowerShell users can run `npm run discover:binance` after confirming no stale process-level credential overrides. Use your approved direct connection. Never share `.env.local`.
 
-The inspector needs no credentials and makes no network requests. It reads only matching discovery/smoke filenames in ignored `evidence/`, chooses the newest report by `startedAt`, and shows its run ID, timestamp, self-reported status, age, fixed error/check labels, market issue counts and at most five affected public contracts. Copying an old file does not make it a new observation. It ignores unknown fields rather than echoing their content. Malformed candidates stop automatic selection instead of silently falling back to an older pass. Use `npm run inspect:binance -- evidence/binance-discovery-<run-id>.json` for an explicit report.
+The inspector needs no credentials and makes no network requests. It reads only matching discovery/market/smoke filenames in ignored `evidence/`, chooses the newest report by `startedAt`, and shows its run ID, timestamp, self-reported status, age, fixed error/check labels, market issue counts and at most five affected public contracts. Market reports preserve the limited scope and show observation age separately. Copying an old file does not make it a new observation. It ignores unknown fields rather than echoing their content. Malformed candidates stop automatic selection instead of silently falling back to an older pass. Use `npm run inspect:binance -- evidence/binance-discovery-<run-id>.json` for an explicit report.
 
 All summaries retain `source: LOCAL_FILE_UNAUTHENTICATED`, `liveGate: UNVERIFIED` and `executionEnabled: false`. A file can be edited, fabricated or produced by a mock. The inspector is diagnostic tooling, not authenticated evidence, a trading gate or a signature verifier. A recent timestamp does not refresh an expired quote or establish tradability. Reports older than 15 minutes are marked historical for troubleshooting. This cutoff is unrelated to quote validity.
 
 | Exit | Meaning |
 | --- | --- |
-| 0 | Inspected a recent self-reported live read-only pass with current format and nonempty discovery coverage, or the exact smoke check list. This does not close Gate 0. |
+| 0 | Inspected a recent self-reported live read-only pass with current nonempty discovery, the limited market check, or the exact smoke check list. This does not close Gate 0. |
 | 1 | Inspected a blocked, partial, fixture, historical, legacy or empty-catalog report. |
 | 2 | Missing, oversized, malformed or inconsistent evidence, unsupported path, symlink, future clock anomaly, or too many candidate files. No raw contents are printed. |
 
@@ -57,6 +75,7 @@ The previous generic error hid which check failed. Errors now emit an additional
 | `DISCOVERY_DECIMALS`, `DISCOVERY_ADDRESS` | Bounded decimals and a valid nonzero token contract |
 | `DISCOVERY_STATUS`, `DISCOVERY_MARKET_STATUS`, `DISCOVERY_OPEN_STATE` | Status object with a string market status and boolean open state |
 | `MARKET_RECORD`, `MARKET_STATUS`, `MARKET_OPEN_STATE` | Strict fresh market response required by feasibility |
+| `MARKET_RESPONSE`, `MARKET_IDENTITY` | Token-specific response object with matching BSC chain and contract |
 
 Update your existing checkout with `git pull --ff-only origin main` while on `main`, then run `npm run discover:binance` from the repository directory. Keep credentials in `.env.local`, not only `.env`. Do not copy the blank template over a file that already contains credentials. Share only the sanitized report from the new run. Do not share raw API responses or `.env.local`. If a check fails, investigate that specific shape against the official [RWA REST schema](https://web3.binance.com/en/dev-docs/catalog/web3-wallet/api/rest-api/rwa-data); do not coerce an unobserved alternative shape merely to obtain a pass.
 
