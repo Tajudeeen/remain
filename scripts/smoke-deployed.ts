@@ -39,6 +39,15 @@ const browserResponse = await fetch(new URL('/response.js', base), { redirect: '
 assert.equal(browserResponse.status, 200);
 assert.match(browserResponse.headers.get('content-type') ?? '', /(?:java|ecma)script/);
 assert.match(await browserResponse.text(), /export function validatePlanningRecord/);
+for (const file of ['live.js', 'wallet.js']) {
+  const response = await fetch(new URL('/' + file, base), { redirect: 'error', signal: AbortSignal.timeout(5000) });
+  assert.equal(response.status, 200); assert.match(response.headers.get('content-type') ?? '', /(?:java|ecma)script/);
+}
+const readiness = await fetch(new URL('/api/live/status', base), { redirect: 'error', signal: AbortSignal.timeout(5000) });
+assert.equal(readiness.status, 200);
+assert.deepEqual(await readJson(readiness), { kind: 'REMAIN_INTEGRATION_READINESS', mode: 'READ_ONLY_SETUP', inspectionAvailable: false, deployment: 'NOT_CONFIGURED', executionEnabled: false, liveGate: 'UNVERIFIED', signatureSemantics: 'UNVERIFIED' });
+const inspect = await fetch(new URL('/api/live/inspect', base), { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(5000) });
+assert.equal(inspect.status, 503); assert.deepEqual(await readJson(inspect), { code: 'LOCAL_SETUP_REQUIRED' });
 
 const input = { cashTarget: '25', retainPercent: 70, maxImpactPercent: '0.50', market: 'regular', allowClosedMarket: false };
 const planResponse = await fetch(new URL('/api/rehearse', base), {
@@ -108,5 +117,5 @@ console.log(JSON.stringify({
   liveGate: 'BLOCKED',
   baseOrigin: base.origin,
   buildSha: healthBody.buildSha,
-  checks: ['health-build', 'static-page', 'browser-response-module', 'planning-accounting', 'paused-market-guard', 'invalid-input', 'planner-duplicate-fields', 'planner-enum-coercion', 'receipt-replay', 'receipt-tampering', 'receipt-duplicate-fields', 'receipt-size-limit', 'execution-endpoints-absent']
+  checks: ['health-build', 'static-page', 'browser-response-module', 'integration-modules', 'public-inspector-locked', 'planning-accounting', 'paused-market-guard', 'invalid-input', 'planner-duplicate-fields', 'planner-enum-coercion', 'receipt-replay', 'receipt-tampering', 'receipt-duplicate-fields', 'receipt-size-limit', 'execution-endpoints-absent']
 }, null, 2));

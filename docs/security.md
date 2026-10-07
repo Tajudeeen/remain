@@ -54,3 +54,10 @@ The connected Vercel context returned no deployable team for this session, so no
 Gate 10 bounds response reads and validates receipt facts before any success UI or download is published. Planner response amounts must agree with the submitted target, retained floor and fixed fictional position. Duplicate fields, malformed UTF-8 and contradictory receipt success reports are rejected. Failed reads cancel without awaiting untrusted cancellation hooks, release reader locks and leave a retry path. Snapshot expiry is capped by a monotonic clock as well as the stated wall-clock boundary.
 
 The browser accepts fixture data only. Its checks do not authenticate a response, rerun the whole solver, recompute a plan hash or establish a live trade. A malicious source can fabricate a consistent fixture. Platform buffering, main-thread suspension and hostile Proxy objects are outside these JavaScript guarantees. See [the detailed boundary contract](browser-response.md).
+
+
+## Prepared integration boundary
+
+The optional account adapter reads only accounts and chain ID after a user click. It never requests a signature, switches chains or submits a transaction. Account discovery is not authenticated ownership. Every account/chain event and input edit invalidates prior inspection state.
+
+The owner-only inspector requires an explicit local opt-in and loopback binding. Host, Origin, peer address and cross-site checks precede exact bounded input parsing. It calls only existing read-only endpoints and projects a fixed redacted report. Public Netlify routes cannot run this callback or load its configuration factory. A complete structural pass retains unverified signature semantics and disabled execution. These invariants and remaining vendor/settlement work are detailed in [integration setup](integration-workspace.md).

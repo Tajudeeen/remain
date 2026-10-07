@@ -1,4 +1,5 @@
 import './proof.js';
+import './live.js';
 import { readFixtureJSON, validatePlanningRecord } from './response.js';
 
 const $ = (id) => document.getElementById(id);
@@ -9,15 +10,18 @@ function route(focus = false) {
   const hash = location.hash;
   const dashboard = ['#dashboard', '#planner', '#cash-target'].includes(hash);
   const proof = ['#proof', '#receipt'].includes(hash);
-  $('landing-view').hidden = dashboard || proof;
+  const live = hash === '#live';
+  $('landing-view').hidden = dashboard || proof || live;
   $('dashboard-view').hidden = !dashboard;
   $('proof-view').hidden = !proof;
-  document.title = proof ? 'Receipt inspection | Remain' : dashboard ? 'Cash planner | Remain' : 'Remain | Raise cash. Stay invested.';
+  $('live-view').hidden = !live;
+  $('fixture-banner').hidden = live;
+  document.title = live ? 'Integration setup | Remain' : proof ? 'Receipt inspection | Remain' : dashboard ? 'Cash planner | Remain' : 'Remain | Raise cash. Stay invested.';
   for (const link of document.querySelectorAll('nav a')) {
-    if (link.getAttribute('href') === (proof ? '#proof' : dashboard ? '#dashboard' : hash)) link.setAttribute('aria-current', 'page');
+    if (link.getAttribute('href') === (live ? '#live' : proof ? '#proof' : dashboard ? '#dashboard' : hash)) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   }
-  const target = hash === '#how-it-works' ? $('how-title') : hash === '#about' ? $('trust-title') : proof ? $('proof-title') : dashboard ? $('intro-title') : $('landing-title');
+  const target = live ? $('live-title') : hash === '#how-it-works' ? $('how-title') : hash === '#about' ? $('trust-title') : proof ? $('proof-title') : dashboard ? $('intro-title') : $('landing-title');
   if (focus) { target.focus({ preventScroll: true }); target.scrollIntoView({ behavior: 'auto', block: 'start' }); }
 }
 window.addEventListener('hashchange', () => route(true));

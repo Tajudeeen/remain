@@ -46,3 +46,23 @@
 @media(max-width:1024px){nav{gap:20px}.receipt-source,.receipt-result{padding:26px}}
 @media(max-width:768px){.topbar nav{flex-wrap:wrap;gap:12px 18px}.receipt-workspace{grid-template-columns:1fr}.receipt-result{border-top:1px solid var(--line)}.receipt-paper{max-width:320px}.receipt-result>h2{font-size:38px}}
 @media(max-width:375px){.receipt-source,.receipt-result{padding:19px}.receipt-result>h2{font-size:34px}.receipt-facts{gap:0 12px}.receipt-facts dd{font-size:15px}}
+
+/* A setup bench, with the private read path beside its evidence gates. */
+.integration-grid{display:grid;grid-template-columns:.95fr 1.05fr;border:1px solid var(--line);margin-top:24px}
+.integration-source{min-width:0;padding:32px;background:var(--cream);color:var(--dark);color-scheme:light}
+.integration-trail{min-width:0;padding:32px;background:var(--panel)}.integration-trail .step{color:var(--muted)}
+.setup-server{padding:25px 0;border-bottom:1px solid #cdcfbf}.setup-server h2{font-size:24px;letter-spacing:-.8px;font-weight:500;margin:0 0 10px}
+.setup-server p,.wallet-card p{color:#58604f;font-size:11px;line-height:1.8;margin:0 0 17px}.integration-source .secondary{border-color:#b3b7a6;color:var(--dark)}.integration-source .secondary:hover:enabled{background:#dcded0}
+.wallet-card{padding:25px 0;border-bottom:1px solid #cdcfbf;margin-bottom:24px}.setup-label{font-size:8px;letter-spacing:1.1px;color:#715716}.wallet-card h3{font-size:15px;font-weight:500;margin:13px 0 10px}.wallet-card code{display:block;font-size:11px;overflow-wrap:anywhere;color:#58604f}
+.wallet-actions{display:flex;gap:10px;margin:19px 0 12px}.wallet-actions .primary{flex:1;font-size:11px;margin:0}.wallet-actions .secondary{width:auto;font-size:11px}.wallet-card p{font-size:10px;margin-bottom:0}
+#live-form>input{display:block;width:100%;border:1px solid #b3b7a6;padding:13px 12px;background:#faf9f3;color:var(--dark);font:inherit;font-size:12px;margin:11px 0 0;border-radius:0}
+#live-form .field-label{font-size:12px}#live-form .field-help{font-size:10px;line-height:1.8;color:#58604f;margin:8px 0 22px}#live-form .primary{margin-top:0}.integration-source .form-message{color:#58604f;line-height:1.8}.integration-source .form-message.error{color:#8b371f}
+.integration-source button:focus-visible,.integration-source input:focus-visible{outline-color:#765100}
+.integration-trail>h2{font-size:clamp(30px,3.3vw,46px);font-weight:500;letter-spacing:-1.6px;line-height:1.1;margin:32px 0 27px}
+.activation-trail{list-style:none;padding:0;margin:0}.activation-trail li{display:flex;gap:19px;border-top:1px solid var(--line);padding:19px 0}.activation-trail li>span{font-size:10px;color:var(--yellow);padding-top:2px}.activation-trail h3{font-size:13px;font-weight:500;margin:0 0 7px}.activation-trail p{font-size:11px;line-height:1.8;color:var(--muted);margin:0 0 11px}
+.setup-state{display:inline-block;font-size:8px;letter-spacing:.9px;color:#bac5a8}.setup-state.locked{color:#d4bc79}
+.setup-instructions{border:1px solid var(--line);margin-top:22px;padding:17px}.setup-instructions summary{display:flex;justify-content:space-between;gap:15px;cursor:pointer;font-size:11px;color:var(--yellow);list-style:none}.setup-instructions ol{padding-left:17px;margin:20px 0 0}.setup-instructions li{font-size:10px;line-height:1.9;color:var(--muted);margin:10px 0}.setup-instructions code{font-size:10px;color:var(--ink);overflow-wrap:anywhere}.setup-instructions p{font-size:10px;line-height:1.8;color:var(--muted);margin:16px 0 0}
+.inspection-result{border:1px solid #665931;background:#28271c;padding:19px;margin-top:22px}.inspection-result .setup-label{color:#d4bc79}.inspection-result h3{font-size:16px;font-weight:500;line-height:1.5;margin:13px 0}.inspection-result ol{list-style:none;padding:0;font-size:10px;line-height:1.8;color:var(--muted)}.inspection-result li{border-top:1px solid #4b4730;padding:8px 0}.inspection-result p{font-size:10px;line-height:1.8;color:#d4c599;overflow-wrap:anywhere}
+@media(max-width:1024px){.integration-source,.integration-trail{padding:26px}nav{gap:16px}}
+@media(max-width:768px){.integration-grid{grid-template-columns:1fr}.integration-trail{border-top:1px solid var(--line)}.integration-trail>h2{font-size:38px}}
+@media(max-width:375px){.integration-source,.integration-trail{padding:19px}.wallet-actions .primary{padding:12px;font-size:10px}.integration-trail>h2{font-size:34px}}

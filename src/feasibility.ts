@@ -17,9 +17,9 @@ export type SmokeReport = {
   notes: string[];
   rfqReview?: RfqReview;
 };
-export type Reader = { get(endpoint: string, query?: Query): Promise<CallResult> };
+export type Reader = { get(endpoint: string, query?: Query, signal?: AbortSignal): Promise<CallResult> };
 
-export async function runFeasibility(env: Record<string, string | undefined>, reader?: Reader): Promise<SmokeReport> {
+export async function runFeasibility(env: Record<string, string | undefined>, reader?: Reader, signal?: AbortSignal): Promise<SmokeReport> {
   const report: SmokeReport = {
     runId: randomUUID(), mode: reader ? 'TEST_FIXTURE' : 'LIVE_READ_ONLY', startedAt: new Date().toISOString(),
     status: 'blocked', executionEnabled: false, observations: [], checks: [],
@@ -32,12 +32,15 @@ export async function runFeasibility(env: Record<string, string | undefined>, re
   };
   try {
     const config = readConfig(env);
+    if (signal?.aborted) throw new RemainError('REQUEST_CANCELLED');
     const client = reader ?? new ReadOnlyBinanceClient({ apiKey: config.apiKey, secretKey: config.secretKey });
     async function call(endpoint: string, query: Query): Promise<CallResult> {
       const observation: Observation = { endpoint, startedAt: new Date().toISOString(), status: 'blocked' };
       report.observations.push(observation);
       try {
-        const result = await client.get(endpoint, query);
+        if (signal?.aborted) throw new RemainError('REQUEST_CANCELLED');
+        const result = await client.get(endpoint, query, signal);
+        if (signal?.aborted) throw new RemainError('REQUEST_CANCELLED');
         observation.status = 'passed'; observation.latencyMs = result.latencyMs; observation.responseHash = result.responseHash;
         return result;
       } catch (error) { observation.error = safeError(error); throw error; }

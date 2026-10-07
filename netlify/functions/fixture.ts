@@ -13,6 +13,6 @@ export default async (request: Request, context: Context) => {
 };
 
 export const config: Config = {
-  path: ['/healthz', '/api/rehearse', '/api/receipt/verify'],
+  path: ['/healthz', '/api/rehearse', '/api/receipt/verify', '/api/live/status', '/api/live/inspect'],
   rateLimit: { windowLimit: 30, windowSize: 60, aggregateBy: ['ip', 'domain'] }
 };
