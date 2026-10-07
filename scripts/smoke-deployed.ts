@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { inspectFixtureReceipt } from '../src/receipts/inspection.ts';
 
 function baseUrl(value: string | undefined): URL {
   if (!value) throw new Error('REMAIN_BASE_URL_MISSING');
@@ -63,6 +64,24 @@ for (const [extra, expectedStatus] of [[{ executionEnabled: true }, 400], [{ mar
   }
 }
 
+const sampleResponse = await fetch(new URL('/demo-receipt.json', base), { redirect: 'error', signal: AbortSignal.timeout(5000) });
+assert.equal(sampleResponse.status, 200);
+const sample = await sampleResponse.text();
+assert.equal(inspectFixtureReceipt(sample).status, 'CONSISTENT_FIXTURE');
+for (const [body, expected] of [[sample, 'CONSISTENT_FIXTURE'],
+  [sample.replace('"stockRemainingRaw":"75"', '"stockRemainingRaw":"74"'), 'INVALID_RECEIPT'],
+  ['{"mode":"TEST_FIXTURE","mode":"LIVE"}', 'INVALID_RECEIPT']] as const) {
+  const response = await fetch(new URL('/api/receipt/verify', base), { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body, redirect: 'error', signal: AbortSignal.timeout(5000) });
+  assert.equal(response.status, 200); assert.equal(response.headers.get('access-control-allow-origin'), null);
+  const checked = await readJson(response); assert.equal(checked.status, expected);
+  assert.equal(checked.source, 'UNAUTHENTICATED'); assert.equal(checked.executionEnabled, false);
+  if (expected === 'INVALID_RECEIPT') assert.equal(checked.facts, null);
+}
+const oversized = await fetch(new URL('/api/receipt/verify', base), { method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: ' '.repeat(262145), redirect: 'error', signal: AbortSignal.timeout(5000) });
+assert.equal(oversized.status, 413);
+
 for (const path of ['/api/submit', '/api/sign', '/api/order']) {
   const response = await fetch(new URL(path, base), { redirect: 'error', signal: AbortSignal.timeout(5000) });
   assert.equal(response.status, 404);
@@ -75,5 +94,5 @@ console.log(JSON.stringify({
   liveGate: 'BLOCKED',
   baseOrigin: base.origin,
   buildSha: healthBody.buildSha,
-  checks: ['health-build', 'static-page', 'planning-accounting', 'paused-market-guard', 'invalid-input', 'execution-endpoints-absent']
+  checks: ['health-build', 'static-page', 'planning-accounting', 'paused-market-guard', 'invalid-input', 'receipt-replay', 'receipt-tampering', 'receipt-duplicate-fields', 'receipt-size-limit', 'execution-endpoints-absent']
 }, null, 2));

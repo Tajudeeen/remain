@@ -1,10 +1,14 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { rehearsePlan, RehearsalError } from './plan.ts';
+import { inspectFixtureReceipt } from '../receipts/inspection.ts';
+import { RECEIPT_MAX_BYTES } from '../receipts/canonical.ts';
 
 const assets = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']], ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
-  ['/styles.css', ['styles.css', 'text/css; charset=utf-8']], ['/logo.png', ['logo.png', 'image/png']]
+  ['/styles.css', ['styles.css', 'text/css; charset=utf-8']], ['/logo.png', ['logo.png', 'image/png']],
+  ['/proof.js', ['proof.js', 'text/javascript; charset=utf-8']],
+  ['/demo-receipt.json', ['demo-receipt.json', 'application/json; charset=utf-8']]
 ]);
 
 export type RehearsalServerOptions = Readonly<{
@@ -25,15 +29,18 @@ function json(response: ServerResponse, status: number, value: unknown, head = f
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': Buffer.byteLength(body) });
   response.end(head ? undefined : body);
 }
-function readBody(request: IncomingMessage): Promise<string> {
+function readBody(request: IncomingMessage, limit: number): Promise<string> {
   return new Promise((resolve, reject) => {
     let size = 0; const chunks: Buffer[] = []; let done = false;
     request.on('data', (chunk: Buffer) => {
       if (done) return; size += chunk.length;
-      if (size > 4096) { done = true; chunks.length = 0; reject(new RehearsalError('BODY_TOO_LARGE')); return; }
+      if (size > limit) { done = true; chunks.length = 0; reject(new RehearsalError('BODY_TOO_LARGE')); return; }
       chunks.push(chunk);
     });
-    request.on('end', () => { if (!done) { done = true; resolve(Buffer.concat(chunks).toString('utf8')); } });
+    request.on('end', () => { if (!done) { done = true;
+      try { resolve(new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks))); }
+      catch { reject(new RehearsalError('INVALID_REQUEST')); }
+    } });
     request.on('error', () => { if (!done) { done = true; reject(new RehearsalError('INVALID_REQUEST')); } });
     request.on('aborted', () => { if (!done) { done = true; reject(new RehearsalError('INVALID_REQUEST')); } });
   });
@@ -102,11 +109,14 @@ export function createRehearsalServer(options: RehearsalServerOptions = {}) {
       } catch { json(response, 503, { code: 'ASSET_UNAVAILABLE' }); }
       return;
     }
-    if (request.url !== '/api/rehearse') { json(response, 404, { code: 'NOT_FOUND' }); return; }
+    if (request.url !== '/api/rehearse' && request.url !== '/api/receipt/verify') { json(response, 404, { code: 'NOT_FOUND' }); return; }
+    const receipt = request.url === '/api/receipt/verify';
+    const limit = receipt ? RECEIPT_MAX_BYTES : 4096;
     if (request.method !== 'POST') { response.setHeader('Allow', 'POST'); json(response, 405, { code: 'METHOD_REJECTED' }); return; }
     if (!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers['content-type'] ?? '')) { json(response, 415, { code: 'CONTENT_TYPE_REJECTED' }); return; }
     if (request.headers['content-encoding'] && request.headers['content-encoding'] !== 'identity') { json(response, 415, { code: 'ENCODING_REJECTED' }); return; }
-    if (Number(request.headers['content-length'] ?? 0) > 4096) { json(response, 413, { code: 'BODY_TOO_LARGE' }); return; }
+    const length = request.headers['content-length'];
+    if (length && (!/^[0-9]+$/.test(length) || Number(length) > limit)) { json(response, 413, { code: 'BODY_TOO_LARGE' }); return; }
     const now = Date.now();
     if (now - windowStarted >= 60000 || now < windowStarted) { windowStarted = now; requests = 0; }
     if (++requests > 30 || inFlight >= 4) { response.setHeader('Retry-After', '60'); json(response, 429, { code: 'REHEARSAL_LIMIT' }); return; }
@@ -114,7 +124,9 @@ export function createRehearsalServer(options: RehearsalServerOptions = {}) {
     const disconnect = () => { if (!response.writableFinished) controller.abort(); };
     response.on('close', disconnect);
     try {
-      const body = await readBody(request);
+      const body = await readBody(request, limit);
+      controller.signal.throwIfAborted();
+      if (receipt) { json(response, 200, inspectFixtureReceipt(body)); return; }
       const input: unknown = JSON.parse(body);
       json(response, 200, await rehearsePlan(input, controller.signal));
     } catch (error) {

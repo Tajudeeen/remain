@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { createRehearsalServer } from '../src/rehearsal/server.ts';
 import { digest } from '../src/validation.ts';
+import { inspectFixtureReceipt } from '../src/receipts/inspection.ts';
 
 // Run through npm run test:web after agent-browser install. Uses a dedicated
 // empty browser session, fictional data and an ephemeral loopback-only port.
@@ -115,17 +116,69 @@ try {
     await check('document.documentElement.scrollWidth <= window.innerWidth');
     await browser('screenshot', `evidence/rehearsal-${width}.png`, '--full');
   }
+  stage = 'receipt workspace';
+  await browser('click', 'nav a[href="#proof"]');
+  await browser('wait', '--fn', "!document.querySelector('#proof-view').hidden");
+  await check("document.querySelector('#dashboard-view').hidden && document.querySelector('#landing-view').hidden && document.activeElement.id === 'proof-title'");
+  await check("document.querySelector('#receipt-verify').disabled && document.querySelector('#receipt-report').disabled");
+  await browser('click', '#receipt-demo');
+  await browser('wait', '--fn', "document.querySelector('#receipt-status').textContent === 'Consistent fixture'");
+  await check("document.querySelector('#receipt-stock').textContent === '75' && document.querySelector('#receipt-accounting').textContent === 'Matched fixture' && document.querySelector('#receipt-boundary') === null && document.querySelector('.receipt-boundary').textContent.includes('fabricated')");
+  const inspectionDownload = resolve('evidence/rehearsal-inspection.json');
+  await browser('download', '#receipt-report', inspectionDownload);
+  const inspection = JSON.parse(await readFile(inspectionDownload, 'utf8'));
+  assert.equal(inspection.status, 'CONSISTENT_FIXTURE'); assert.equal(inspection.source, 'UNAUTHENTICATED'); assert.equal(inspection.executionEnabled, false);
+  const sampleDownload = resolve('evidence/rehearsal-demo-receipt.json');
+  await browser('download', '.receipt-sample-link', sampleDownload);
+  assert.equal(inspectFixtureReceipt(await readFile(sampleDownload, 'utf8')).status, 'CONSISTENT_FIXTURE');
+  for (const width of [320, 375, 768, 1024, 1440]) {
+    await browser('set', 'viewport', String(width), '1000');
+    await check('document.documentElement.scrollWidth <= window.innerWidth');
+    await browser('screenshot', `evidence/rehearsal-receipt-${width}.png`, '--full');
+  }
+  stage = 'tampered receipt upload';
+  await browser('eval', "(async () => { const r = await (await fetch('/demo-receipt.json')).json(); r.summary.stockRemainingRaw = '74'; const dt = new DataTransfer(); dt.items.add(new File([JSON.stringify(r)], 'tampered.json', {type: 'application/json'})); const input = document.querySelector('#receipt-file'); input.files = dt.files; input.dispatchEvent(new Event('change', {bubbles: true})); })()");
+  await browser('wait', '--fn', "!document.querySelector('#receipt-verify').disabled");
+  await check("document.querySelector('#receipt-status').textContent === 'Awaiting receipt' && document.querySelector('#receipt-report').disabled");
+  await browser('click', '#receipt-verify');
+  await browser('wait', '--fn', "document.querySelector('#receipt-status').textContent === 'Rejected'");
+  await check("document.querySelector('#receipt-facts').hidden && document.querySelector('#receipt-reasons').textContent.includes('recomputed journal')");
+  stage = 'duplicate fields upload';
+  await browser('eval', `(() => { const dt = new DataTransfer(); dt.items.add(new File(['{"mode":"TEST_FIXTURE","mode":"LIVE"}'], 'duplicate.json')); const input = document.querySelector('#receipt-file'); input.files = dt.files; input.dispatchEvent(new Event('change', {bubbles:true})); })()`);
+  await browser('wait', '--fn', "!document.querySelector('#receipt-verify').disabled");
+  await browser('click', '#receipt-verify');
+  await browser('wait', '--fn', "document.querySelector('#receipt-reasons').textContent.includes('Duplicate fields')");
+  stage = 'receipt size limit';
+  await browser('eval', "(() => { const dt = new DataTransfer(); dt.items.add(new File([' '.repeat(262145)], 'large.json')); const input = document.querySelector('#receipt-file'); input.files = dt.files; input.dispatchEvent(new Event('change', {bubbles:true})); })()");
+  await check("document.querySelector('#receipt-verify').disabled && document.querySelector('#receipt-report').disabled && document.querySelector('#receipt-message').textContent.includes('256 KiB')");
+  stage = 'receipt service failure and retry';
+  await browser('eval', "window.fetch = (...args) => String(args[0]) === '/api/receipt/verify' ? Promise.reject(new Error('Fixture service unavailable')) : window.remainRealFetch(...args)");
+  await browser('click', '#receipt-demo');
+  await browser('wait', '--fn', "document.querySelector('#receipt-message').classList.contains('error') && !document.querySelector('#receipt-verify').disabled");
+  await check("document.querySelector('#receipt-report').disabled && document.querySelector('#receipt-facts').hidden");
+  await browser('eval', 'window.fetch = window.remainRealFetch');
+  await browser('click', '#receipt-verify');
+  await browser('wait', '--fn', "document.querySelector('#receipt-status').textContent === 'Consistent fixture'");
+  stage = 'receipt response race and clear';
+  await browser('eval', "window.fetch = async (...args) => { const r = await window.remainRealFetch(...args); if (String(args[0]) === '/api/receipt/verify') await new Promise(resolve => setTimeout(resolve, 500)); return r; }");
+  await browser('click', '#receipt-verify'); await browser('click', '#receipt-clear');
+  await browser('wait', '700');
+  await check("document.querySelector('#receipt-status').textContent === 'Awaiting receipt' && document.querySelector('#receipt-report').disabled && document.querySelector('#receipt-verify').disabled && document.querySelector('#receipt-result').getAttribute('aria-busy') === 'false'");
+  await browser('eval', 'window.fetch = window.remainRealFetch');
   const errors = await browser('errors');
   assert.deepEqual((errors as { errors?: unknown[] }).errors ?? [], [], 'Unexpected browser errors');
   stage = 'direct dashboard link';
   await browser('open', `http://127.0.0.1:${address.port}/#dashboard`);
   await check("!document.querySelector('#dashboard-view').hidden && document.querySelector('#splash').hidden");
+  stage = 'direct receipt link';
+  await browser('open', `http://127.0.0.1:${address.port}/#proof`);
+  await check("!document.querySelector('#proof-view').hidden && document.querySelector('#splash').hidden && document.querySelector('#receipt-report').disabled");
   stage = 'reduced motion';
   await browser('set', 'media', 'light', 'reduced-motion');
   await browser('eval', "sessionStorage.removeItem('remain-introduced')");
   await browser('open', `http://127.0.0.1:${address.port}`);
   await check("matchMedia('(prefers-reduced-motion: reduce)').matches && document.querySelector('#splash').hidden && !document.querySelector('#site-content').inert");
-  console.log('Browser rehearsal passed: landing, splash skip, repeat visit, keyboard entry, route history, direct dashboard link, planning, hard blocks, duplicate input events, changed-input invalidation, checksum download, expiry, request race and both views at five responsive widths. TEST_FIXTURE only.');
+  console.log('Browser rehearsal passed: landing, splash, keyboard/history/direct routes, planning blocks/download/expiry/races, receipt replay/source and report downloads, tampering, duplicate fields, size limits, retry/clear/races, and all three views at five widths. TEST_FIXTURE only.');
 } catch (error) {
   console.error(`Browser rehearsal failed during ${stage}.`);
   await mkdir('evidence', { recursive: true });
