@@ -48,3 +48,9 @@ The container runs as the non-root `node` user. Local credential files, git meta
 A public fixture host must not receive Binance API secrets, wallet keys or signing material. The service has no order, signing or submission endpoints. The deployed smoke test explicitly verifies those surfaces remain absent.
 
 The connected Vercel context returned no deployable team for this session, so no Vercel deployment is treated as evidence yet. A future host must pass the external HTTPS smoke check before Gate 5 can be called complete.
+
+## Browser response boundary
+
+Gate 10 bounds response reads and validates receipt facts before any success UI or download is published. Planner response amounts must agree with the submitted target, retained floor and fixed fictional position. Duplicate fields, malformed UTF-8 and contradictory receipt success reports are rejected. Failed reads cancel without awaiting untrusted cancellation hooks, release reader locks and leave a retry path. Snapshot expiry is capped by a monotonic clock as well as the stated wall-clock boundary.
+
+The browser accepts fixture data only. Its checks do not authenticate a response, rerun the whole solver, recompute a plan hash or establish a live trade. A malicious source can fabricate a consistent fixture. Platform buffering, main-thread suspension and hostile Proxy objects are outside these JavaScript guarantees. See [the detailed boundary contract](browser-response.md).

@@ -1,3 +1,4 @@
+import { readFixtureText, readFixtureJSON, validateReceiptReport } from './response.js';
 const $ = id => document.getElementById(id);
 const maxBytes = 262144;
 let text;
@@ -41,27 +42,24 @@ async function run(load) {
   $('receipt-verify').disabled = true; $('receipt-demo').disabled = true;
   message(load ? 'Loading the fictional receipt…' : 'Checking the supplied fixture…');
   const timeout = setTimeout(() => active.abort(), 6000);
+  let failureMessage = 'Inspection unavailable or invalid. Please retry.';
   try {
     if (load) {
       text = undefined; $('receipt-file').value = '';
-      const sample = await fetch('/demo-receipt.json', { cache: 'no-store', credentials: 'omit', signal: active.signal });
-      if (!sample.ok) throw new Error('The demo file is unavailable. Please retry.');
-      const body = await sample.arrayBuffer();
-      if (body.byteLength > maxBytes) throw new Error('The file exceeds 256 KiB.');
-      const loaded = new TextDecoder('utf-8', { fatal: true }).decode(body);
+      const sample = await fetch('/demo-receipt.json', { cache: 'no-store', credentials: 'omit', redirect: 'error', signal: active.signal });
+      if (!sample.ok) { failureMessage = 'The demo file is unavailable. Please retry.'; throw new Error(); }
+      const loaded = await readFixtureText(sample, active.signal);
       if (current !== version) return;
       text = loaded; $('receipt-selection').textContent = 'Demo receipt · entirely fictional';
     }
     if (!text) throw new Error('Choose a fixture receipt first.');
     const response = await fetch('/api/receipt/verify', { method: 'POST',
       headers: { 'Content-Type': 'application/json' }, body: text, cache: 'no-store',
-      credentials: 'omit', signal: active.signal });
-    if (!response.ok) throw new Error(response.status === 429 ? 'Please wait a minute, then retry.' : response.status === 413 ? 'The file exceeds 256 KiB.' : 'Receipt inspection is unavailable. Please retry.');
-    const result = await response.json();
+      credentials: 'omit', redirect: 'error', signal: active.signal });
+    if (!response.ok) { failureMessage = response.status === 429 ? 'Please wait a minute, then retry.' : response.status === 413 ? 'The file exceeds 256 KiB.' : failureMessage; throw new Error(); }
+    const result = validateReceiptReport(await readFixtureJSON(response, active.signal));
     if (current !== version) return;
-    if (result.mode !== 'TEST_FIXTURE' || result.executionEnabled !== false || result.source !== 'UNAUTHENTICATED' || result.signature !== 'NOT_REQUESTED' || !['CONSISTENT_FIXTURE', 'INVALID_RECEIPT'].includes(result.status) || !Array.isArray(result.reasons) || result.reasons.length > 64 || result.receiptChecksum !== null && !/^[a-f0-9]{64}$/.test(result.receiptChecksum)) throw new Error('Unexpected verification response. Please retry.');
     const passed = result.status === 'CONSISTENT_FIXTURE';
-    if (passed && (!result.facts || !Number.isSafeInteger(result.facts.eventCount) || result.facts.eventCount < 0 || result.facts.eventCount > 64)) throw new Error('Unexpected verification response. Please retry.');
     report = result;
     $('receipt-status').textContent = passed ? 'Consistent fixture' : 'Rejected';
     $('receipt-status').className = `verdict-pill ${passed ? 'pass' : 'blocked'}`;
@@ -74,12 +72,10 @@ async function run(load) {
       $('receipt-accounting').textContent = result.facts.settlementStatus === 'MATCHED_FIXTURE' ? 'Matched fixture' : result.facts.settlementStatus === 'NOT_RECONCILED' ? 'Not reconciled' : result.facts.settlementStatus === 'WAITING' ? 'Waiting' : 'Mismatch';
       // Raw units avoid assuming decimals or a ticker for arbitrary uploaded receipts.
       for (const [id, value] of [['receipt-stock', result.facts.stockRemainingRaw], ['receipt-cash', result.facts.netCashReceivedRaw]]) {
-        if (value !== null && (typeof value !== 'string' || !/^[0-9]{1,78}$/.test(value))) throw new Error('Unexpected amount in response.');
         $(id).textContent = value ?? 'Not reconciled';
       }
     }
     for (const reason of result.reasons) {
-      if (typeof reason !== 'string' || !/^[A-Z_]{1,64}$/.test(reason)) throw new Error('Unexpected reason in response.');
       const li = document.createElement('li'); li.textContent = explanations[reason] || `Check failed: ${reason}`;
       $('receipt-reasons').append(li);
     }
@@ -88,7 +84,7 @@ async function run(load) {
   } catch (error) {
     if (current !== version) return;
     resetResult();
-    message(active.signal.aborted ? 'Inspection timed out. Retry when ready.' : error instanceof Error ? error.message : 'Inspection unavailable. Please retry.', true);
+    message(active.signal.aborted ? 'Inspection timed out. Retry when ready.' : failureMessage, true);
   } finally {
     clearTimeout(timeout);
     if (current === version) {

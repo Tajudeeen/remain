@@ -23,6 +23,7 @@ Remain is a cash-target tokenized-stock product with BellGuard risk checks. The 
 - Run npm run verify and npm run test:coverage before proposing a merge.
 - The owner's next-milestone request on 2026-10-07 authorizes Gate 8 bounded RFQ structure validation, unsigned build-to-quote consistency checks and redacted read-only diagnostics. Vendor signature semantics remain UNVERIFIED. Fixture review cannot close Gate 0 or enable signing, approvals, order submission, broadcast or trading. No live credentials are added to the hosted demo.
 - The owner's subsequent continuation authorizes Gate 9 public fixture request-boundary hardening, strict planner data validation, explicit bounded body reads, deployed regression checks and an automatic exact-build HTTPS smoke gate. Keep the existing Netlify fixture deployment and private source. This authorizes no Binance credential hosting, live wallet, signing, approval, order submission, RPC or trading.
+- The owner's next-milestone request authorizes Gate 10 browser response hardening, bounded streaming reads, strict display contracts, atomic receipt rendering and recoverable fixture UI errors. Keep source private and live execution disabled. Browser consistency checks do not authenticate a server response or close Gate 0.
 - Any changed signing, wallet or settlement code needs adversarial tests and documented invariants.
 - Preserve user changes. Use apply_patch. No force-push or destructive git operations.
 - Do not claim audited, formally verified, production ready or contest winning from a test pass.

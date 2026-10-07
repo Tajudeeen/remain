@@ -97,6 +97,13 @@ try {
   await browser('eval', "window.remainRealNow = Date.now; Date.now = () => window.remainRealNow() + 16000");
   await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Snapshot expired'");
   await browser('eval', 'Date.now = window.remainRealNow');
+  stage = 'clock rollback cannot extend review';
+  await browser('click', '[data-scenario="safe"]');
+  await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Plan available'");
+  await browser('eval', "window.remainRealPerformanceNow = performance.now.bind(performance); Date.now = () => window.remainRealNow() - 5000; Object.defineProperty(performance, 'now', {configurable: true, value: () => window.remainRealPerformanceNow() + 16000})");
+  await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Snapshot expired'");
+  await check("document.querySelector('#form-message').textContent.includes('Snapshot expired')");
+  await browser('eval', 'Date.now = window.remainRealNow; delete performance.now');
   await browser('click', '[data-scenario="safe"]');
   await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Plan available'");
   // An older response must not overwrite settings changed during a request.
@@ -108,6 +115,12 @@ try {
   await browser('click', '#plan-button'); await browser('fill', '#cash-target', '30');
   await browser('wait', '700');
   await check("document.querySelector('#retained-number').textContent === '—' && document.querySelector('#download').disabled && !document.querySelector('#plan-button').disabled");
+  await browser('eval', 'window.fetch = window.remainRealFetch');
+  stage = 'planner altered response and retry';
+  await browser('eval', "window.fetch = async (...args) => { const r = await window.remainRealFetch(...args); if (String(args[0]) !== '/api/rehearse') return r; const body = await r.json(); body.plan.candidate.verdict.amounts.remainingStockRaw = '76'; return new Response(JSON.stringify(body), {headers: {'content-type':'application/json'}}); }");
+  await browser('click', '[data-scenario="safe"]');
+  await browser('wait', '--fn', "document.querySelector('#form-message').classList.contains('error') && !document.querySelector('#plan-button').disabled");
+  await check("document.querySelector('#retained-number').textContent === '—' && document.querySelector('#download').disabled && document.querySelector('#plan-preview').getAttribute('aria-busy') === 'false'");
   await browser('eval', 'window.fetch = window.remainRealFetch');
   await browser('click', '[data-scenario="safe"]');
   await browser('wait', '--fn', "document.querySelector('#verdict-pill').textContent === 'Plan available'");
@@ -159,6 +172,14 @@ try {
   await browser('eval', 'window.fetch = window.remainRealFetch');
   await browser('click', '#receipt-verify');
   await browser('wait', '--fn', "document.querySelector('#receipt-status').textContent === 'Consistent fixture'");
+  stage = 'receipt malformed success and retry';
+  await browser('eval', "window.fetch = async (...args) => { const r = await window.remainRealFetch(...args); if (String(args[0]) !== '/api/receipt/verify') return r; const body = await r.json(); body.facts.settlementStatus = 'UNKNOWN'; return new Response(JSON.stringify(body), {headers: {'content-type':'application/json'}}); }");
+  await browser('click', '#receipt-verify');
+  await browser('wait', '--fn', "document.querySelector('#receipt-message').classList.contains('error') && !document.querySelector('#receipt-verify').disabled");
+  await check("document.querySelector('#receipt-status').textContent === 'Awaiting receipt' && document.querySelector('#receipt-report').disabled && document.querySelector('#receipt-facts').hidden");
+  await browser('eval', 'window.fetch = window.remainRealFetch');
+  await browser('click', '#receipt-verify');
+  await browser('wait', '--fn', "document.querySelector('#receipt-status').textContent === 'Consistent fixture'");
   stage = 'receipt response race and clear';
   await browser('eval', "window.fetch = async (...args) => { const r = await window.remainRealFetch(...args); if (String(args[0]) === '/api/receipt/verify') await new Promise(resolve => setTimeout(resolve, 500)); return r; }");
   await browser('click', '#receipt-verify'); await browser('click', '#receipt-clear');
@@ -178,7 +199,7 @@ try {
   await browser('eval', "sessionStorage.removeItem('remain-introduced')");
   await browser('open', `http://127.0.0.1:${address.port}`);
   await check("matchMedia('(prefers-reduced-motion: reduce)').matches && document.querySelector('#splash').hidden && !document.querySelector('#site-content').inert");
-  console.log('Browser rehearsal passed: landing, splash, keyboard/history/direct routes, planning blocks/download/expiry/races, receipt replay/source and report downloads, tampering, duplicate fields, size limits, retry/clear/races, and all three views at five widths. TEST_FIXTURE only.');
+  console.log('Browser rehearsal passed: landing, splash, keyboard/history/direct routes, planning blocks/download/expiry/races, altered-response rejection and retry, receipt replay/source and report downloads, tampering, duplicate fields, size limits, malformed-success recovery, retry/clear/races, and all three views at five widths. TEST_FIXTURE only.');
 } catch (error) {
   console.error(`Browser rehearsal failed during ${stage}.`);
   await mkdir('evidence', { recursive: true });

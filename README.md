@@ -85,6 +85,8 @@ The Netlify fixture deployment passed an independent external HTTPS smoke. See [
 
 Gate 9 hardens the public planning boundary with duplicate-key rejection, strict data/enums and bounded upload lifetimes. Runtime releases automatically wait for their exact build identity before external HTTPS checks. See [request handling and verification limits](docs/request-boundary.md).
 
+Gate 10 hardens the receiving browser: bounded streamed responses, duplicate-aware parsing, checks against the submitted cash intent, atomic receipt validation and retry after malformed responses. A monotonic timer prevents a wall-clock rollback extending the review window. These checks establish fixture display consistency only. See [browser response contracts and limits](docs/browser-response.md).
+
 ## Live discovery and feasibility
 
 Latest owner-reported market run `a2a2b549-f749-4779-892e-cd204f37252d`, started 2026-10-07 06:55:47 UTC, passed current stock identity and fresh selected-stock market checks for AALon. It reported `overnight`/`true`; observed endpoint durations were 1,294 ms for the catalog and 236 ms for the fresh market read. This is one owner-provided local sample, not independently executed or authenticated here. See [sanitized observation](docs/observations/owner-market-a2a2b549-f749-4779-892e-cd204f37252d.json).
