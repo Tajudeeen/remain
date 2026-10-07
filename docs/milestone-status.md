@@ -1,10 +1,10 @@
 # Milestone status
 
-Updated 2026-10-06. Submission target: 2026-10-11 12:00 UTC per the supplied brief. Official eligibility, deadline, rubric and deliverables must be confirmed before public submission.
+Updated 2026-10-07. Submission target: 2026-10-11 12:00 UTC per the supplied brief. Official eligibility, deadline, rubric and deliverables must be confirmed before public submission.
 
 | Gate | Implementation | Evidence needed | Status |
 | --- | --- | --- | --- |
-| 0: API feasibility | Signing client, identity catalog with partial market diagnostics, strict fresh-market/read-only RFQ harness, CI | Local suite, remote CI, real authenticated route with inspectable payload | Code implemented; live gate BLOCKED. Owner report reached stock metadata; updated catalog and held-stock RFQ evidence pending |
+| 0: API feasibility | Signing client, identity catalog with partial market diagnostics, strict fresh-market/read-only RFQ harness, local evidence inspector, CI | Local suite, remote CI, real authenticated route with inspectable payload | Code implemented; live gate BLOCKED. Owner supplied updated catalog excerpt with readable rows and one null market status; complete report and held-stock RFQ evidence pending |
 | 1: Cash solver and BellGuard | Standalone planning engine, integer conversion, immutable trace/checksum and rehearsal | Adversarial tests and exhaustive small-domain oracle; live vendor adapter later | Planning module implemented; live integration BLOCKED by gate 0 |
 | 2: Original interface and wallet flow | Synthetic planning interface and local rehearsal server implemented; live wallet flow pending | Real-browser fixture tests, mobile/accessibility; live signature field verification later | Independent rehearsal implemented; live wallet/integration BLOCKED by gate 0 |
 | 3: Order durability and settlement | Standalone fixture SQLite journal, conservative provider states, recovery advice and settlement accounting implemented | Crash/concurrency/tamper tests and synthetic reconciliation; hosted storage, vendor adapter and approved tiny live settlement later | Independent module implemented; live order/settlement BLOCKED by gate 0 |
@@ -22,6 +22,7 @@ Updated 2026-10-06. Submission target: 2026-10-11 12:00 UTC per the supplied bri
 - Structural typed-data validation only. Opaque data fails closed.
 - Discovery requires only API credentials. Smoke additionally requires public wallet, held stock contract and raw amount.
 - Fixture reports have TEST_FIXTURE labels. Reports contain no raw wallet state or order payload.
+- Local evidence inspection selects the newest saved run by report time, projects only fixed diagnostics, labels historical/fixture/legacy files, bounds reads and rejects malformed candidates. It performs no networking, reads no credentials and always leaves the live gate UNVERIFIED.
 
 ## Gate 0 closure criteria
 

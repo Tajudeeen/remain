@@ -1,6 +1,32 @@
 # Binance compliance rejection: 40304
 
+## Inspect the newest local result
+
+Run from the updated Remain repository directory on your own PC:
+
+```sh
+git pull --ff-only origin main
+env -u BINANCE_WEB3_API_KEY -u BINANCE_WEB3_SECRET_KEY npm run discover:binance
+npm run inspect:binance
+```
+
+The `env -u` command is for Git Bash. It clears inherited credentials for that invocation so Node reads the existing `.env.local`. It does not edit the file. PowerShell users can run `npm run discover:binance` after confirming no stale process-level credential overrides. Use your approved direct connection. Never share `.env.local`.
+
+The inspector needs no credentials and makes no network requests. It reads only matching discovery/smoke filenames in ignored `evidence/`, chooses the newest report by `startedAt`, and shows its run ID, timestamp, self-reported status, age, fixed error/check labels, market issue counts and at most five affected public contracts. Copying an old file does not make it a new observation. It ignores unknown fields rather than echoing their content. Malformed candidates stop automatic selection instead of silently falling back to an older pass. Use `npm run inspect:binance -- evidence/binance-discovery-<run-id>.json` for an explicit report.
+
+All summaries retain `source: LOCAL_FILE_UNAUTHENTICATED`, `liveGate: UNVERIFIED` and `executionEnabled: false`. A file can be edited, fabricated or produced by a mock. The inspector is diagnostic tooling, not authenticated evidence, a trading gate or a signature verifier. A recent timestamp does not refresh an expired quote or establish tradability. Reports older than 15 minutes are marked historical for troubleshooting. This cutoff is unrelated to quote validity.
+
+| Exit | Meaning |
+| --- | --- |
+| 0 | Inspected a recent self-reported live read-only pass with current format and nonempty discovery coverage, or the exact smoke check list. This does not close Gate 0. |
+| 1 | Inspected a blocked, partial, fixture, historical, legacy or empty-catalog report. |
+| 2 | Missing, oversized, malformed or inconsistent evidence, unsupported path, symlink, future clock anomaly, or too many candidate files. No raw contents are printed. |
+
+Share this compact output from the new run. For a partial catalog, identify a stock your wallet actually holds, configure its discovered contract and explicit raw amount, then run `npm run smoke:binance`. Fresh selected-stock market validation still precedes balance/quote/build. An unavailable catalog field is never converted into permission to trade. Compliance rejections require support/access review before another live attempt.
+
 ## Stock catalog with unavailable market metadata
+
+On 2026-10-07 the owner supplied an excerpt in the updated format. AXTIB (`AXTI`, issuer `bstock`) reported null market status and `receivedType: null`; AALon and DRSon (`ondo`) reported readable `regular`/`true`. No run ID, timestamp, full catalog or top-level count/status was included. These are owner-provided API observations, not a fresh-market feasibility check, trading permission or independent exchange-session evidence. Unknown state for one row does not establish that all stocks from its issuer behave the same way.
 
 The owner supplied run `a19fb351-ae16-4280-b12e-8659e276baeb`, started `2026-10-06T19:09:34.511Z`, with `validationCheck: DISCOVERY_MARKET_STATUS`. This owner-reported run passed the HTTP/envelope checks and reached a BSC stock record whose `statusInfo.marketStatus` was not a string. Its actual type and value remain unknown; the diagnostic does not establish a null field, numeric enum or new mapping.
 
@@ -60,7 +86,7 @@ git clone https://github.com/Tajudeeen/remain.git
 cd remain
 npm ci
 npm run verify
-Copy-Item .env.example .env.local
+if (!(Test-Path .env.local)) { Copy-Item .env.example .env.local }
 notepad .env.local
 npm run discover:binance
 ```

@@ -79,7 +79,7 @@ This fixture-only flow creates a canonical receipt only after synthetic settleme
 
 The rehearsal can be packaged in the committed non-root Docker image. A public bind fails closed unless `REMAIN_ALLOWED_HOSTS` names the exact public hostname. `/healthz` exposes only fixture readiness, execution remains disabled, and `npm run smoke:deployed` verifies the deployed surface from outside. See the [deployment runbook](docs/deployment-runbook.md).
 
-No external deployment is claimed yet. The connected Vercel session currently exposes no deployable team context, so a public URL and external smoke result remain required evidence for Gate 5.
+The Netlify fixture deployment passed an independent external HTTPS smoke. See [deployment evidence](docs/netlify-deployment.md). This establishes the synthetic demo surface only; live integration remains blocked.
 
 ## Live discovery and feasibility
 
@@ -95,6 +95,14 @@ First discover supported public stock metadata. This requires only those two cre
 ```sh
 npm run discover:binance
 ```
+
+Inspect the newest local discovery or smoke report without credentials or networking:
+
+```sh
+npm run inspect:binance
+```
+
+The inspector chooses the report's start time, marks old reports historical, summarizes fixed validation labels and caps affected stock samples at five. It never echoes arbitrary error text, notes, raw payloads or balances. Files are untrusted local claims, so every summary keeps `liveGate: UNVERIFIED`. Exit 1 preserves blocked, partial, fixture, historical, legacy or empty-catalog status. Exit 2 means missing/unsafe evidence. Exit 0 only means a recent self-reported pass was inspected, not that Gate 0 closed. To inspect a specific saved report, pass its path after `--`. See [local evidence inspection](docs/access-troubleshooting.md#inspect-the-newest-local-result).
 
 Then configure these three non-secret values locally or in GitHub Actions repository variables:
 
