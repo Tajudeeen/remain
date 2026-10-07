@@ -111,3 +111,16 @@ signature semantics remain open. This evidence-only update uses
 - Oversize/stalled response and unresponsive-cancellation claims are local stream/VM regression evidence. Malformed-response UI recovery and clock rollback are real-browser CI evidence. No production load test or malicious-server authentication guarantee is claimed. No Binance credentials, wallet, signature, allowance, submission, RPC or live trade were added.
 
 Gate 10 is complete for the fixture browser response boundary. Gate 0, vendor signature semantics and actual submission readiness remain blocked. This evidence-only update uses `[skip netlify]` to preserve the exact verified production artifact.
+
+
+## Prepared-integration release, 2026-10-07 17:32 UTC
+
+[PR #27](https://github.com/Tajudeeen/remain/pull/27) merged as `f083c8b25c093a8a8a259f6277820150614f2efc`. Production deploy `6ac681fc1a2a910008de5df7` published at 17:31:56.111 UTC with that exact commit. The tested tree equals the merged tree. Source remains private. The fictional planner remains `TEST_FIXTURE` and the separate setup page is `READ_ONLY_SETUP`.
+
+- 693 local tests, full verification, coverage and source/history pattern checks passed. The wallet adapter and integration projection have 100% local line coverage. Browser page event handling is covered by remote acceptance rather than claimed as local unit coverage.
+- [PR CI 37609868439](https://github.com/Tajudeeen/remain/actions/runs/37609868439), [push CI 37609864317](https://github.com/Tajudeeen/remain/actions/runs/37609864317) and [main CI 37659754692](https://github.com/Tajudeeen/remain/actions/runs/37659754692) passed full verification, coverage, history screen, terminal rehearsals, container smoke and real-browser tests. The new public setup page passed five widths. A controlled fixture wallet/local inspector covered wrong chain, empty holdings, a fixture structural pass with signing still locked, malformed response recovery, account changes, input races and clear.
+- [Exact-build HTTPS smoke 37659754659](https://github.com/Tajudeeen/remain/actions/runs/37659754659) matched `f083c8b25c093a8a8a259f6277820150614f2efc` at 17:31:58 UTC and passed at 17:32:01 UTC. It verified new browser modules, fixed unconfigured readiness and a 503 inspection denial alongside existing planner, receipt and execution-absence regressions.
+- The production browser opened `https://remain-cash.netlify.app/#live`, displayed local setup required, no selected account, disabled held-stock inspection and unverified signing/execution gates. Recheck server returned the same locked status. [Screenshot](images/integration-workspace-20261007.jpg). No wallet-connect action was taken. Browser extension metadata errors were observed separately from app behavior. A full-page screenshot timed out, so the saved evidence is a viewport capture.
+- No credentials were read or hosted, no real Binance request was made, and no signing, approvals, orders or trades were performed. A local read pass cannot establish authenticated ownership, vendor economic enforcement or settlement.
+
+Gate 11 is complete for prepared read-only integration. Actual live RFQ feasibility, signing semantics, execution, settlement and submission readiness remain unresolved. This evidence-only commit uses `[skip netlify]` to preserve the verified production artifact.

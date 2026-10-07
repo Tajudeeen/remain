@@ -1,8 +1,8 @@
 # Remain evidence index
 
-This is a private preparation packet, not a release certificate. The current deployment snapshot is 2026-10-07 10:08:13 UTC. Evidence links are observations and must be rechecked at the release freeze.
+This is a private preparation packet, not a release certificate. The current deployment snapshot is 2026-10-07T17:36:57Z. Evidence links are observations and must be rechecked at the release freeze.
 
-The latest fixture release is [PR #25](https://github.com/Tajudeeen/remain/pull/25), commit `8e3609e4c0c29131b08f42666ed2936d8e2f5d0b`, deploy `6ac61970871cbf0008eb5b2a`. [Main CI 37605083803](https://github.com/Tajudeeen/remain/actions/runs/37605083803) passed all 653 tests, container checks and real-browser malformed-response recovery, retry and clock-rollback checks. [Exact-build HTTPS smoke 37605083674](https://github.com/Tajudeeen/remain/actions/runs/37605083674) passed against that commit. Production browser checks completed the fictional planner and receipt flows. See [release evidence and screenshot](../netlify-deployment.md#browser-response-release-2026-10-07-1006-utc). This is the current deployment in packet.json. No live proof gate is closed.
+The latest prepared-integration release is [PR #27](https://github.com/Tajudeeen/remain/pull/27), commit `f083c8b25c093a8a8a259f6277820150614f2efc`, deploy `6ac681fc1a2a910008de5df7`. [Main CI 37659754692](https://github.com/Tajudeeen/remain/actions/runs/37659754692) passed all 693 tests, container checks and real-browser public setup/controlled fixture inspection checks at five widths. [Exact-build HTTPS smoke 37659754659](https://github.com/Tajudeeen/remain/actions/runs/37659754659) passed against that commit and confirmed hosted inspection stays unconfigured. Production browser verified the setup page and server recheck without connecting a wallet. See [release evidence and screenshot](../netlify-deployment.md#prepared-integration-release-2026-10-07-1732-utc). This is the deployment pinned in packet.json. No live proof gate is closed.
 
 ## Earlier observations
 
