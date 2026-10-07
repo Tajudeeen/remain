@@ -43,7 +43,7 @@ function verifySummary(value: unknown, expected: ReceiptSummary): void {
 export function verifyReceipt(value: unknown): ReceiptVerification {
   const base: ReceiptVerification = { mode: 'TEST_FIXTURE', executionEnabled: false, status: 'INVALID_RECEIPT', reasons: [], receiptChecksum: null, canonicalBytes: 0 };
   try {
-    const r = exact(value, receiptKeys); base.receiptChecksum = typeof r.receiptChecksum === 'string' ? r.receiptChecksum : null;
+    const r = exact(value, receiptKeys); base.receiptChecksum = safeHash(r.receiptChecksum) ? r.receiptChecksum : null;
     if (r.kind !== 'REMAIN_FIXTURE_RECEIPT' || r.version !== 1 || r.profile !== 'REMAIN_JSON_V1' || r.mode !== 'TEST_FIXTURE' || r.executionEnabled !== false || typeof r.exportedAtMs !== 'number' || !Number.isSafeInteger(r.exportedAtMs) || r.exportedAtMs < 0) throw new ReceiptError('RECEIPT_SCHEMA');
     const p = exact(r.provenance, ['planning', 'order', 'chain', 'authentication', 'signature']);
     if (p.planning !== 'TEST_FIXTURE_GENERATOR' || p.order !== 'TEST_FIXTURE_JOURNAL' || p.chain !== 'TEST_FIXTURE_ASSERTIONS' || p.authentication !== 'UNAUTHENTICATED' || p.signature !== 'NOT_REQUESTED') throw new ReceiptError('PROVENANCE_MISMATCH');

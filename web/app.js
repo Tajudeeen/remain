@@ -1,3 +1,5 @@
+import './proof.js';
+
 const $ = (id) => document.getElementById(id);
 const form = $('plan-form');
 const bar = $('position-bar');
@@ -5,14 +7,16 @@ const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 function route(focus = false) {
   const hash = location.hash;
   const dashboard = ['#dashboard', '#planner', '#cash-target'].includes(hash);
-  $('landing-view').hidden = dashboard;
+  const proof = ['#proof', '#receipt'].includes(hash);
+  $('landing-view').hidden = dashboard || proof;
   $('dashboard-view').hidden = !dashboard;
-  document.title = dashboard ? 'Cash planner | Remain' : 'Remain | Raise cash. Stay invested.';
+  $('proof-view').hidden = !proof;
+  document.title = proof ? 'Receipt inspection | Remain' : dashboard ? 'Cash planner | Remain' : 'Remain | Raise cash. Stay invested.';
   for (const link of document.querySelectorAll('nav a')) {
-    if (link.getAttribute('href') === (dashboard ? '#dashboard' : hash)) link.setAttribute('aria-current', 'page');
+    if (link.getAttribute('href') === (proof ? '#proof' : dashboard ? '#dashboard' : hash)) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   }
-  const target = hash === '#how-it-works' ? $('how-title') : hash === '#about' ? $('trust-title') : dashboard ? $('intro-title') : $('landing-title');
+  const target = hash === '#how-it-works' ? $('how-title') : hash === '#about' ? $('trust-title') : proof ? $('proof-title') : dashboard ? $('intro-title') : $('landing-title');
   if (focus) { target.focus({ preventScroll: true }); target.scrollIntoView({ behavior: 'auto', block: 'start' }); }
 }
 window.addEventListener('hashchange', () => route(true));

@@ -1,4 +1,6 @@
 import { rehearsePlan } from './plan.ts';
+import { inspectFixtureReceipt } from '../receipts/inspection.ts';
+import { RECEIPT_MAX_BYTES } from '../receipts/canonical.ts';
 
 export type NetlifyFixtureOptions = Readonly<{ origins: readonly string[]; buildSha?: string }>;
 
@@ -11,7 +13,7 @@ function response(status: number, value: unknown, head = false): Response {
   } });
 }
 
-async function boundedBody(request: Request, signal: AbortSignal): Promise<string> {
+async function boundedBody(request: Request, signal: AbortSignal, limit: number): Promise<string> {
   signal.throwIfAborted();
   if (!request.body) throw new Error('INVALID_REQUEST');
   const reader = request.body.getReader(); const chunks: Uint8Array[] = []; let size = 0;
@@ -23,7 +25,7 @@ async function boundedBody(request: Request, signal: AbortSignal): Promise<strin
       signal.throwIfAborted();
       if (done) break;
       size += value.byteLength;
-      if (size > 4096) { await reader.cancel(); throw new Error('BODY_TOO_LARGE'); }
+      if (size > limit) { await reader.cancel(); throw new Error('BODY_TOO_LARGE'); }
       chunks.push(value);
     }
     const bytes = new Uint8Array(size); let offset = 0;
@@ -44,20 +46,24 @@ export async function handleNetlifyFixture(request: Request, options: NetlifyFix
   } catch { return response(403, { code: 'HOST_REJECTED' }); }
   const origin = request.headers.get('origin');
   if (request.headers.get('sec-fetch-site') === 'cross-site' || origin && origin !== url.origin) return response(403, { code: 'ORIGIN_REJECTED' });
-  if (url.search || !['/healthz', '/api/rehearse'].includes(url.pathname)) return response(404, { code: 'NOT_FOUND' });
+  if (url.search || !['/healthz', '/api/rehearse', '/api/receipt/verify'].includes(url.pathname)) return response(404, { code: 'NOT_FOUND' });
   if (url.pathname === '/healthz') {
     if (!['GET', 'HEAD'].includes(request.method)) return response(405, { code: 'METHOD_REJECTED' });
     return response(200, { status: 'ok', service: 'remain-rehearsal', mode: 'TEST_FIXTURE', executionEnabled: false,
       liveGate: 'BLOCKED', buildSha: options.buildSha && /^[a-f0-9]{40}$/.test(options.buildSha) ? options.buildSha : 'unknown' }, request.method === 'HEAD');
   }
   if (request.method !== 'POST') return response(405, { code: 'METHOD_REJECTED' });
+  const receipt = url.pathname === '/api/receipt/verify';
+  const limit = receipt ? RECEIPT_MAX_BYTES : 4096;
   if (!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers.get('content-type') ?? '')) return response(415, { code: 'CONTENT_TYPE_REJECTED' });
   if (request.headers.has('content-encoding') && request.headers.get('content-encoding') !== 'identity') return response(415, { code: 'ENCODING_REJECTED' });
   const length = request.headers.get('content-length');
-  if (length && (!/^[0-9]+$/.test(length) || Number(length) > 4096)) return response(413, { code: 'BODY_TOO_LARGE' });
+  if (length && (!/^[0-9]+$/.test(length) || Number(length) > limit)) return response(413, { code: 'BODY_TOO_LARGE' });
   try {
     const signal = AbortSignal.any([request.signal, AbortSignal.timeout(2000)]);
-    const input: unknown = JSON.parse(await boundedBody(request, signal));
+    const body = await boundedBody(request, signal, limit);
+    if (receipt) return response(200, inspectFixtureReceipt(body));
+    const input: unknown = JSON.parse(body);
     return response(200, await rehearsePlan(input, signal));
   } catch (error) {
     const tooLarge = error instanceof Error && error.message === 'BODY_TOO_LARGE';
