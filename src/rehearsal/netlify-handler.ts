@@ -1,4 +1,4 @@
-import { rehearsePlan } from './plan.ts';
+import { rehearsePlan, parsePlanningRequest } from './plan.ts';
 import { inspectFixtureReceipt } from '../receipts/inspection.ts';
 import { RECEIPT_MAX_BYTES } from '../receipts/canonical.ts';
 
@@ -25,7 +25,7 @@ async function boundedBody(request: Request, signal: AbortSignal, limit: number)
       signal.throwIfAborted();
       if (done) break;
       size += value.byteLength;
-      if (size > limit) { await reader.cancel(); throw new Error('BODY_TOO_LARGE'); }
+      if (size > limit) { void reader.cancel().catch(() => {}); throw new Error('BODY_TOO_LARGE'); }
       chunks.push(value);
     }
     const bytes = new Uint8Array(size); let offset = 0;
@@ -63,7 +63,7 @@ export async function handleNetlifyFixture(request: Request, options: NetlifyFix
     const signal = AbortSignal.any([request.signal, AbortSignal.timeout(2000)]);
     const body = await boundedBody(request, signal, limit);
     if (receipt) return response(200, inspectFixtureReceipt(body));
-    const input: unknown = JSON.parse(body);
+    const input = parsePlanningRequest(body);
     return response(200, await rehearsePlan(input, signal));
   } catch (error) {
     const tooLarge = error instanceof Error && error.message === 'BODY_TOO_LARGE';

@@ -1,5 +1,17 @@
 name: Deployed fixture smoke
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/rehearsal/**'
+      - 'src/planning/**'
+      - 'src/input/**'
+      - 'src/release/deployment-wait.ts'
+      - 'scripts/smoke-deployed.ts'
+      - 'scripts/wait-deployment.ts'
+      - '.github/workflows/deployment-smoke.yml'
+      - 'netlify/**'
+      - 'netlify.toml'
   workflow_dispatch:
     inputs:
       base_url:
@@ -12,6 +24,9 @@ jobs:
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      REMAIN_BASE_URL: ${{ inputs.base_url || 'https://remain-cash.netlify.app/' }}
+      REMAIN_EXPECTED_BUILD_SHA: ${{ github.event_name == 'push' && github.sha || '' }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -21,7 +36,8 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - name: Wait for the exact main build to publish
+        if: github.event_name == 'push'
+        run: node scripts/wait-deployment.ts
       - name: Verify deployed fixture
-        env:
-          REMAIN_BASE_URL: ${{ inputs.base_url }}
         run: npm run smoke:deployed

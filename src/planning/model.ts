@@ -1,4 +1,5 @@
-import { address, BSC_USDT, record, uint } from '../validation.ts';
+import { address, BSC_USDT, uint } from '../validation.ts';
+import { dataRecord } from '../input/data.ts';
 
 export type PlanningMode = 'TEST_FIXTURE' | 'LIVE_READ_ONLY';
 export type MarketSnapshot = { observedAtMs: number; openState: boolean; marketStatus: string; reasonCode: string | null };
@@ -48,7 +49,7 @@ export function exposureFloor(intent: CashIntent): bigint {
 }
 export function normalizeIntent(value: unknown): CashIntent {
   try {
-    const v = record(value); const m = record(v.market);
+    const v = dataRecord(value); const m = dataRecord(v.market);
     if (v.chain !== '56' || typeof v.allowClosedMarket !== 'boolean' || typeof m.openState !== 'boolean' || typeof m.marketStatus !== 'string' || m.marketStatus.length > 64 || !(m.reasonCode === null || typeof m.reasonCode === 'string' && m.reasonCode.length <= 64)) throw new PlanningError('INVALID_INTENT');
     const stockToken = address(v.stockToken); const cashToken = address(v.cashToken);
     if (cashToken !== BSC_USDT.toLowerCase() || stockToken === cashToken) throw new PlanningError('INVALID_INTENT');
@@ -65,9 +66,9 @@ export function normalizeIntent(value: unknown): CashIntent {
 }
 export function normalizeQuote(value: unknown): PlanningQuote {
   try {
-    const v = record(value);
-    if (v.chain !== '56' || typeof v.id !== 'string' || !/^[A-Za-z0-9-]{1,128}$/.test(v.id) || !['PcsXRfq', 'InchFusion', 'CowSwap'].includes(String(v.vendor)) || !['UNVERIFIED', 'VERIFIED_ORDER'].includes(String(v.minimumOutputBinding))) throw new PlanningError('INVALID_QUOTE');
-    return Object.freeze({ id: v.id, vendor: String(v.vendor), wallet: address(v.wallet), chain: '56', stockToken: address(v.stockToken), cashToken: address(v.cashToken),
+    const v = dataRecord(value);
+    if (v.chain !== '56' || typeof v.id !== 'string' || !/^[A-Za-z0-9-]{1,128}$/.test(v.id) || typeof v.vendor !== 'string' || !['PcsXRfq', 'InchFusion', 'CowSwap'].includes(v.vendor) || typeof v.minimumOutputBinding !== 'string' || !['UNVERIFIED', 'VERIFIED_ORDER'].includes(v.minimumOutputBinding)) throw new PlanningError('INVALID_QUOTE');
+    return Object.freeze({ id: v.id, vendor: v.vendor, wallet: address(v.wallet), chain: '56', stockToken: address(v.stockToken), cashToken: address(v.cashToken),
       inputRaw: uint(v.inputRaw, true), inputFeeRaw: uint(v.inputFeeRaw), expectedGrossOutputRaw: uint(v.expectedGrossOutputRaw, true), minimumGrossOutputRaw: uint(v.minimumGrossOutputRaw, true), outputFeeUpperBoundRaw: uint(v.outputFeeUpperBoundRaw), impactBps: bps(v.impactBps),
       issuedAtMs: timestamp(v.issuedAtMs), expiresAtMs: timestamp(v.expiresAtMs), minimumOutputBinding: v.minimumOutputBinding as PlanningQuote['minimumOutputBinding'] });
   } catch { throw new PlanningError('INVALID_QUOTE'); }
