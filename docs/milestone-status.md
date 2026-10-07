@@ -13,6 +13,7 @@ Updated 2026-10-07. Submission target: 2026-10-11 12:00 UTC per the supplied bri
 | 6: Submission and public release | Private preparation packet, strict fixture-readiness check and tracked-history pattern screen | Green remote checks for this tooling; live mainnet proof, owner report/video, eligibility and public-release approval still required | Preparation implemented; actual submission and public release BLOCKED |
 | 7: Receipt workspace | Separate app route, fictional source receipt, stateless inspection adapter and downloadable result | 453 local tests and coverage, green PR/main CI with browser/container checks, external HTTPS smoke 37587725694 and production browser | COMPLETE for TEST_FIXTURE receipt inspection. Live provenance remains BLOCKED |
 | 8: RFQ payload review | Bounded recursive typed-data validation, duplicate-aware RFQ parsing, unsigned build binding and redacted review report | Adversarial local suite, coverage, terminal rehearsal and green remote CI; actual vendor order semantics and held-position RFQ later | Independent read-only module implemented; live feasibility and signature semantics remain BLOCKED/UNVERIFIED |
+| 9: Public request boundary | Duplicate-aware planner parsing, strict data/enums, upload deadlines, cancellation cleanup and exact-build deployment smoke | Failing regressions reproduced, full suite and coverage, green remote CI, real Netlify release and HTTPS smoke | Hardening implemented; deployment evidence pending. Live trading remains BLOCKED |
 
 ## Implemented in gate 0
 
@@ -38,6 +39,8 @@ Local and remote checks green, then a real authenticated smoke result with suppo
 Gate 0 completion does not authorize trading or prove signature semantics. Those require vendor field binding, actual approval/settlement analysis and explicit owner approval later.
 
 ## Blueprint clarifications
+
+The owner's subsequent continuation authorizes Gate 9 hardening of the existing public TEST_FIXTURE request boundary. Both accepted and rejected requests remain bounded, source remains private, and the deployed smoke checks the exact released build. See [request-boundary contract](request-boundary.md).
 
 The owner's next-milestone request on 2026-10-07 authorizes Gate 8 read-only RFQ inspection. Structural validity and unsigned build consistency are distinct from signed economic authorization. No signing or execution is added. The Netlify fixture surface is unchanged. See [RFQ inspection contract](rfq-review.md).
 

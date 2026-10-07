@@ -1,6 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { rehearsePlan, RehearsalError } from './plan.ts';
+import { rehearsePlan, parsePlanningRequest, RehearsalError } from './plan.ts';
 import { inspectFixtureReceipt } from '../receipts/inspection.ts';
 import { RECEIPT_MAX_BYTES } from '../receipts/canonical.ts';
 
@@ -15,6 +15,7 @@ export type RehearsalServerOptions = Readonly<{
   assetRoot?: URL;
   allowedHosts?: readonly string[];
   buildSha?: string;
+  bodyReadTimeoutMs?: number;
 }>;
 
 function headers(response: ServerResponse): void {
@@ -29,20 +30,29 @@ function json(response: ServerResponse, status: number, value: unknown, head = f
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': Buffer.byteLength(body) });
   response.end(head ? undefined : body);
 }
-function readBody(request: IncomingMessage, limit: number): Promise<string> {
+function readBody(request: IncomingMessage, limit: number, timeoutMs: number): Promise<string> {
   return new Promise((resolve, reject) => {
     let size = 0; const chunks: Buffer[] = []; let done = false;
-    request.on('data', (chunk: Buffer) => {
+    const finish = (error?: RehearsalError, body?: string) => {
+      if (done) return; done = true; clearTimeout(timer); chunks.length = 0;
+      request.off('data', onData); request.off('end', onEnd); request.off('aborted', onAborted);
+      // Keep an error sink until close, since aborted can precede ECONNRESET.
+      if (error) { request.pause(); reject(error); } else resolve(body!);
+    };
+    const onData = (chunk: Buffer) => {
       if (done) return; size += chunk.length;
-      if (size > limit) { done = true; chunks.length = 0; reject(new RehearsalError('BODY_TOO_LARGE')); return; }
+      if (size > limit) { finish(new RehearsalError('BODY_TOO_LARGE')); return; }
       chunks.push(chunk);
-    });
-    request.on('end', () => { if (!done) { done = true;
-      try { resolve(new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks))); }
-      catch { reject(new RehearsalError('INVALID_REQUEST')); }
-    } });
-    request.on('error', () => { if (!done) { done = true; reject(new RehearsalError('INVALID_REQUEST')); } });
-    request.on('aborted', () => { if (!done) { done = true; reject(new RehearsalError('INVALID_REQUEST')); } });
+    };
+    const onEnd = () => {
+      try { const body = new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)); finish(undefined, body); }
+      catch { finish(new RehearsalError('INVALID_REQUEST')); }
+    };
+    const onError = () => finish(new RehearsalError('INVALID_REQUEST'));
+    const onAborted = () => finish(new RehearsalError('INVALID_REQUEST'));
+    const timer = setTimeout(() => finish(new RehearsalError('BODY_TIMEOUT')), timeoutMs);
+    request.on('data', onData); request.once('end', onEnd); request.once('error', onError); request.once('aborted', onAborted);
+    request.once('close', () => { onAborted(); request.off('error', onError); });
   });
 }
 function normalizeAllowedHosts(values: readonly string[] | undefined): Set<string> {
@@ -74,6 +84,8 @@ export function createRehearsalServer(options: RehearsalServerOptions = {}) {
   const assetRoot = options.assetRoot ?? new URL('../../web/', import.meta.url);
   const allowedHosts = normalizeAllowedHosts(options.allowedHosts);
   const deployedBuild = buildId(options.buildSha);
+  const bodyReadTimeoutMs = options.bodyReadTimeoutMs ?? 2000;
+  if (!Number.isInteger(bodyReadTimeoutMs) || bodyReadTimeoutMs < 1 || bodyReadTimeoutMs > 5000) throw new RehearsalError('INVALID_REQUEST');
   // One global budget is intentionally simple and memory-bounded for a fixture
   // service. It is not an authenticated production trading backend.
   let windowStarted = Date.now(); let requests = 0; let inFlight = 0;
@@ -124,14 +136,16 @@ export function createRehearsalServer(options: RehearsalServerOptions = {}) {
     const disconnect = () => { if (!response.writableFinished) controller.abort(); };
     response.on('close', disconnect);
     try {
-      const body = await readBody(request, limit);
+      const body = await readBody(request, limit, bodyReadTimeoutMs);
       controller.signal.throwIfAborted();
       if (receipt) { json(response, 200, inspectFixtureReceipt(body)); return; }
-      const input: unknown = JSON.parse(body);
+      const input = parsePlanningRequest(body);
       json(response, 200, await rehearsePlan(input, controller.signal));
     } catch (error) {
       const tooLarge = error instanceof RehearsalError && error.code === 'BODY_TOO_LARGE';
-      json(response, tooLarge ? 413 : 400, { code: tooLarge ? 'BODY_TOO_LARGE' : 'INVALID_REQUEST' });
+      const timedOut = error instanceof RehearsalError && error.code === 'BODY_TIMEOUT';
+      if (!request.complete) response.setHeader('Connection', 'close');
+      json(response, tooLarge ? 413 : timedOut ? 408 : 400, { code: tooLarge ? 'BODY_TOO_LARGE' : timedOut ? 'BODY_TIMEOUT' : 'INVALID_REQUEST' });
     } finally { inFlight--; response.off('close', disconnect); }
   });
   server.requestTimeout = 5000; server.headersTimeout = 5000; server.keepAliveTimeout = 1000;

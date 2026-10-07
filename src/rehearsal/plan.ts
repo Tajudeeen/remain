@@ -1,9 +1,11 @@
 import { parseUnits, type CashIntent, type QuoteProvider } from '../planning/model.ts';
 import { solveCash } from '../planning/solver.ts';
-import { BSC_USDT, record } from '../validation.ts';
+import { BSC_USDT } from '../validation.ts';
+import { dataRecord } from '../input/data.ts';
+import { parseReceiptJSON } from '../receipts/canonical.ts';
 
 export class RehearsalError extends Error {
-  readonly code: 'INVALID_REQUEST' | 'BODY_TOO_LARGE';
+  readonly code: 'INVALID_REQUEST' | 'BODY_TOO_LARGE' | 'BODY_TIMEOUT';
   constructor(code: RehearsalError['code']) { super(code); this.code = code; }
 }
 export type RehearsalInput = {
@@ -13,16 +15,22 @@ export type RehearsalInput = {
 const fields = ['cashTarget', 'retainPercent', 'maxImpactPercent', 'market', 'allowClosedMarket'];
 export function validateRehearsalInput(input: unknown): RehearsalInput {
   try {
-    const v = record(input);
+    const v = dataRecord(input);
     if (Object.keys(v).length !== fields.length || fields.some((key) => !Object.hasOwn(v, key))) throw new Error();
     if (typeof v.cashTarget !== 'string' || v.cashTarget.length > 8 || !/^(0|[1-9][0-9]*)(?:\.[0-9]{1,2})?$/.test(v.cashTarget)) throw new Error();
     const cash = BigInt(parseUnits(v.cashTarget, 18));
     if (cash <= 0n || cash > BigInt(parseUnits('10000', 18))) throw new Error();
     if (typeof v.retainPercent !== 'number' || !Number.isInteger(v.retainPercent) || v.retainPercent < 0 || v.retainPercent > 100) throw new Error();
     if (typeof v.maxImpactPercent !== 'string' || !/^(0|[1-5])(?:\.[0-9]{1,2})?$/.test(v.maxImpactPercent) || BigInt(parseUnits(v.maxImpactPercent, 2)) > 500n) throw new Error();
-    if (!['regular', 'closed', 'pause'].includes(String(v.market)) || typeof v.allowClosedMarket !== 'boolean') throw new Error();
+    if (typeof v.market !== 'string' || !['regular', 'closed', 'pause'].includes(v.market) || typeof v.allowClosedMarket !== 'boolean') throw new Error();
     return Object.freeze({ cashTarget: v.cashTarget, retainPercent: v.retainPercent, maxImpactPercent: v.maxImpactPercent, market: v.market as RehearsalInput['market'], allowClosedMarket: v.allowClosedMarket });
   } catch { throw new RehearsalError('INVALID_REQUEST'); }
+}
+
+export function parsePlanningRequest(body: string): RehearsalInput {
+  if (Buffer.byteLength(body) > 4096) throw new RehearsalError('BODY_TOO_LARGE');
+  try { return validateRehearsalInput(parseReceiptJSON(body)); }
+  catch { throw new RehearsalError('INVALID_REQUEST'); }
 }
 
 // Fictional position, addresses, rate and quote. No Binance/client imports,

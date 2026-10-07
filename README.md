@@ -83,6 +83,8 @@ The rehearsal can be packaged in the committed non-root Docker image. A public b
 
 The Netlify fixture deployment passed an independent external HTTPS smoke. See [deployment evidence](docs/netlify-deployment.md). This establishes the synthetic demo surface only; live integration remains blocked.
 
+Gate 9 hardens the public planning boundary with duplicate-key rejection, strict data/enums and bounded upload lifetimes. Runtime releases automatically wait for their exact build identity before external HTTPS checks. See [request handling and verification limits](docs/request-boundary.md).
+
 ## Live discovery and feasibility
 
 Latest owner-reported market run `a2a2b549-f749-4779-892e-cd204f37252d`, started 2026-10-07 06:55:47 UTC, passed current stock identity and fresh selected-stock market checks for AALon. It reported `overnight`/`true`; observed endpoint durations were 1,294 ms for the catalog and 236 ms for the fresh market read. This is one owner-provided local sample, not independently executed or authenticated here. See [sanitized observation](docs/observations/owner-market-a2a2b549-f749-4779-892e-cd204f37252d.json).

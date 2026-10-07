@@ -64,6 +64,16 @@ for (const [extra, expectedStatus] of [[{ executionEnabled: true }, 400], [{ mar
   }
 }
 
+for (const body of [
+  JSON.stringify(input).replace('"cashTarget":"25"', '"cashTarget":"99","cashTarget":"25"'),
+  JSON.stringify(input).replace('"retainPercent":70', '"retainPercent":0,"\\u0072etainPercent":70'),
+  JSON.stringify({ ...input, market: ['regular'] })
+]) {
+  const response = await fetch(new URL('/api/rehearse', base), { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body, redirect: 'error', signal: AbortSignal.timeout(5000) });
+  assert.equal(response.status, 400); assert.deepEqual(await readJson(response), { code: 'INVALID_REQUEST' });
+}
+
 const sampleResponse = await fetch(new URL('/demo-receipt.json', base), { redirect: 'error', signal: AbortSignal.timeout(5000) });
 assert.equal(sampleResponse.status, 200);
 const sample = await sampleResponse.text();
@@ -94,5 +104,5 @@ console.log(JSON.stringify({
   liveGate: 'BLOCKED',
   baseOrigin: base.origin,
   buildSha: healthBody.buildSha,
-  checks: ['health-build', 'static-page', 'planning-accounting', 'paused-market-guard', 'invalid-input', 'receipt-replay', 'receipt-tampering', 'receipt-duplicate-fields', 'receipt-size-limit', 'execution-endpoints-absent']
+  checks: ['health-build', 'static-page', 'planning-accounting', 'paused-market-guard', 'invalid-input', 'planner-duplicate-fields', 'planner-enum-coercion', 'receipt-replay', 'receipt-tampering', 'receipt-duplicate-fields', 'receipt-size-limit', 'execution-endpoints-absent']
 }, null, 2));
