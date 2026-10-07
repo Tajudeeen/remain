@@ -152,3 +152,6 @@ GitHub has a manual **Binance read-only feasibility** workflow with `discover` a
 - [Developer experience log](docs/devex-log.md)
 
 The dependency lockfile is committed. `npm run check:security` is a small source-policy check, not a security audit. No deployed custom contracts exist at this milestone.
+
+
+Prepared integration release: [PR #27](https://github.com/Tajudeeen/remain/pull/27), 693 tests, complete remote browser/container checks and an exact-build HTTPS pass. [Setup workspace](https://remain-cash.netlify.app/#live) is deployed. Public inspection stays locked. See [release evidence](docs/netlify-deployment.md#prepared-integration-release-2026-10-07-1732-utc).
