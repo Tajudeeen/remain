@@ -2,6 +2,12 @@
 
 Real findings and unanswered questions. No fabricated live measurements.
 
+## Local evidence diagnosis, 2026-10-07
+
+The repository and remote CI were checked again after the catalog patch. No new authenticated report was available in this workspace at that check. The owner then supplied a current-format catalog excerpt: AXTIB (`AXTI`, issuer `bstock`) had `marketStatus: null` and a type-only `DISCOVERY_MARKET_STATUS` issue. AALon and DRSon (`ondo`) had readable `regular`/`true` fields, and the shown LLYon fields were also readable. This is owner-provided excerpt evidence without a run ID, timestamp, full catalog or overall status/count. It confirms the observed null shape for that AXTIB row, not a global issuer defect or independent US-exchange opening state. Real held-stock RFQ/build evidence remains absent.
+
+Added `npm run inspect:binance` to summarize the latest local report by its recorded start time. It exposes only validated diagnostic fields and labels the source as an unauthenticated local file. Historical, fixture, legacy, partial and blocked results remain nonzero; malformed candidates cannot silently select an older pass. Tests exercise stale copied files, unsafe paths, symlinks, oversized data, inconsistent status/counts, and arbitrary hidden properties. These are tooling tests, not live API measurements. The next required observation is the owner's updated discovery, followed by a held-stock read-only RFQ/build check on their approved host.
+
 ## Owner-reported catalog market-field mismatch, 2026-10-06
 
 Run `a19fb351-ae16-4280-b12e-8659e276baeb`, started `2026-10-06T19:09:34.511Z`, reached `DISCOVERY_MARKET_STATUS` in the owner's PC checkout. This identifies a non-string catalog market field after envelope and preceding stock-identity checks. The actual field type/value and which token triggered it are still unknown. This is owner-provided evidence, not a call independently made in this workspace.

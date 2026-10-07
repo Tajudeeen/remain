@@ -33,6 +33,10 @@ const messages: Record<ErrorCode, string> = {
   RFQ_OPAQUE: 'RFQ data was received but is not inspectable EIP-712 data. Signing remains blocked.'
 };
 
+export function isErrorCode(value: unknown): value is ErrorCode {
+  return typeof value === 'string' && Object.hasOwn(messages, value);
+}
+
 // Only fixed local labels may be exposed. Never use provider keys, messages or
 // values as diagnostic labels, even if callers bypass TypeScript at runtime.
 const schemaChecks = [
@@ -44,7 +48,7 @@ const schemaChecks = [
   'MARKET_RECORD', 'MARKET_STATUS', 'MARKET_OPEN_STATE'
 ] as const;
 export type SchemaCheck = typeof schemaChecks[number];
-function allowedCheck(value: unknown): value is SchemaCheck {
+export function isSchemaCheck(value: unknown): value is SchemaCheck {
   return typeof value === 'string' && (schemaChecks as readonly string[]).includes(value);
 }
 
@@ -57,14 +61,14 @@ export class RemainError extends Error {
     this.name = 'RemainError';
     this.code = code;
     this.upstreamCode = upstreamCode;
-    this.validationCheck = code === 'UPSTREAM_SCHEMA_INVALID' && allowedCheck(validationCheck) ? validationCheck : undefined;
+    this.validationCheck = code === 'UPSTREAM_SCHEMA_INVALID' && isSchemaCheck(validationCheck) ? validationCheck : undefined;
   }
 }
 
 export function safeError(error: unknown): { code: ErrorCode; message: string; upstreamCode?: number; validationCheck?: SchemaCheck } {
   const e = error instanceof RemainError ? error : new RemainError('UPSTREAM_SCHEMA_INVALID');
   return { code: e.code, message: e.message, ...(e.upstreamCode === undefined ? {} : { upstreamCode: e.upstreamCode }),
-    ...(e.code === 'UPSTREAM_SCHEMA_INVALID' && allowedCheck(e.validationCheck) ? { validationCheck: e.validationCheck } : {}) };
+    ...(e.code === 'UPSTREAM_SCHEMA_INVALID' && isSchemaCheck(e.validationCheck) ? { validationCheck: e.validationCheck } : {}) };
 }
 
 export function schemaError(check: SchemaCheck): RemainError {
