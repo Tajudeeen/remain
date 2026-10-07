@@ -14,6 +14,7 @@ Updated 2026-10-07. Submission target: 2026-10-11 12:00 UTC per the supplied bri
 | 7: Receipt workspace | Separate app route, fictional source receipt, stateless inspection adapter and downloadable result | 453 local tests and coverage, green PR/main CI with browser/container checks, external HTTPS smoke 37587725694 and production browser | COMPLETE for TEST_FIXTURE receipt inspection. Live provenance remains BLOCKED |
 | 8: RFQ payload review | Bounded recursive typed-data validation, duplicate-aware RFQ parsing, unsigned build binding and redacted review report | Adversarial local suite, coverage, terminal rehearsal and green remote CI; actual vendor order semantics and held-position RFQ later | Independent read-only module implemented; live feasibility and signature semantics remain BLOCKED/UNVERIFIED |
 | 9: Public request boundary | Duplicate-aware planner parsing, strict data/enums, upload deadlines, cancellation cleanup and exact-build deployment smoke | 603 local tests and coverage, green PR/main CI, Netlify deploy 6ac611f78be59c00081c215e, HTTPS smoke 37601461211 and production browser | COMPLETE for TEST_FIXTURE request hardening. Live trading remains BLOCKED |
+| 10: Browser response boundary | Bounded stream reads, duplicate-aware response parsing, submitted-intent display checks, atomic receipt validation, retry and monotonic expiry | 653 local tests and coverage, actual-page VM regressions; real-browser CI and exact-build HTTPS verification pending | Implemented and locally verified; remote/release verification pending. Live trading remains BLOCKED |
 
 ## Implemented in gate 0
 
@@ -39,6 +40,8 @@ Local and remote checks green, then a real authenticated smoke result with suppo
 Gate 0 completion does not authorize trading or prove signature semantics. Those require vendor field binding, actual approval/settlement analysis and explicit owner approval later.
 
 ## Blueprint clarifications
+
+The owner's next-milestone request on 2026-10-07 authorizes Gate 10 response handling in the existing synthetic planner and receipt workspace. It adds no wallet, vendor adapter, credential hosting or execution. Numbering follows the independently authorized fixture milestones, and does not mean the original blueprint's live release milestone has passed. See [browser response contract](browser-response.md).
 
 The owner's subsequent continuation authorizes Gate 9 hardening of the existing public TEST_FIXTURE request boundary. Both accepted and rejected requests remain bounded, source remains private, and the deployed smoke checks the exact released build. See [request-boundary contract](request-boundary.md).
 

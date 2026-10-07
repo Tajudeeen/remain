@@ -35,6 +35,10 @@ assert.equal(page.status, 200);
 const html = await page.text();
 assert.match(html, /Remain/);
 assert.match(html, /TEST_FIXTURE|synthetic/i);
+const browserResponse = await fetch(new URL('/response.js', base), { redirect: 'error', signal: AbortSignal.timeout(5000) });
+assert.equal(browserResponse.status, 200);
+assert.match(browserResponse.headers.get('content-type') ?? '', /(?:java|ecma)script/);
+assert.match(await browserResponse.text(), /export function validatePlanningRecord/);
 
 const input = { cashTarget: '25', retainPercent: 70, maxImpactPercent: '0.50', market: 'regular', allowClosedMarket: false };
 const planResponse = await fetch(new URL('/api/rehearse', base), {
@@ -104,5 +108,5 @@ console.log(JSON.stringify({
   liveGate: 'BLOCKED',
   baseOrigin: base.origin,
   buildSha: healthBody.buildSha,
-  checks: ['health-build', 'static-page', 'planning-accounting', 'paused-market-guard', 'invalid-input', 'planner-duplicate-fields', 'planner-enum-coercion', 'receipt-replay', 'receipt-tampering', 'receipt-duplicate-fields', 'receipt-size-limit', 'execution-endpoints-absent']
+  checks: ['health-build', 'static-page', 'browser-response-module', 'planning-accounting', 'paused-market-guard', 'invalid-input', 'planner-duplicate-fields', 'planner-enum-coercion', 'receipt-replay', 'receipt-tampering', 'receipt-duplicate-fields', 'receipt-size-limit', 'execution-endpoints-absent']
 }, null, 2));

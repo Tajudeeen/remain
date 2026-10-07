@@ -1,4 +1,5 @@
 import './proof.js';
+import { readFixtureJSON, validatePlanningRecord } from './response.js';
 
 const $ = (id) => document.getElementById(id);
 const form = $('plan-form');
@@ -124,8 +125,11 @@ function render(result) {
   }
   detail(`${plan.attempts.length} synthetic quote inputs checked. Smallest safe observed debit, not a global guarantee.`);
   record = result; $('download').disabled = false;
+  // A clock rollback must not extend a received snapshot's review window.
+  const remainingMs = Math.max(0, Math.min(15000, result.reviewUntilMs - Date.now()));
+  const monotonicDeadline = performance.now() + remainingMs;
   const updateFreshness = () => {
-    const seconds = Math.max(0, Math.ceil((result.reviewUntilMs - Date.now()) / 1000));
+    const seconds = Math.max(0, Math.ceil(Math.min(result.reviewUntilMs - Date.now(), monotonicDeadline - performance.now()) / 1000));
     $('freshness').textContent = passed ? seconds ? `Review window · ${seconds}s` : 'Snapshot expired' : 'Blocked snapshot';
     if (passed && !seconds) {
       pill.textContent = 'Snapshot expired'; pill.className = 'verdict-pill';
@@ -143,16 +147,18 @@ form.addEventListener('submit', async (event) => {
   const current = ++version; clearPreview('Checking the synthetic quotes against your rules.');
   $('plan-button').disabled = true; $('plan-preview').setAttribute('aria-busy', 'true'); message('Checking your cash target and retained floor…');
   const timeout = setTimeout(() => active.abort(), 4000);
+  let failureMessage = 'Couldn’t calculate this rehearsal. Check your inputs and try again.';
   try {
-    const response = await fetch('/api/rehearse', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(submitted), signal: active.signal, credentials: 'omit', cache: 'no-store' });
-    if (!response.ok) throw new Error(response.status === 429 ? 'Please wait a minute before another rehearsal.' : 'Couldn’t calculate this rehearsal. Check your inputs and try again.');
-    const result = await response.json();
+    const response = await fetch('/api/rehearse', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(submitted), signal: active.signal, credentials: 'omit', cache: 'no-store', redirect: 'error' });
+    if (!response.ok) { if (response.status === 429) failureMessage = 'Please wait a minute before another rehearsal.'; throw new Error(); }
+    const result = validatePlanningRecord(await readFixtureJSON(response, active.signal), submitted);
     if (current !== version) return;
-    render(result); message(result.plan.status === 'PLANNED_FOR_REVIEW' ? 'Synthetic plan checked. Execution remains disabled.' : 'BellGuard blocked this rehearsal. Review the reasons.');
+    render(result);
+    if ($('verdict-pill').textContent !== 'Snapshot expired') message(result.plan.status === 'PLANNED_FOR_REVIEW' ? 'Synthetic plan checked. Execution remains disabled.' : 'BellGuard blocked this rehearsal. Review the reasons.');
   } catch (error) {
     if (current !== version) return;
     clearPreview('No valid result. Please retry the rehearsal.');
-    message(active.signal.aborted ? 'Rehearsal timed out. Please try again.' : error instanceof Error ? error.message : 'Rehearsal unavailable.', true);
+    message(active.signal.aborted ? 'Rehearsal timed out. Please try again.' : failureMessage, true);
   } finally {
     clearTimeout(timeout);
     if (current === version) { $('plan-button').disabled = false; $('plan-preview').setAttribute('aria-busy', 'false'); controller = undefined; }
