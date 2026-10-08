@@ -174,6 +174,18 @@ test('a reorg withdraws durable reconciliation and browser-visible success', asy
   await assert.rejects(s.engine.poll(s.f.wallet, r.id), /REORG_DETECTED/);
   assert.equal(s.engine.get(s.f.wallet, r.id).state, 'INVALIDATED'); assert.equal(s.engine.get(s.f.wallet, r.id).result, null);
 });
+test('a replacement settlement hash is admitted only after withdrawal and exact-UID chain reconciliation', async t => {
+  const s = setup(t), r = await s.engine.prepare(s.f.wallet, s.f.input), replacement = '0x' + '6'.repeat(64);
+  await s.engine.sign(s.f.wallet, r.id, await s.f.account.signTypedData(auth(s.f).typedData)); await s.engine.submit(s.f.wallet, r.id);
+  s.f.flags.orderUid = r.auth.orderUid; s.f.flags.settled = true; await s.engine.poll(s.f.wallet, r.id); await s.engine.poll(s.f.wallet, r.id);
+  await assert.rejects(s.engine.recoverSettlement(s.f.wallet, r.id, replacement), /ORDER_ID_MISMATCH/);
+  s.f.flags.reorg = true; await assert.rejects(s.engine.poll(s.f.wallet, r.id)); s.f.flags.reorg = false;
+  const original = s.f.rpc.call; s.f.rpc.call = async (method, params) => {
+    const value = await original(method, params); return JSON.parse(JSON.stringify(value).replaceAll(txHash, replacement));
+  };
+  s.f.flags.shortfall = true; await assert.rejects(s.engine.recoverSettlement(s.f.wallet, r.id, replacement), /SETTLEMENT_NOT_CONFIRMED/); assert.equal(s.engine.get(s.f.wallet, r.id).txHash, txHash);
+  s.f.flags.shortfall = false; const result = await s.engine.recoverSettlement(s.f.wallet, r.id, replacement); assert.equal(result.state, 'RECONCILED'); assert.equal(result.txHash, replacement); assert.equal(s.calls(), 1);
+});
 test('confirmed invalidation never claims absence of a raced fill or releases the unresolved order lock', async t => {
   const s = setup(t), r = await s.engine.prepare(s.f.wallet, s.f.input);
   await s.engine.sign(s.f.wallet, r.id, await s.f.account.signTypedData(auth(s.f).typedData)); await s.engine.submit(s.f.wallet, r.id);

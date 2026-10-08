@@ -153,7 +153,11 @@ export class ExecutionEngine {
   async recoverSettlement(wallet: string, id: string, txHash: string) {
     const r = this.options.store.get(id, wallet);
     if (!(r.state === 'PREPARED' && r.signaturePrompted) && !['SUBMITTING', 'UNKNOWN', 'PENDING', 'FILLED', 'FAILED', 'INVALIDATED', 'RECONCILED'].includes(r.state)) fail('STATE_CONFLICT');
-    const hash = hexHash(txHash); if (r.txHash && r.txHash !== hash) fail('ORDER_ID_MISMATCH');
+    const hash = hexHash(txHash);
+    // A reorg or disputed vendor hash can require a replacement settlement.
+    // Withdraw the old observation first, then require the same exact UID and
+    // complete independent accounting before changing the transaction binding.
+    if (r.txHash && r.txHash !== hash && r.state !== 'INVALIDATED') fail('ORDER_ID_MISMATCH');
     const result = await reconcileChain(this.options.rpcs, r.auth, hash, this.options.mode === 'TEST_FIXTURE');
     // An arbitrary transaction hash cannot be attached to an unresolved order.
     if (result.status !== 'RECONCILED') fail('SETTLEMENT_NOT_CONFIRMED');

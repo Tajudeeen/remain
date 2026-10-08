@@ -59,6 +59,8 @@ Loopback read-only inspection cannot run on a public bind. Authenticated executi
 
 Unknown outcomes retain the original UUID/signature across restart. Sign in again and “Load original order.” Poll an observed platform ID or supply an independently located settlement hash. Recovery requires the exact UID and all accounting checks. The server never guesses a vendor lookup endpoint or creates a replacement sale.
 
+After the prior observation is withdrawn into `INVALIDATED`, a different settlement hash may be supplied for the same exact order UID. It replaces the old binding only after complete independent reconciliation, which handles a reorg's replacement solver transaction without submitting another sale.
+
 Requesting an order-signature prompt durably marks the draft as potentially signed, before returning typed data to the browser. A lost response, page change, prompt timeout or invalid uploaded signature cannot erase that marker. Only a draft that never requested order signing can be discarded as unsigned. Repeated prompts sign the same UID rather than creating new authority. Investigate or invalidate potentially escaped authority before trying a different sale.
 
 Preparation, ordinary reads and downloads omit raw typed data until that durable marker exists. Reviewing decoded economic bounds does not export a signable artifact early. The owner can still perform unrelated wallet actions outside Remain, which remain outside its retained-floor guarantee.
@@ -66,6 +68,8 @@ Preparation, ordinary reads and downloads omit raw typed data until that durable
 For invalidation, confirm its exact wallet transaction and paste the hash into “Check invalidation.” Confirmed revocation leaves `INVALIDATED` with the sale locked until settlement is understood. A provider failure/expiry/cancellation label cannot revoke an escaped signature. Automatic historical no-fill/expiry unlock is not implemented. Preserve the journal and investigate rather than deleting it to clear a lock.
 
 Download a private receipt and run `npm run verify:chain-receipt -- <local-json-file>`. The verifier reconstructs intent and signed schema, then rereads both RPCs. Downloaded success labels are not trusted. The live CLI rejects fixture receipts and prints bounded status/reasons, not balances or signatures.
+
+The RPC recheck establishes signed-order settlement facts. The off-chain cash target, retention percentage and preflight settings remain receipt assertions, not values authenticated by the CoW signature. A recomputable JSON checksum cannot authenticate those assertions.
 
 ## Persistent HTTPS packaging
 
