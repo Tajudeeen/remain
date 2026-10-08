@@ -1,7 +1,7 @@
 import { createRehearsalServer } from '../src/rehearsal/server.ts';
 import { localInspector } from '../src/integration/local.ts';
 import { localPositionReader } from '../src/integration/position.ts';
-import { localCashPreviewer } from '../src/integration/preview.ts';
+import { localCashPreviewer, localCashReviewer } from '../src/integration/preview.ts';
 
 function port(value: string | undefined): number {
   if (value === undefined) return 3000;
@@ -33,10 +33,11 @@ try {
   const inspector = localInspector(process.env);
   const positionReader = localPositionReader(process.env);
   const cashPreviewer = localCashPreviewer(process.env);
+  const cashReviewer = localCashReviewer(process.env);
 
   const configuredBuildSha = process.env.REMAIN_BUILD_SHA;
   const server = createRehearsalServer({ allowedHosts: hosts,
-    ...(configuredBuildSha ? { buildSha: configuredBuildSha } : {}), ...(inspector ? { inspector } : {}), ...(positionReader ? { positionReader } : {}), ...(cashPreviewer ? { cashPreviewer } : {}) });
+    ...(configuredBuildSha ? { buildSha: configuredBuildSha } : {}), ...(inspector ? { inspector } : {}), ...(positionReader ? { positionReader } : {}), ...(cashPreviewer ? { cashPreviewer } : {}), ...(cashReviewer ? { cashReviewer } : {}) });
 
   server.listen(listenPort, host, () => {
     const address = host === '0.0.0.0' ? 'configured public host' : `http://${host}:${listenPort}`;

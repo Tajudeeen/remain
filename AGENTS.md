@@ -31,6 +31,7 @@ Remain is a cash-target tokenized-stock product with BellGuard risk checks. The 
 - Preserve user changes. Use apply_patch. No force-push or destructive git operations.
 - The owner's next-milestone request on 2026-10-08 authorizes Gate 14 read-only cash-target quote exploration from a fresh selected position, bounded by a retained-input floor. The loopback-only prepared adapter may read catalog, balance, market and quotes. Estimates cannot become executable minimums or verified fee/debit bounds. No actual wallet or authenticated read is performed by the agent, credentials remain local, and signing/build/execution and source-publication gates remain unchanged.
 - Do not claim audited, formally verified, production ready or contest winning from a test pass.
+- The owner's 2026-10-08 request to enable trading and advance authorizes Gate 15 prepared cash-candidate unsigned review. An explicit action refreshes the chosen raw input and venue against fresh local position/market data, then requests an unsigned build with approvals disabled. This advances integration without inventing vendor signing semantics. Missing held-position and economic evidence keeps live trading locked. No real wallet, authenticated read, signature, approval or order is performed by the agent. Credentials remain local and source remains private.
 
 ## Product honesty
 

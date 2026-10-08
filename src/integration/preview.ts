@@ -7,9 +7,25 @@ import { BSC_USDT, address, selectedMarket, uint } from '../validation.ts';
 import { RemainError } from '../errors.ts';
 import { readSelectedPosition } from './position.ts';
 import { SearchBoundary, SearchStopped } from '../planning/search-boundary.ts';
+import { reviewRfqBuild, type RfqReview } from '../rfq/review.ts';
+import { orderReviewInput, validateOrderReview, type OrderReviewInput, type CashOrderReview } from '../../web/order-review.js';
 import { previewInput, cashTargetRaw, impactWithin, qualifiesPreview, validatePreview, type CashPreview, type PreviewInput, type PreviewRoute } from '../../web/preview.js';
 
 export type LocalCashPreviewer = (input: PreviewInput, signal: AbortSignal) => Promise<CashPreview>;
+export type LocalCashReviewer = (input: OrderReviewInput, signal: AbortSignal) => Promise<CashOrderReview>;
+export function cashOrderInput(value: unknown): OrderReviewInput {
+  try { return orderReviewInput(value); } catch { throw new RemainError('INVALID_INPUT'); }
+}
+export function projectCashOrder(value: unknown, input: OrderReviewInput, now = Date.now()): CashOrderReview {
+  try { return validateOrderReview(value, input, now); } catch { throw new RemainError('UPSTREAM_SCHEMA_INVALID'); }
+}
+export function localCashReviewer(env: Record<string, string | undefined>, reader?: Reader): LocalCashReviewer | undefined {
+  if (env.REMAIN_LOCAL_READ_ONLY !== 'true') return undefined;
+  const apiKey = env.BINANCE_WEB3_API_KEY, secretKey = env.BINANCE_WEB3_SECRET_KEY;
+  if (!apiKey?.trim() || !secretKey?.trim()) throw new RemainError('CONFIG_MISSING');
+  const client = reader ?? new ReadOnlyBinanceClient({ apiKey, secretKey });
+  return (input, signal) => reviewCashCandidate(input, client, signal, reader ? 'TEST_FIXTURE' : 'LIVE_READ_ONLY');
+}
 export function cashPreviewInput(value: unknown): PreviewInput {
   try { return previewInput(value); } catch { throw new RemainError('INVALID_INPUT'); }
 }
@@ -28,6 +44,17 @@ export function localCashPreviewer(env: Record<string, string | undefined>, read
 // quote estimates contain no verified minimum, debit-fee bound or signed deadline.
 export async function exploreCashTarget(value: PreviewInput, reader: Reader, signal: AbortSignal,
   mode: CashPreview['mode'] = 'TEST_FIXTURE', now: () => number = Date.now): Promise<CashPreview> {
+  return (await readCashTarget(value, reader, signal, mode, now)).preview;
+}
+export async function reviewCashCandidate(value: OrderReviewInput, reader: Reader, signal: AbortSignal,
+  mode: CashPreview['mode'] = 'TEST_FIXTURE', now: () => number = Date.now): Promise<CashOrderReview> {
+  const input = cashOrderInput(value);
+  const result = await readCashTarget(input.intent, reader, signal, mode, now, input);
+  return projectCashOrder({ kind: 'REMAIN_UNSIGNED_CASH_REVIEW', input, preview: result.preview, rfqReview: result.review,
+    estimateChanged: result.preview.probes[0]!.routes[0]!.estimatedOutputRaw !== input.expectedOutputRaw, executionEnabled: false }, input, now());
+}
+async function readCashTarget(value: PreviewInput, reader: Reader, signal: AbortSignal,
+  mode: CashPreview['mode'], now: () => number, selection?: OrderReviewInput): Promise<{ preview: CashPreview; review?: RfqReview }> {
   const input = cashPreviewInput(value), started = now();
   if (!Number.isSafeInteger(started) || started < 0) throw new RemainError('AUTH_CLOCK_DRIFT');
   const boundary = new SearchBoundary(now, started, 12000, signal);
@@ -50,6 +77,7 @@ export async function exploreCashTarget(value: PreviewInput, reader: Reader, sig
     if (position.status !== 'HELD_OBSERVED') throw new RemainError('INSUFFICIENT_POSITION');
     const balance = BigInt(position.balanceRaw!), floor = (balance * BigInt(input.retainBps) + 9999n) / 10000n, max = balance - floor;
     if (max <= 0n) throw new RemainError('INSUFFICIENT_POSITION');
+    if (selection && BigInt(selection.amountRaw) > max) throw new RemainError('INSUFFICIENT_POSITION');
     const marketRead = await read('/api/v1/dex/market/rwa/underlying-market', [['binanceChainId', '56'], ['tokenContractAddress', input.token]]);
     const marketData = dataRecord(marketRead.data), status = dataRecord(marketData.statusInfo);
     const market = { ...selectedMarket(marketData, input.token), reasonCode: status.reasonCode == null ? null : status.reasonCode as string, observedAtMs: marketRead.timestamp };
@@ -57,7 +85,8 @@ export async function exploreCashTarget(value: PreviewInput, reader: Reader, sig
         market.reasonCode === 'MARKET_CLOSED' && market.openState || !market.openState && !input.allowClosedMarket) throw new RemainError('MARKET_BLOCKED');
     let decimals: number | null = null, target: string | null = null;
     const probes: CashPreview['probes'][number][] = [], seen = new Set<string>(), ids = new Set<string>();
-    let best: CashPreview['candidate'] = null, next = max, stopReason: CashPreview['stopReason'] = 'SEARCH_LIMIT';
+    let best: CashPreview['candidate'] = null, next = selection ? BigInt(selection.amountRaw) : max, stopReason: CashPreview['stopReason'] = 'SEARCH_LIMIT';
+    let review: RfqReview | undefined;
     for (let attempt = 0; attempt < 8; attempt++) {
       fresh(); const amount = next.toString(); seen.add(amount);
       const result = await read('/api/v1/dex/aggregator/quote', [['binanceChainId', '56'], ['amount', amount],
@@ -65,24 +94,44 @@ export async function exploreCashTarget(value: PreviewInput, reader: Reader, sig
       const batch = result.data;
       if (!Array.isArray(batch) || batch.length > 16) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
       // snapshotRfq has already rejected sparse arrays, getters and executable data.
-      const routes: PreviewRoute[] = batch.map(value => {
+      const admit = (value: unknown, checkId = true): PreviewRoute => {
         const r = dataRecord(value), from = dataRecord(r.fromToken), to = dataRecord(r.toToken);
-        if (r.binanceChainId !== '56' || r.executionMode !== 'RFQ' || r.fromTokenAmount !== amount ||
+        if (r.binanceChainId !== '56' || (checkId ? r.executionMode !== 'RFQ' : r.executionMode !== undefined && r.executionMode !== 'RFQ') || r.fromTokenAmount !== amount ||
             address(from.tokenContractAddress) !== input.token || address(to.tokenContractAddress) !== BSC_USDT.toLowerCase() ||
-            !['PcsXRfq', 'InchFusion', 'CowSwap'].includes(r.vendorName as string) || typeof r.quoteId !== 'string' || !/^[a-zA-Z0-9-]{1,128}$/.test(r.quoteId) || ids.has(r.quoteId) ||
+            !['PcsXRfq', 'InchFusion', 'CowSwap'].includes(r.vendorName as string) || checkId && (typeof r.quoteId !== 'string' || !/^[a-zA-Z0-9-]{1,128}$/.test(r.quoteId) || ids.has(r.quoteId)) ||
             from.decimal !== String(position!.stock.decimals) || typeof to.decimal !== 'string' || !/^(0|[1-9][0-9]?)$/.test(to.decimal) || Number(to.decimal) > 36 ||
             from.isHoneyPot !== false || to.isHoneyPot !== false || typeof from.taxRate !== 'string' || typeof to.taxRate !== 'string' || !/^0(?:\.0+)?$/.test(from.taxRate) || !/^0(?:\.0+)?$/.test(to.taxRate) ||
             r.feeAmount !== null || r.feeToken !== null || r.actualSwapAmount !== null) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
         if (decimals !== null && decimals !== Number(to.decimal)) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
-        decimals = Number(to.decimal); target = cashTargetRaw(input.cashTarget, decimals); ids.add(r.quoteId);
+        decimals = Number(to.decimal); target = cashTargetRaw(input.cashTarget, decimals); if (checkId) ids.add(r.quoteId as string);
         const route = { vendor: r.vendorName as PreviewRoute['vendor'], estimatedOutputRaw: uint(r.toTokenAmount, true), impactPercent: r.priceImpactPercent as string | null };
         impactWithin(route.impactPercent, input.maxImpactBps); return Object.freeze(route);
-      });
+      };
+      let routes: PreviewRoute[] = batch.map(r => admit(r));
+      let selected: Record<string, unknown> | undefined;
+      if (selection) {
+        if (decimals !== selection.cashDecimals) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
+        const matching = routes.map((r, i) => ({ r, i })).filter(({ r }) => r.vendor === selection.vendor);
+        if (matching.length !== 1 || !qualifiesPreview(matching[0]!.r, input, target!)) throw new RemainError('RFQ_UNAVAILABLE');
+        selected = dataRecord(batch[matching[0]!.i]); routes = [matching[0]!.r];
+      }
       probes.push({ inputRaw: amount, observedAtMs: result.timestamp, routes });
       for (let j = 0; j < routes.length; j++) {
         const route = routes[j]!;
         if (qualifiesPreview(route, input, target!) && (!best || next < BigInt(probes[best.probeIndex]!.inputRaw) ||
             amount === probes[best.probeIndex]!.inputRaw && BigInt(route.estimatedOutputRaw) > BigInt(probes[best.probeIndex]!.routes[best.routeIndex]!.estimatedOutputRaw))) best = { probeIndex: attempt, routeIndex: j };
+      }
+      if (selection) {
+        // One refreshed quote for the explicitly selected input and vendor.
+        // No replacement input, fallback venue, signature or automatic retry.
+        const built = await read('/api/v1/dex/aggregator/swap', [['binanceChainId', '56'], ['amount', amount],
+          ['fromTokenAddress', input.token], ['toTokenAddress', BSC_USDT.toLowerCase()], ['userWalletAddress', input.wallet],
+          ['quoteId', selected!.quoteId as string], ['slippagePercent', '0.5'], ['autoSlippage', 'false'], ['approveTransaction', 'false'],
+          ['priceImpactProtectionPercent', (input.maxImpactBps / 100).toString()]]);
+        const build = dataRecord(built.data), builtRoute = admit(build.routerResult, false);
+        if (builtRoute.impactPercent !== routes[0]!.impactPercent || !qualifiesPreview(builtRoute, input, target!)) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
+        review = reviewRfqBuild(build, selected, { token: input.token, amount, wallet: input.wallet });
+        fresh(); stopReason = 'EXHAUSTED'; break;
       }
       // A proportional seed improves the first result. Remaining probes sample
       // unobserved gaps. No monotonic-price assumption or global optimum claim.
@@ -105,9 +154,10 @@ export async function exploreCashTarget(value: PreviewInput, reader: Reader, sig
       }));
     }
     const at = fresh();
-    return projectCashPreview({ kind: 'REMAIN_CASH_PREVIEW', mode, input, position, market, cashDecimals: decimals, cashTargetRaw: target,
+    const preview = projectCashPreview({ kind: 'REMAIN_CASH_PREVIEW', mode, input, position, market, cashDecimals: decimals, cashTargetRaw: target,
       floorRaw: floor.toString(), maxInputRaw: max.toString(), probes, candidate: best, stopReason, createdAtMs: at,
       executionEnabled: false, liveGate: 'UNVERIFIED', minimumOutputBinding: 'UNVERIFIED', fees: 'UNVERIFIED', ownership: 'NOT_AUTHENTICATED' }, input, at);
+    return { preview, ...(review ? { review } : {}) };
   } catch (error) {
     if (boundary.reason === 'CLOCK_REGRESSION') throw new RemainError('AUTH_CLOCK_DRIFT');
     if (boundary.reason === 'SEARCH_TIME_BUDGET' && !signal.aborted) throw new RemainError('UPSTREAM_TIMEOUT');

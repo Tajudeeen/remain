@@ -2,6 +2,7 @@ import { readFixtureJSON, readReadOnlyJSON } from './response.js';
 import { walletSession } from './wallet.js';
 import { validatePosition, formatPositionUnits, preparePositionAmount } from './position.js';
 import { previewInput, validatePreview } from './preview.js';
+import { candidateForReview, validateOrderReview } from './order-review.js';
 
 const $ = id => document.getElementById(id);
 const checks = ['authenticated_bsc_aggregator', 'supported_bsc_stock_identity', 'market_status_read', 'wallet_balance_covers_input', 'matching_stock_to_usdt_rfq', 'inspectable_bsc_eip712_structure'];
@@ -35,8 +36,17 @@ export function validateInspection(value) {
 if (typeof document !== 'undefined' && $('live-view')) {
   let available = false, statusController, inspectionController, statusVersion = 0, inspectionVersion = 0;
   let positionController, positionVersion = 0, positionSnapshot, positionReceived, positionAge, positionTimer;
-  let previewController, previewVersion = 0, previewTimer;
+  let previewController, previewVersion = 0, previewTimer, previewSnapshot, previewReceived, previewAge;
+  let reviewController, reviewVersion = 0, reviewTimer;
+  function clearReview() {
+    reviewVersion++; reviewController?.abort(); reviewController = undefined; clearTimeout(reviewTimer);
+    $('cash-review-result').hidden = true;
+    for (const id of ['cash-review-label', 'cash-review-sale', 'cash-review-before', 'cash-review-after', 'cash-review-details', 'cash-review-proof']) $(id).textContent = '';
+    $('cash-review-message').textContent = 'Choose a fresh cash candidate to review its unsigned order.';
+    $('cash-review-message').classList.remove('error');
+  }
   function clearPreview() {
+    clearReview(); previewSnapshot = undefined; previewReceived = undefined; previewAge = undefined;
     previewVersion++; previewController?.abort(); previewController = undefined; clearTimeout(previewTimer);
     $('cash-preview-result').hidden = true; $('cash-preview-panel').setAttribute('aria-busy', 'false');
     for (const id of ['cash-preview-label', 'cash-preview-title', 'cash-preview-sale', 'cash-preview-retained', 'cash-preview-output', 'cash-preview-details']) $(id).textContent = '';
@@ -62,10 +72,13 @@ if (typeof document !== 'undefined' && $('live-view')) {
     update();
   }
   function update() {
-    $('live-inspect').disabled = !available || session.state.status !== 'CONNECTED' || Boolean(inspectionController || previewController || positionController);
-    $('position-read').disabled = !available || session.state.status !== 'CONNECTED' || Boolean(positionController || previewController || inspectionController);
-    $('cash-preview').disabled = !available || session.state.status !== 'CONNECTED' || Boolean(previewController || positionController || inspectionController);
+    const busy = Boolean(inspectionController || previewController || positionController || reviewController);
+    $('live-inspect').disabled = !available || session.state.status !== 'CONNECTED' || busy;
+    $('position-read').disabled = !available || session.state.status !== 'CONNECTED' || busy;
+    $('cash-preview').disabled = !available || session.state.status !== 'CONNECTED' || busy;
     $('cash-preview-cancel').disabled = !previewController;
+    $('cash-review').disabled = !available || session.state.status !== 'CONNECTED' || busy || !previewSnapshot?.candidate;
+    $('cash-review-cancel').disabled = !reviewController;
   }
   function walletChanged(state) {
     clearPosition(); $('live-amount').value = '';
@@ -109,7 +122,7 @@ if (typeof document !== 'undefined' && $('live-view')) {
   for (const id of ['cash-preview-target', 'cash-preview-retain', 'cash-preview-impact', 'cash-preview-closed']) $(id).addEventListener('input', () => { clearPreview(); update(); });
   $('cash-preview-cancel').addEventListener('click', () => { clearPreview(); $('cash-preview-message').textContent = 'Preview cancelled. Nothing submitted.'; update(); });
   $('cash-preview').addEventListener('click', async () => {
-    if (!available || session.state.status !== 'CONNECTED' || previewController || inspectionController || positionController || !$('live-token').reportValidity() ||
+    if (!available || session.state.status !== 'CONNECTED' || previewController || inspectionController || positionController || reviewController || !$('live-token').reportValidity() ||
         !['cash-preview-target', 'cash-preview-retain', 'cash-preview-impact'].every(id => $(id).reportValidity())) return;
     let submitted;
     try { submitted = previewInput({ wallet: session.state.address, token: $('live-token').value.trim(), cashTarget: $('cash-preview-target').value.trim(),
@@ -130,6 +143,7 @@ if (typeof document !== 'undefined' && $('live-view')) {
       const at = Date.now(), result = validatePreview(body, submitted, at), elapsed = performance.now() - started;
       if (active.signal.aborted || at < startedWall || !Number.isFinite(elapsed) || elapsed < 0 || elapsed > 15000) throw new Error();
       const age = at - result.position.observedAtMs;
+      previewSnapshot = result; previewReceived = performance.now(); previewAge = age;
       $('cash-preview-label').textContent = `${result.mode} · ESTIMATED OUTPUT`;
       $('cash-preview-title').textContent = result.candidate ? 'A cash candidate. Signing locked.' : 'No qualifying candidate observed.';
       if (result.candidate) {
@@ -153,8 +167,48 @@ if (typeof document !== 'undefined' && $('live-view')) {
       clearTimeout(timer); if (current === previewVersion) { previewController = undefined; $('cash-preview-panel').setAttribute('aria-busy', 'false'); } update();
     }
   });
+  $('cash-review-cancel').addEventListener('click', () => { clearReview(); $('cash-review-message').textContent = 'Order review cancelled. Nothing signed or submitted.'; update(); });
+  $('cash-review').addEventListener('click', async () => {
+    if (!available || session.state.status !== 'CONNECTED' || !previewSnapshot?.candidate || reviewController || previewController || positionController || inspectionController) return;
+    let submitted;
+    try {
+      const elapsed = performance.now() - previewReceived;
+      if (!Number.isFinite(elapsed) || elapsed < 0 || previewAge + elapsed > 15000) throw new Error();
+      submitted = candidateForReview(previewSnapshot, Date.now());
+    } catch { clearPreview(); $('cash-review-message').textContent = 'Candidate expired. Explore a fresh cash target.'; update(); return; }
+    clearReview(); const active = new AbortController(); reviewController = active; const current = ++reviewVersion; update();
+    const started = performance.now(), startedWall = Date.now(), timer = setTimeout(() => active.abort(), 15000);
+    $('cash-review-message').textContent = 'Rereading the holding and market, then refreshing this exact input and venue. No signature requested…';
+    try {
+      const response = await fetch('/api/live/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(submitted), signal: active.signal, credentials: 'omit', cache: 'no-store', redirect: 'error' });
+      const body = await readReadOnlyJSON(response, active.signal);
+      if (current !== reviewVersion) return;
+      if (!response.ok) {
+        const code = exact(body, ['code']) && codes.has(body.code) ? body.code : 'UPSTREAM_SCHEMA_INVALID';
+        $('cash-review-message').textContent = `${code}. ${errorHelp[code] ?? 'The unsigned review was blocked. Explore a fresh candidate.'}`;
+        $('cash-review-message').classList.add('error'); return;
+      }
+      const at = Date.now(), result = validateOrderReview(body, submitted, at), elapsed = performance.now() - started;
+      if (active.signal.aborted || at < startedWall || !Number.isFinite(elapsed) || elapsed < 0 || elapsed > 15000) throw new Error();
+      const p = result.preview, route = p.probes[0].routes[0];
+      $('cash-review-label').textContent = `${p.mode} · UNSIGNED STRUCTURE ONLY`;
+      $('cash-review-sale').textContent = `${formatPositionUnits(submitted.amountRaw, p.position.stock.decimals)} ${p.position.stock.symbol}`;
+      $('cash-review-before').textContent = `${formatPositionUnits(submitted.expectedOutputRaw, p.cashDecimals)} USDT`;
+      $('cash-review-after').textContent = `${formatPositionUnits(route.estimatedOutputRaw, p.cashDecimals)} USDT`;
+      $('cash-review-details').textContent = `${submitted.vendor} · ${p.market.marketStatus} · reported impact ${route.impactPercent}%. ${result.estimateChanged ? 'The estimate changed. Review the fresh value.' : 'The estimated cash amount is unchanged.'} This is one selected input, not another search.`;
+      $('cash-review-proof').textContent = `Unsigned build matches the fresh quote. ${result.rfqReview.typeCount} types, ${result.rfqReview.fieldCount} fields structurally checked. Artifact checksum ${result.rfqReview.artifactChecksum}. This JSON checksum is not an EIP-712 signing hash.`;
+      $('cash-review-message').textContent = 'Signed receiver, total debit, minimum payout, fees, spender, nonce and deadline still need vendor verification. Trading remains locked.';
+      $('cash-review-result').hidden = false;
+      reviewTimer = setTimeout(() => { if (current !== reviewVersion) return; clearReview(); $('cash-review-message').textContent = 'Unsigned review expired. Request a fresh candidate.'; update(); }, Math.max(0, 15000 - (at - p.position.observedAtMs)));
+    } catch {
+      if (current !== reviewVersion) return;
+      const timedOut = active.signal.aborted; clearReview();
+      $('cash-review-message').textContent = timedOut ? 'Order review timed out. Nothing submitted.' : 'No valid unsigned review. Check the local server and retry.';
+      $('cash-review-message').classList.add('error');
+    } finally { clearTimeout(timer); if (current === reviewVersion) reviewController = undefined; update(); }
+  });
   $('position-read').addEventListener('click', async () => {
-    if (!available || session.state.status !== 'CONNECTED' || !$('live-token').reportValidity()) return;
+    if (!available || session.state.status !== 'CONNECTED' || inspectionController || positionController || previewController || reviewController || !$('live-token').reportValidity()) return;
     clearPosition(); invalidate(); const active = new AbortController(); positionController = active; const current = ++positionVersion; update();
     const submitted = { wallet: session.state.address, token: $('live-token').value.trim() };
     const started = performance.now(); const timer = setTimeout(() => active.abort(), 25000);
@@ -200,7 +254,7 @@ if (typeof document !== 'undefined' && $('live-view')) {
     }
   });
   $('live-form').addEventListener('submit', async event => {
-    event.preventDefault(); if (!available || session.state.status !== 'CONNECTED' || !$('live-form').reportValidity()) return;
+    event.preventDefault(); if (!available || session.state.status !== 'CONNECTED' || reviewController || previewController || positionController || inspectionController || !$('live-form').reportValidity()) return;
     invalidate(); const active = new AbortController(); inspectionController = active; const current = ++inspectionVersion; update();
     const submitted = { wallet: session.state.address, token: $('live-token').value.trim(), amountRaw: $('live-amount').value.trim() };
     const timer = setTimeout(() => active.abort(), 25000); message('Reading stock identity, held balance, RFQ and unsigned build…');

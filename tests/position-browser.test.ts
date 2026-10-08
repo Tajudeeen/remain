@@ -5,6 +5,7 @@ import { runInNewContext } from 'node:vm';
 import { readFixtureJSON, readReadOnlyJSON } from '../web/response.js';
 import * as boundary from '../web/position.js';
 import * as previewBoundary from '../web/preview.js';
+import * as reviewBoundary from '../web/order-review.js';
 import { readinessStatus } from '../src/integration/readiness.ts';
 
 const wallet = '0x' + '1'.repeat(40), token = '0x' + '2'.repeat(40), other = '0x' + '3'.repeat(40), time = 100000;
@@ -14,7 +15,7 @@ const position = () => ({ kind: 'REMAIN_POSITION_READ', mode: 'TEST_FIXTURE', wa
 type Handler = (...args: unknown[]) => unknown;
 type Element = { textContent: string; value: string; checked: boolean; disabled: boolean; hidden: boolean; events: Map<string, Handler>; attrs: Map<string, string>;
   classList: { toggle: Handler; add: Handler; remove: Handler }; setAttribute: Handler; replaceChildren: Handler; append: Handler; addEventListener: (name: string, handler: Handler) => void; reportValidity: () => boolean };
-function harness(positionFetch: (signal: AbortSignal) => Promise<Response> = async () => json(position()), previewFetch: (signal: AbortSignal) => Promise<Response> = async () => json(preview())) {
+function harness(positionFetch: (signal: AbortSignal) => Promise<Response> = async () => json(position()), previewFetch: (signal: AbortSignal) => Promise<Response> = async () => json(preview()), reviewFetch: (signal: AbortSignal) => Promise<Response> = async () => json(review())) {
   const elements = new Map<string, Element>(), timers = new Map<number, { ms: number; run: () => void }>(), events = new Map<string, Handler>();
   let timerId = 0, wall = time, elapsed = 0, changed!: (state: Record<string, unknown>) => void, state: Record<string, unknown> = { status: 'IDLE' };
   const requests: string[] = [];
@@ -35,8 +36,9 @@ function harness(positionFetch: (signal: AbortSignal) => Promise<Response> = asy
     validatePosition: (v: unknown, input: boundary.PositionInput) => boundary.validatePosition(v, plain(input), wall), formatPositionUnits: boundary.formatPositionUnits,
     preparePositionAmount: (a: string, v: unknown, input: boundary.PositionInput, now: number, age: number) => boundary.preparePositionAmount(a, v, plain(input), now, age),
     previewInput: (v: unknown) => previewBoundary.previewInput(plain(v)), validatePreview: (v: unknown, submitted: previewBoundary.PreviewInput, now: number) => previewBoundary.validatePreview(v, plain(submitted), now),
+    candidateForReview: (v: previewBoundary.CashPreview, now: number) => reviewBoundary.candidateForReview(v, now), validateOrderReview: (v: unknown, submitted: reviewBoundary.OrderReviewInput, now: number) => reviewBoundary.validateOrderReview(v, plain(submitted), now),
     document: { getElementById: get, createElement: () => get('created') }, location: { hash: '#home' }, window: { addEventListener(name: string, handler: Handler) { events.set(name, handler); } },
-    fetch: async (url: string, options: RequestInit) => { requests.push(url); return url === '/api/live/status' ? json(readinessStatus(true)) : url === '/api/live/preview' ? previewFetch(options.signal!) : positionFetch(options.signal!); },
+    fetch: async (url: string, options: RequestInit) => { requests.push(url); return url === '/api/live/status' ? json(readinessStatus(true)) : url === '/api/live/review' ? reviewFetch(options.signal!) : url === '/api/live/preview' ? previewFetch(options.signal!) : positionFetch(options.signal!); },
     Date: { now: () => wall }, performance: { now: () => elapsed }, AbortController,
     setTimeout(run: () => void, ms: number) { timers.set(++timerId, { ms, run }); return timerId; }, clearTimeout(id: number) { timers.delete(id); }
   });
@@ -52,6 +54,11 @@ function preview() {
     probes: [{ inputRaw: '50', observedAtMs: time, routes: [{ vendor: 'PcsXRfq', estimatedOutputRaw: '1000000', impactPercent: '-0.01' }] }],
     candidate: { probeIndex: 0, routeIndex: 0 }, stopReason: 'SEARCH_LIMIT', createdAtMs: time,
     executionEnabled: false, liveGate: 'UNVERIFIED', minimumOutputBinding: 'UNVERIFIED', fees: 'UNVERIFIED', ownership: 'NOT_AUTHENTICATED' };
+}
+function review() {
+  const p = previewBoundary.validatePreview(preview(), preview().input, time);
+  return { kind: 'REMAIN_UNSIGNED_CASH_REVIEW', input: reviewBoundary.candidateForReview(p, time), preview: { ...p, stopReason: 'EXHAUSTED' },
+    rfqReview: { profile: 'REMAIN_RFQ_REVIEW_V1', structure: 'VALIDATED', unsignedBuild: 'MATCHES_SELECTED_QUOTE', checksumKind: 'SHA256_JSON_NOT_EIP712', artifactChecksum: 'a'.repeat(64), typeCount: 3, fieldCount: 7, domainTypeDeclared: true, signatureSemantics: 'UNVERIFIED', executionEnabled: false }, estimateChanged: false, executionEnabled: false };
 }
 test('actual integration page prepares exact units only on explicit action and never requests an RFQ automatically', async () => {
   const page = harness(); await page.ready(); await page.event('position-read');
@@ -99,6 +106,45 @@ test('actual cash preview page renders exact estimated cash and retained stock w
   const page = harness(); await page.ready(); await page.event('cash-preview');
   assert.equal(page.get('cash-preview-result').hidden, false); assert.equal(page.get('cash-preview-sale').textContent, '0.5 FIXon'); assert.equal(page.get('cash-preview-retained').textContent, '2 FIXon'); assert.equal(page.get('cash-preview-output').textContent, '1 USDT');
   assert.match(page.get('cash-preview-label').textContent, /TEST_FIXTURE.*ESTIMATED/); assert.match(page.get('cash-preview-message').textContent, /unverified/); assert.equal(page.get('live-amount').value, ''); assert.deepEqual(page.requests, ['/api/live/status', '/api/live/preview']); assert.equal(page.get('cash-preview').disabled, false);
+});
+test('actual cash page requests unsigned review only after an explicit selected-candidate action', async () => {
+  const page = harness(); await page.ready(); await page.event('cash-review'); assert.equal(page.requests.includes('/api/live/review'), false);
+  await page.event('cash-preview'); assert.equal(page.get('cash-review').disabled, false); await page.event('cash-review');
+  assert.equal(page.get('cash-review-result').hidden, false); assert.equal(page.get('cash-review-sale').textContent, '0.5 FIXon'); assert.equal(page.get('cash-review-before').textContent, '1 USDT'); assert.equal(page.get('cash-review-after').textContent, '1 USDT');
+  assert.match(page.get('cash-review-label').textContent, /TEST_FIXTURE.*UNSIGNED/); assert.match(page.get('cash-review-message').textContent, /Trading remains locked/); assert.match(page.get('cash-review-proof').textContent, /not an EIP-712/);
+  assert.deepEqual(page.requests, ['/api/live/status', '/api/live/preview', '/api/live/review']); assert.equal(page.get('live-amount').value, '');
+});
+test('actual unsigned review displays changed fresh estimates as a separate value', async () => {
+  const r = review(); const changed = { ...r, estimateChanged: true, preview: { ...r.preview, probes: [{ ...r.preview.probes[0], routes: [{ ...r.preview.probes[0]!.routes[0], estimatedOutputRaw: '1100000' }] }] } };
+  const page = harness(undefined, undefined, async () => json(changed)); await page.ready(); await page.event('cash-preview'); await page.event('cash-review');
+  assert.equal(page.get('cash-review-before').textContent, '1 USDT'); assert.equal(page.get('cash-review-after').textContent, '1.1 USDT'); assert.match(page.get('cash-review-details').textContent, /estimate changed/);
+});
+for (const [label, patch] of [['wrong selected amount', { input: { ...review().input, amountRaw: '51' } }], ['false signature authorization', { rfqReview: { ...review().rfqReview, signatureSemantics: 'VERIFIED' } }], ['false changed estimate', { estimateChanged: true }], ['execution enabled', { executionEnabled: true }], ['private raw payload', { rawOrder: 'PRIVATE_SENTINEL' }]] as const) test(`actual unsigned review rejects ${label} atomically and permits retry`, async () => {
+  let bad = true; const page = harness(undefined, undefined, async () => json(bad ? { ...review(), ...patch } : review())); await page.ready(); await page.event('cash-preview'); await page.event('cash-review');
+  assert.equal(page.get('cash-review-result').hidden, true); assert.equal(page.get('cash-review-after').textContent, ''); assert.equal(page.get('cash-review').disabled, false);
+  bad = false; await page.event('cash-review'); assert.equal(page.get('cash-review-result').hidden, false);
+});
+test('actual unsigned review cancels and rejects late responses after intent, account, expiry or page changes', async () => {
+  for (const trigger of ['cancel', 'intent', 'account', 'expiry', 'pagehide']) {
+    let release!: (r: Response) => void, signal!: AbortSignal;
+    const page = harness(undefined, undefined, s => { signal = s; return new Promise(resolve => { release = resolve; }); }); await page.ready(); await page.event('cash-preview'); const pending = page.event('cash-review');
+    assert.equal(page.get('cash-preview').disabled, true); assert.equal(page.get('live-inspect').disabled, true);
+    if (trigger === 'cancel') await page.event('cash-review-cancel');
+    else if (trigger === 'intent') await page.event('cash-preview-target', 'input');
+    else if (trigger === 'account') page.accountChange();
+    else if (trigger === 'pagehide') page.pagehide();
+    else [...page.timers.values()].find(t => t.ms === 15000)!.run();
+    assert.equal(signal.aborted, true); release(json(review())); await pending;
+    assert.equal(page.get('cash-review-result').hidden, true); assert.equal(page.get('cash-review-after').textContent, '');
+  }
+});
+test('unsigned review rejects expired candidate, transport clock rollback and elapsed deadline', async () => {
+  const expired = harness(); await expired.ready(); await expired.event('cash-preview'); expired.clocks(time, 15001); await expired.event('cash-review'); assert.equal(expired.requests.includes('/api/live/review'), false);
+  for (const variant of ['rollback', 'elapsed']) { let page: ReturnType<typeof harness>; page = harness(undefined, undefined, async () => { page.clocks(variant === 'rollback' ? time - 1 : time, variant === 'elapsed' ? 15001 : 1); return json(review()); }); await page.ready(); await page.event('cash-preview'); await page.event('cash-review'); assert.equal(page.get('cash-review-result').hidden, true); }
+});
+test('unsigned review preserves redacted error codes and clearing removes all review values', async () => {
+  const blocked = harness(undefined, undefined, async () => new Response('{"code":"RFQ_UNAVAILABLE"}', { status: 502, headers: { 'Content-Type': 'application/json' } })); await blocked.ready(); await blocked.event('cash-preview'); await blocked.event('cash-review'); assert.match(blocked.get('cash-review-message').textContent, /RFQ_UNAVAILABLE/);
+  const page = harness(); await page.ready(); await page.event('cash-preview'); await page.event('cash-review'); await page.event('wallet-forget'); assert.equal(page.get('cash-review-after').textContent, ''); assert.equal(page.get('cash-review-proof').textContent, ''); assert.equal(page.get('cash-review-result').hidden, true);
 });
 for (const [label, patch] of [['wrong cash intent', { input: { ...preview().input, cashTarget: '2' } }], ['false floor', { floorRaw: '0' }], ['forged minimum', { minimumOutputBinding: 'VERIFIED_ORDER' }], ['execution enabled', { executionEnabled: true }], ['extra payload', { privatePayload: 'PRIVATE_SENTINEL' }], ['wrong candidate', { candidate: null }]] as const) test(`actual preview page rejects ${label} before rendering and allows retry`, async () => {
   let bad = true; const page = harness(undefined, async () => json(bad ? { ...preview(), ...patch } : preview())); await page.ready(); await page.event('cash-preview'); assert.equal(page.get('cash-preview-result').hidden, true); assert.equal(page.get('cash-preview-output').textContent, ''); assert.equal(page.get('cash-preview').disabled, false);
