@@ -39,7 +39,7 @@ const browserResponse = await fetch(new URL('/response.js', base), { redirect: '
 assert.equal(browserResponse.status, 200);
 assert.match(browserResponse.headers.get('content-type') ?? '', /(?:java|ecma)script/);
 assert.match(await browserResponse.text(), /export function validatePlanningRecord/);
-for (const file of ['live.js', 'wallet.js', 'position.js', 'preview.js', 'order-review.js']) {
+for (const file of ['live.js', 'wallet.js', 'position.js', 'preview.js', 'order-review.js', 'trade.js']) {
   const response = await fetch(new URL('/' + file, base), { redirect: 'error', signal: AbortSignal.timeout(5000) });
   assert.equal(response.status, 200); assert.match(response.headers.get('content-type') ?? '', /(?:java|ecma)script/);
 }
@@ -54,6 +54,13 @@ const preview = await fetch(new URL('/api/live/preview', base), { method: 'POST'
 assert.equal(preview.status, 503); assert.deepEqual(await readJson(preview), { code: 'LOCAL_SETUP_REQUIRED' });
 const review = await fetch(new URL('/api/live/review', base), { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(5000) });
 assert.equal(review.status, 503); assert.deepEqual(await readJson(review), { code: 'LOCAL_SETUP_REQUIRED' });
+const executionStatus = await fetch(new URL('/api/execution/status', base), { redirect: 'error', signal: AbortSignal.timeout(5000) });
+assert.equal(executionStatus.status, 200);
+assert.deepEqual(await readJson(executionStatus), { kind: 'REMAIN_EXECUTION_STATUS', available: false, profile: 'COW_BSC_SELL_V1', userConfirmationRequired: true });
+for (const action of ['challenge', 'login', 'prepare', 'sign', 'submit', 'recover', 'invalidate']) {
+  const response = await fetch(new URL('/api/execution/' + action, base), { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(5000) });
+  assert.equal(response.status, 503); assert.deepEqual(await readJson(response), { code: 'EXECUTION_SETUP_REQUIRED' });
+}
 
 const input = { cashTarget: '25', retainPercent: 70, maxImpactPercent: '0.50', market: 'regular', allowClosedMarket: false };
 const planResponse = await fetch(new URL('/api/rehearse', base), {

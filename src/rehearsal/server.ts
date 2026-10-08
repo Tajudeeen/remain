@@ -8,6 +8,7 @@ import { RemainError } from '../errors.ts';
 import { positionInput, projectPosition, type LocalPositionReader } from '../integration/position.ts';
 import { cashPreviewInput, projectCashPreview, type LocalCashPreviewer } from '../integration/preview.ts';
 import { cashOrderInput, projectCashOrder, type LocalCashReviewer } from '../integration/preview.ts';
+import { ExecutionHttp, executionError } from '../execution/http.ts';
 
 const assets = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']], ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
@@ -19,6 +20,7 @@ const assets = new Map([
   ['/position.js', ['position.js', 'text/javascript; charset=utf-8']],
   ['/preview.js', ['preview.js', 'text/javascript; charset=utf-8']],
   ['/order-review.js', ['order-review.js', 'text/javascript; charset=utf-8']],
+  ['/trade.js', ['trade.js', 'text/javascript; charset=utf-8']],
   ['/demo-receipt.json', ['demo-receipt.json', 'application/json; charset=utf-8']]
 ]);
 
@@ -32,6 +34,7 @@ export type RehearsalServerOptions = Readonly<{
   cashPreviewer?: LocalCashPreviewer;
   cashReviewer?: LocalCashReviewer;
   inspectionTimeoutMs?: number;
+  execution?: ExecutionHttp;
 }>;
 
 function headers(response: ServerResponse): void {
@@ -120,6 +123,10 @@ export function createRehearsalServer(options: RehearsalServerOptions = {}) {
       /^(?:localhost|127\.0\.0\.1)(?::[0-9]{1,5})?$/.test(host) &&
       ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(request.socket.remoteAddress ?? '');
     const inspectionAvailable = Boolean(options.inspector && loopback);
+    if (request.url === '/api/execution/status') {
+      if (!['GET', 'HEAD'].includes(request.method ?? '')) { json(response, 405, { code: 'METHOD_REJECTED' }); return; }
+      json(response, 200, options.execution?.status() ?? { kind: 'REMAIN_EXECUTION_STATUS', available: false, profile: 'COW_BSC_SELL_V1', userConfirmationRequired: true }, request.method === 'HEAD'); return;
+    }
     if (request.url === '/api/live/status') {
       if (!['GET', 'HEAD'].includes(request.method ?? '')) { json(response, 405, { code: 'METHOD_REJECTED' }); return; }
       json(response, 200, readinessStatus(inspectionAvailable), request.method === 'HEAD'); return;
@@ -148,7 +155,8 @@ export function createRehearsalServer(options: RehearsalServerOptions = {}) {
       } catch { json(response, 503, { code: 'ASSET_UNAVAILABLE' }); }
       return;
     }
-    if (!['/api/rehearse', '/api/receipt/verify', '/api/live/inspect', '/api/live/position', '/api/live/preview', '/api/live/review'].includes(request.url ?? '')) { json(response, 404, { code: 'NOT_FOUND' }); return; }
+    const executionAction = /^\/api\/execution\/(challenge|login|preview|prepare|approve|signing|sign|submit|poll|get|cancel|recover|invalidate|receipt)$/.exec(request.url ?? '')?.[1];
+    if (!executionAction && !['/api/rehearse', '/api/receipt/verify', '/api/live/inspect', '/api/live/position', '/api/live/preview', '/api/live/review'].includes(request.url ?? '')) { json(response, 404, { code: 'NOT_FOUND' }); return; }
     const receipt = request.url === '/api/receipt/verify';
     const position = request.url === '/api/live/position';
     const preview = request.url === '/api/live/preview';
@@ -156,6 +164,8 @@ export function createRehearsalServer(options: RehearsalServerOptions = {}) {
     const live = request.url === '/api/live/inspect' || position || preview || review;
     const limit = receipt ? RECEIPT_MAX_BYTES : 4096;
     if (request.method !== 'POST') { response.setHeader('Allow', 'POST'); json(response, 405, { code: 'METHOD_REJECTED' }); return; }
+    if (executionAction && !options.execution) { json(response, 503, { code: 'EXECUTION_SETUP_REQUIRED' }); return; }
+    if (executionAction && (request.headers.origin !== options.execution!.origin || host !== new URL(options.execution!.origin).host)) { json(response, 403, { code: 'ORIGIN_REJECTED' }); return; }
     if (live && !(review ? options.cashReviewer && loopback : preview ? options.cashPreviewer && loopback : position ? options.positionReader && loopback : inspectionAvailable)) { json(response, 503, { code: 'LOCAL_SETUP_REQUIRED' }); return; }
     if (live && !request.headers.origin) { json(response, 403, { code: 'ORIGIN_REJECTED' }); return; }
     if (!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers['content-type'] ?? '')) { json(response, 415, { code: 'CONTENT_TYPE_REJECTED' }); return; }
@@ -171,6 +181,12 @@ export function createRehearsalServer(options: RehearsalServerOptions = {}) {
     try {
       const body = await readBody(request, limit, bodyReadTimeoutMs);
       controller.signal.throwIfAborted();
+      if (executionAction) {
+        // Once claimed, submission is independent of browser disconnection.
+        // Never roll back the durable attempt or repeat it on a request retry.
+        const result = await options.execution!.handle(executionAction, parseReceiptJSON(body), request.headers.authorization);
+        json(response, 200, result); return;
+      }
       if (live) {
         const parsed = parseReceiptJSON(body);
         const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(inspectionTimeoutMs)]);
@@ -208,6 +224,7 @@ export function createRehearsalServer(options: RehearsalServerOptions = {}) {
       const input = parsePlanningRequest(body);
       json(response, 200, await rehearsePlan(input, controller.signal));
     } catch (error) {
+      if (executionAction) { json(response, 400, { code: executionError(error) }); return; }
       if (live && error instanceof RemainError && error.code === 'REQUEST_CANCELLED') { json(response, 408, { code: 'REQUEST_CANCELLED' }); return; }
       if ((position || preview || review) && error instanceof RemainError) { json(response, error.code === 'INVALID_INPUT' ? 400 : 502, { code: error.code }); return; }
       const tooLarge = error instanceof RehearsalError && error.code === 'BODY_TOO_LARGE';

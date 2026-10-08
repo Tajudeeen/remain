@@ -1,5 +1,7 @@
 # Milestone status
 
+Gate 16 adds prepared CoW execution, authenticated sale review, encrypted recovery, exact approvals/signatures, invalidation checks, two-RPC settlement and an independent verifier. See [execution contract](execution.md). Release verification is recorded after completion. This is prepared code, not a closed live or mainnet gate. Netlify financial routes remain unavailable. Actual payload review, pins, approved persistent hosting, wallet confirmations, an original DevEx report and public-source approval remain owner tasks.
+
 Updated 2026-10-08. Submission target: 2026-10-11 12:00 UTC per the supplied brief. Official eligibility, deadline, rubric and deliverables must be confirmed before public submission.
 
 | Gate | Implementation | Evidence needed | Status |

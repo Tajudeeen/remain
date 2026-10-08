@@ -310,6 +310,15 @@ try {
   stage = 'direct receipt link';
   await browser('open', `http://127.0.0.1:${address.port}/#proof`);
   await check("!document.querySelector('#proof-view').hidden && document.querySelector('#splash').hidden && document.querySelector('#receipt-report').disabled");
+  stage = 'sale review isolation and responsive layout';
+  await browser('open', `http://127.0.0.1:${address.port}/#trade`);
+  await browser('wait', '--fn', "document.querySelector('#trade-server').textContent === 'Trading service not configured'");
+  await check("!document.querySelector('#trade-view').hidden && document.querySelector('#trade-login').disabled && document.querySelector('#trade-sign').disabled && document.querySelector('#trade-submit').disabled && document.querySelector('#fixture-banner').hidden");
+  for (const width of [320, 375, 768, 1024, 1440]) {
+    await browser('set', 'viewport', String(width), '1000');
+    await check('document.documentElement.scrollWidth <= window.innerWidth');
+    await browser('screenshot', `evidence/rehearsal-trade-${width}.png`, '--full');
+  }
   stage = 'reduced motion';
   await browser('set', 'media', 'light', 'reduced-motion');
   await browser('eval', "sessionStorage.removeItem('remain-introduced')");

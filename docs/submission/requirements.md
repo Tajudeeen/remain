@@ -4,7 +4,7 @@ Sources: [official track](https://www.bnbchain.org/en/hackathons/tokenized-stock
 
 - Deadline: 11 October 2026, 12:00 UTC, which is 13:00 in Lagos. Internal target: 09:00 UTC.
 - A working spot product on BSC mainnet with bStocks, Ondo or xStocks central to its flow. A small live amount demonstrates it.
-- Public repository, a video no longer than four minutes, and deployment or reproducible run instructions.
+- Public repository and deployment or reproducible run instructions. A demo video of four minutes or less is strongly recommended and optional under the current organizer page, checked 2026-10-08.
 - Developer Experience Report is mandatory. Its final narrative must be owner-authored. AI-assisted code is allowed, but the organizer explicitly rejects AI-generated reports.
 - Scoring: technical integration 30%, originality 25%, DevEx report 25%, product/UX 20%. Tie-breaks prioritize API depth, then feedback quality.
 - Registration and eligibility require owner confirmation. One entry per team. Submission links must remain accessible through judging.

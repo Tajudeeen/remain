@@ -14,9 +14,11 @@ ENV HOST=0.0.0.0
 ENV PORT=3000
 WORKDIR /app
 COPY --from=build --chown=node:node /app/package.json /app/package-lock.json ./
+COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/src ./src
 COPY --from=build --chown=node:node /app/scripts ./scripts
 COPY --from=build --chown=node:node /app/web ./web
+RUN mkdir -p /app/state && chown node:node /app/state && chmod 700 /app/state
 USER node
 EXPOSE 3000
 CMD ["npm", "run", "serve"]

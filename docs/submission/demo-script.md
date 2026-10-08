@@ -18,6 +18,8 @@ Record a backup take. Remove secret values, private account pages and browser no
 
 ## Final contest video upgrade, only after the live gates pass
 
+The current organizer page recommends a video of four minutes or less but does not require it. The prepared route is `/#trade`. Show approvals, order signing and submission as separate owner-confirmed actions. For a real receipt include exact UID, settlement hash and a fresh independent verifier result. Explain that exposure is checked against a snapshot and reconciled afterward. Concurrent wallet activity can invalidate the floor.
+
 Replace the fictional position with a real supported BSC stock wrapper and authenticated data. Include the reviewed tiny sale and reconcile actual USDT, remaining stock, vendor order identity and BSC transaction. Show independent settlement verification. The final cut must remain under four minutes. Never splice fixture accounting into a real settlement claim.
 
 ## Rehearsal checklist

@@ -35,6 +35,8 @@ Remain is a cash-target tokenized-stock product with BellGuard risk checks. The 
 
 ## Product honesty
 
+The owner's 2026-10-08 request to engineer all remaining work authorizes prepared vendor-specific execution, wallet confirmation, durable recovery, RPC reconciliation and hosting code. This supersedes earlier code-sequencing restrictions. The agent must not connect a real wallet or execute a financial action. Activation still requires a real inspectable payload, independently reviewed contract pins, protected configuration and explicit user confirmation of each approval/order. Keep source private and do not fabricate live evidence or the owner's DevEx narrative.
+
 - Binance RWA referencePrice is derived from token data. It is not independent exchange price evidence.
 - A SHA-256 JSON digest is an evidence checksum, never an EIP-712 signing hash or proof of truth.
 - RFQ simulation and AMM transaction simulation are separate capabilities.

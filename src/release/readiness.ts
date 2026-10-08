@@ -66,6 +66,7 @@ export function fixtureReadiness(value: unknown) {
     mode: packet.mode, executionEnabled: packet.executionEnabled,
     evidenceSnapshotAt: packet.snapshotAt, deployedBuildSha: packet.deployment.buildSha,
     evidenceLinksRechecked: false,
-    blockers: [...Object.entries(blockedGates), ...Object.entries(pendingGates)].map(([gate, reason]) => ({ gate, reason }))
+    optionalItems: [{ gate: 'demoVideo', reason: 'A video of four minutes or less is strongly recommended, optional under the current organizer rules.' }],
+    blockers: [...Object.entries(blockedGates), ...Object.entries(pendingGates).filter(([gate]) => gate !== 'demoVideo')].map(([gate, reason]) => ({ gate, reason }))
   };
 }

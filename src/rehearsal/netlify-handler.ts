@@ -47,7 +47,10 @@ export async function handleNetlifyFixture(request: Request, options: NetlifyFix
   } catch { return response(403, { code: 'HOST_REJECTED' }); }
   const origin = request.headers.get('origin');
   if (request.headers.get('sec-fetch-site') === 'cross-site' || origin && origin !== url.origin) return response(403, { code: 'ORIGIN_REJECTED' });
-  if (url.search || !['/healthz', '/api/rehearse', '/api/receipt/verify', '/api/live/status', '/api/live/inspect', '/api/live/position', '/api/live/preview', '/api/live/review'].includes(url.pathname)) return response(404, { code: 'NOT_FOUND' });
+  const execution = /^\/api\/execution\/(status|challenge|login|preview|prepare|approve|signing|sign|submit|poll|get|cancel|recover|invalidate|receipt)$/.test(url.pathname);
+  if (url.search || !execution && !['/healthz', '/api/rehearse', '/api/receipt/verify', '/api/live/status', '/api/live/inspect', '/api/live/position', '/api/live/preview', '/api/live/review'].includes(url.pathname)) return response(404, { code: 'NOT_FOUND' });
+  if (url.pathname === '/api/execution/status') return response(['GET', 'HEAD'].includes(request.method) ? 200 : 405, ['GET', 'HEAD'].includes(request.method) ? { kind: 'REMAIN_EXECUTION_STATUS', available: false, profile: 'COW_BSC_SELL_V1', userConfirmationRequired: true } : { code: 'METHOD_REJECTED' }, request.method === 'HEAD');
+  if (execution) return response(request.method === 'POST' ? 503 : 405, { code: request.method === 'POST' ? 'EXECUTION_SETUP_REQUIRED' : 'METHOD_REJECTED' });
   if (url.pathname === '/api/live/status') {
     if (!['GET', 'HEAD'].includes(request.method)) return response(405, { code: 'METHOD_REJECTED' });
     return response(200, readinessStatus(false), request.method === 'HEAD');
