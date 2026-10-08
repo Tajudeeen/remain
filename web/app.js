@@ -1,5 +1,6 @@
 import './proof.js';
 import './live.js';
+import './trade.js';
 import { readFixtureJSON, validatePlanningRecord } from './response.js';
 
 const $ = (id) => document.getElementById(id);
@@ -11,17 +12,19 @@ function route(focus = false) {
   const dashboard = ['#dashboard', '#planner', '#cash-target'].includes(hash);
   const proof = ['#proof', '#receipt'].includes(hash);
   const live = hash === '#live';
-  $('landing-view').hidden = dashboard || proof || live;
+  const trade = hash === '#trade';
+  $('landing-view').hidden = dashboard || proof || live || trade;
   $('dashboard-view').hidden = !dashboard;
   $('proof-view').hidden = !proof;
   $('live-view').hidden = !live;
-  $('fixture-banner').hidden = live;
-  document.title = live ? 'Integration setup | Remain' : proof ? 'Receipt inspection | Remain' : dashboard ? 'Cash planner | Remain' : 'Remain | Raise cash. Stay invested.';
+  $('trade-view').hidden = !trade;
+  $('fixture-banner').hidden = live || trade;
+  document.title = trade ? 'Sale review | Remain' : live ? 'Integration setup | Remain' : proof ? 'Receipt inspection | Remain' : dashboard ? 'Cash planner | Remain' : 'Remain | Raise cash. Stay invested.';
   for (const link of document.querySelectorAll('nav a')) {
-    if (link.getAttribute('href') === (live ? '#live' : proof ? '#proof' : dashboard ? '#dashboard' : hash)) link.setAttribute('aria-current', 'page');
+    if (link.getAttribute('href') === (trade ? '#trade' : live ? '#live' : proof ? '#proof' : dashboard ? '#dashboard' : hash)) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   }
-  const target = live ? $('live-title') : hash === '#how-it-works' ? $('how-title') : hash === '#about' ? $('trust-title') : proof ? $('proof-title') : dashboard ? $('intro-title') : $('landing-title');
+  const target = trade ? $('trade-title') : live ? $('live-title') : hash === '#how-it-works' ? $('how-title') : hash === '#about' ? $('trust-title') : proof ? $('proof-title') : dashboard ? $('intro-title') : $('landing-title');
   if (focus) { target.focus({ preventScroll: true }); target.scrollIntoView({ behavior: 'auto', block: 'start' }); }
 }
 window.addEventListener('hashchange', () => route(true));

@@ -24,8 +24,16 @@ test('Netlify deployment preserves health, fixture planning and guard behavior',
   assert.equal(b.executionEnabled, false);
 });
 test('Netlify routes expose only fixture health/planning and platform rate limit', () => {
-  assert.deepEqual(config.path, ['/healthz', '/api/rehearse', '/api/receipt/verify', '/api/live/status', '/api/live/inspect', '/api/live/position', '/api/live/preview', '/api/live/review']);
+  assert.deepEqual(config.path, ['/healthz', '/api/rehearse', '/api/receipt/verify', '/api/live/status', '/api/live/inspect', '/api/live/position', '/api/live/preview', '/api/live/review', '/api/execution/*']);
   assert.deepEqual(config.rateLimit, { windowLimit: 30, windowSize: 60, aggregateBy: ['ip', 'domain'] });
+});
+test('public execution routes are explicitly unavailable and never read a financial request body', async () => {
+  const status = await handleNetlifyFixture(new Request(origin + '/api/execution/status'), options);
+  assert.deepEqual(await status.json(), { kind: 'REMAIN_EXECUTION_STATUS', available: false, profile: 'COW_BSC_SELL_V1', userConfirmationRequired: true });
+  for (const action of ['challenge', 'login', 'preview', 'prepare', 'approve', 'signing', 'sign', 'submit', 'poll', 'get', 'cancel', 'recover', 'invalidate', 'receipt']) {
+    const blocked = await handleNetlifyFixture(request('/api/execution/' + action, 'malformed'), options);
+    assert.equal(blocked.status, 503); assert.deepEqual(await blocked.json(), { code: 'EXECUTION_SETUP_REQUIRED' });
+  }
 });
 const cases: [string, Request, number][] = [
   ['cross-site', request('/api/rehearse', JSON.stringify(input), { 'sec-fetch-site': 'cross-site' }), 403],

@@ -54,7 +54,7 @@ export async function reviewCashCandidate(value: OrderReviewInput, reader: Reade
     estimateChanged: result.preview.probes[0]!.routes[0]!.estimatedOutputRaw !== input.expectedOutputRaw, executionEnabled: false }, input, now());
 }
 async function readCashTarget(value: PreviewInput, reader: Reader, signal: AbortSignal,
-  mode: CashPreview['mode'], now: () => number, selection?: OrderReviewInput): Promise<{ preview: CashPreview; review?: RfqReview }> {
+  mode: CashPreview['mode'], now: () => number, selection?: OrderReviewInput): Promise<{ preview: CashPreview; review?: RfqReview; selected?: Record<string, unknown>; build?: Record<string, unknown>; quoteAtMs?: number }> {
   const input = cashPreviewInput(value), started = now();
   if (!Number.isSafeInteger(started) || started < 0) throw new RemainError('AUTH_CLOCK_DRIFT');
   const boundary = new SearchBoundary(now, started, 12000, signal);
@@ -87,6 +87,7 @@ async function readCashTarget(value: PreviewInput, reader: Reader, signal: Abort
     const probes: CashPreview['probes'][number][] = [], seen = new Set<string>(), ids = new Set<string>();
     let best: CashPreview['candidate'] = null, next = selection ? BigInt(selection.amountRaw) : max, stopReason: CashPreview['stopReason'] = 'SEARCH_LIMIT';
     let review: RfqReview | undefined;
+    let order: { selected: Record<string, unknown>; build: Record<string, unknown>; quoteAtMs: number } | undefined;
     for (let attempt = 0; attempt < 8; attempt++) {
       fresh(); const amount = next.toString(); seen.add(amount);
       const result = await read('/api/v1/dex/aggregator/quote', [['binanceChainId', '56'], ['amount', amount],
@@ -136,6 +137,7 @@ async function readCashTarget(value: PreviewInput, reader: Reader, signal: Abort
         if (builtRawRoute.quoteId !== undefined && builtRawRoute.quoteId !== selected!.quoteId) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
         if (builtRoute.impactPercent !== routes[0]!.impactPercent || !qualifiesPreview(builtRoute, input, target!)) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
         review = reviewRfqBuild(build, selected, { token: input.token, amount, wallet: input.wallet });
+        order = { selected: selected!, build, quoteAtMs: result.timestamp };
         fresh(); stopReason = 'EXHAUSTED'; break;
       }
       // A proportional seed improves the first result. Remaining probes sample
@@ -162,7 +164,7 @@ async function readCashTarget(value: PreviewInput, reader: Reader, signal: Abort
     const preview = projectCashPreview({ kind: 'REMAIN_CASH_PREVIEW', mode, input, position, market, cashDecimals: decimals, cashTargetRaw: target,
       floorRaw: floor.toString(), maxInputRaw: max.toString(), probes, candidate: best, stopReason, createdAtMs: at,
       executionEnabled: false, liveGate: 'UNVERIFIED', minimumOutputBinding: 'UNVERIFIED', fees: 'UNVERIFIED', ownership: 'NOT_AUTHENTICATED' }, input, at);
-    return { preview, ...(review ? { review } : {}) };
+    return { preview, ...(review ? { review } : {}), ...order };
   } catch (error) {
     if (boundary.reason === 'CLOCK_REGRESSION') throw new RemainError('AUTH_CLOCK_DRIFT');
     if (boundary.reason === 'SEARCH_TIME_BUDGET' && !signal.aborted) throw new RemainError('UPSTREAM_TIMEOUT');
@@ -171,4 +173,12 @@ async function readCashTarget(value: PreviewInput, reader: Reader, signal: Abort
     if (error instanceof RemainError && error.code !== 'INVALID_INPUT') throw error;
     throw new RemainError('UPSTREAM_SCHEMA_INVALID');
   } finally { boundary.close(); }
+}
+
+// Private server port. Raw payloads never enter the read-only browser response.
+export async function prepareCashCandidate(value: OrderReviewInput, reader: Reader, signal: AbortSignal, now: () => number = Date.now) {
+  const input = cashOrderInput(value);
+  const result = await readCashTarget(input.intent, reader, signal, 'LIVE_READ_ONLY', now, input);
+  if (!result.selected || !result.build || result.quoteAtMs === undefined) throw new RemainError('RFQ_OPAQUE');
+  return { input, preview: result.preview, selected: result.selected, build: result.build, quoteAtMs: result.quoteAtMs };
 }

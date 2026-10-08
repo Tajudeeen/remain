@@ -1,0 +1,3 @@
+{$REMAIN_PUBLIC_HOST} {
+    reverse_proxy remain:3000
+}

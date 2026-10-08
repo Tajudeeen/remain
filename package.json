@@ -21,13 +21,15 @@
     "discover:binance": "node --env-file-if-exists=.env.local scripts/discover-binance.ts",
     "market:binance": "node --env-file-if-exists=.env.local scripts/check-binance-market.ts",
     "inspect:binance": "node scripts/inspect-binance.ts",
+    "inspect:contracts": "node --env-file-if-exists=.env.local scripts/inspect-contracts.ts",
     "rehearse:plan": "node scripts/rehearse-plan.ts",
     "rehearse:orders": "node scripts/rehearse-orders.ts",
     "rehearse:receipt": "node scripts/rehearse-receipt.ts",
     "rehearse:rfq": "node scripts/rehearse-rfq.ts",
     "verify:receipt": "node scripts/verify-receipt.ts",
+    "verify:chain-receipt": "node --env-file-if-exists=.env.local scripts/verify-chain-receipt.ts",
     "dev": "node --env-file-if-exists=.env.local scripts/serve-rehearsal.ts",
-    "check:web": "node --check web/app.js && node --check web/proof.js && node --check web/response.js && node --check web/live.js && node --check web/wallet.js && node --check web/position.js && node --check web/preview.js && node --check web/order-review.js",
+    "check:web": "node --check web/app.js && node --check web/proof.js && node --check web/response.js && node --check web/live.js && node --check web/wallet.js && node --check web/position.js && node --check web/preview.js && node --check web/order-review.js && node --check web/trade.js",
     "test:web": "npm exec --yes --package=agent-browser@0.38.2 -- node scripts/verify-browser.ts",
     "serve": "node scripts/serve-rehearsal.ts",
     "smoke:deployed": "node scripts/smoke-deployed.ts"
@@ -36,5 +38,8 @@
     "@netlify/functions": "6.0.2",
     "@types/node": "24.19.1",
     "typescript": "7.0.2"
+  },
+  "dependencies": {
+    "viem": "2.57.4"
   }
 }

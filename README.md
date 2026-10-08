@@ -8,6 +8,8 @@ Remain works backward from a USDT cash target to a bounded partial sale of a tok
 
 ## Current state
 
+The [prepared execution service](docs/execution.md) adds a strict CoW BSC sell profile, authenticated wallet review, exact approvals, owner-recovered EIP-712 signatures, a one-attempt encrypted journal, cancellation checks and two-RPC settlement accounting. The [sale-review page](https://remain-cash.netlify.app/#trade) is included in this release, with execution unavailable on Netlify. Persistent HTTPS Node hosting is packaged separately. Actual vendor compatibility, funded settlement and operator activation remain unverified. Read its contract before configuration.
+
 The cash solver, BellGuard, fixture order journal, settlement accounting and receipt verifier are implemented and deployed as a fictional rehearsal. The integration workspace adds opt-in browser account discovery and a loopback-only held-stock inspection using the existing read-only Binance harness. The public deployment has no Binance credentials and cannot run that inspection. Execution is disabled. After historical compliance/schema rejections, the owner reported a successful AALon stock-identity and fresh-market read on 2026-10-07. A real held-position RFQ/build, vendor signing semantics and independently reconciled settlement remain unverified. See [milestone status](docs/milestone-status.md), [integration setup](docs/integration-workspace.md) and [access troubleshooting](docs/access-troubleshooting.md).
 
 This repo stays private until the owner approves public release. Nothing here is financial advice or a claim of Binance endorsement.
@@ -36,7 +38,7 @@ npm run verify
 npm run test:coverage
 ```
 
-The kit includes exact-byte HMAC signing, a read-only endpoint allowlist, bounded responses and retries, input/schema validation, synthetic adversarial tests and sanitized evidence reports. No wallet-signing or trade-submission methods exist.
+The kit includes exact-byte HMAC signing, a read-only endpoint allowlist, bounded responses and retries, input/schema validation, synthetic adversarial tests and sanitized evidence reports. The separate prepared execution adapter never retries submission automatically and requires explicit owner wallet confirmation. It stays disabled by default and unavailable on Netlify.
 
 ## Cash-planning rehearsal
 

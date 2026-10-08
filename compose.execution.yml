@@ -1,0 +1,39 @@
+services:
+  remain:
+    build: .
+    restart: unless-stopped
+    env_file: .env.execution
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      REMAIN_EXECUTION_DB: /app/state/execution.sqlite
+      REMAIN_LOCAL_READ_ONLY: "false"
+    volumes:
+      - execution_state:/app/state
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    expose:
+      - "3000"
+  edge:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    environment:
+      REMAIN_PUBLIC_HOST: ${REMAIN_PUBLIC_HOST:?Set the approved HTTPS host}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - edge_data:/data
+      - edge_config:/config
+    depends_on:
+      - remain
+volumes:
+  execution_state:
+  edge_data:
+  edge_config:

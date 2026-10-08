@@ -16,7 +16,8 @@ test('valid fixture evidence remains blocked and is snapshotted against caller m
   const report = fixtureReadiness(validated);
   assert.equal(report.packetStatus, 'VALID'); assert.equal(report.submissionStatus, 'BLOCKED');
   assert.equal(report.executionEnabled, false); assert.equal(report.evidenceLinksRechecked, false);
-  assert.equal(report.blockers.length, 9);
+  assert.equal(report.blockers.length, 8);
+  assert.equal(report.optionalItems[0]?.gate, 'demoVideo');
 });
 
 for (const gate of ['liveFeasibility', 'supportedStock', 'mainnetSettlement', 'registration', 'eligibility', 'ownerDevexReport', 'demoVideo', 'publicSource', 'signedOutLinks']) {

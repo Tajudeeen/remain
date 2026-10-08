@@ -79,6 +79,7 @@ if (typeof document !== 'undefined' && $('live-view')) {
     $('cash-preview-cancel').disabled = !previewController;
     $('cash-review').disabled = !available || session.state.status !== 'CONNECTED' || busy || !previewSnapshot?.candidate;
     $('cash-review-cancel').disabled = !reviewController;
+    $('cash-trade').disabled = !available || session.state.status !== 'CONNECTED' || busy || !previewSnapshot?.candidate;
   }
   function walletChanged(state) {
     clearPosition(); $('live-amount').value = '';
@@ -168,6 +169,14 @@ if (typeof document !== 'undefined' && $('live-view')) {
     }
   });
   $('cash-review-cancel').addEventListener('click', () => { clearReview(); $('cash-review-message').textContent = 'Order review cancelled. Nothing signed or submitted.'; update(); });
+  $('cash-trade').addEventListener('click', () => {
+    if (!previewSnapshot || session.state.status !== 'CONNECTED') return;
+    try {
+      const elapsed = performance.now() - previewReceived;
+      if (!Number.isFinite(elapsed) || elapsed < 0 || elapsed + previewAge >= 15000) throw new Error('EXPIRED');
+      window.dispatchEvent(new CustomEvent('remain-cash-selection', { detail: previewSnapshot }));
+    } catch { $('cash-review-message').textContent = 'Request a fresh cash preview before sale review.'; }
+  });
   $('cash-review').addEventListener('click', async () => {
     if (!available || session.state.status !== 'CONNECTED' || !previewSnapshot?.candidate || reviewController || previewController || positionController || inspectionController) return;
     let submitted;
