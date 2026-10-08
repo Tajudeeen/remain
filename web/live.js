@@ -81,7 +81,11 @@ if (typeof document !== 'undefined' && $('live-view')) {
     if (window.ethereum !== provider) { session.destroy(); provider = window.ethereum; session = walletSession(provider, walletChanged); }
     session.connect();
   });
-  $('wallet-forget').addEventListener('click', () => { $('live-token').value = ''; $('live-amount').value = ''; session.forget(); message('Account and inputs cleared from this page. Wallet permissions are managed in your wallet.'); });
+  $('wallet-forget').addEventListener('click', () => {
+    $('live-token').value = ''; $('live-amount').value = ''; $('cash-preview-target').value = '';
+    $('cash-preview-retain').value = '70'; $('cash-preview-impact').value = '50'; $('cash-preview-closed').checked = false;
+    session.forget(); message('Account and inputs cleared from this page. Wallet permissions are managed in your wallet.');
+  });
   async function refresh() {
     statusController?.abort(); const active = new AbortController(); statusController = active; const current = ++statusVersion;
     available = false; clearPosition(); invalidate(); $('live-refresh').disabled = true; $('live-server').textContent = 'Checking server…';

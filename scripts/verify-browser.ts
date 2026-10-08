@@ -247,7 +247,7 @@ try {
   await browser('click', '#cash-preview'); await browser('wait', '--fn', "document.querySelector('#cash-preview-message').classList.contains('error') && !document.querySelector('#cash-preview').disabled");
   await check("document.querySelector('#cash-preview-result').hidden"); await browser('eval', 'window.fetch=window.previewFetch');
   await browser('click', '#cash-preview'); await browser('wait', '--fn', "!document.querySelector('#cash-preview-result').hidden");
-  await browser('screenshot', 'evidence/cash-target-preview.png', '--full');
+  await browser('screenshot', 'evidence/rehearsal-cash-target-preview.png', '--full');
   stage = 'selected position and exact amount preparation';
   await browser('fill', '#live-token', '0x2222222222222222222222222222222222222222'); await browser('click', '#position-read');
   await browser('wait', '--fn', "!document.querySelector('#position-result').hidden");
@@ -281,7 +281,7 @@ try {
   await browser('click', '#live-inspect'); await browser('fill', '#live-amount', '101'); await browser('wait', '700');
   await check("document.querySelector('#live-result').hidden && !document.querySelector('#live-inspect').disabled && document.querySelector('#live-form').getAttribute('aria-busy') === 'false'");
   await browser('eval', 'window.fetch=window.integrationFetch'); await browser('click', '#wallet-forget');
-  await check("document.querySelector('#live-token').value === '' && document.querySelector('#live-amount').value === '' && document.querySelector('#live-inspect').disabled && window.fixtureWalletMethods.every(method=>['eth_requestAccounts','eth_accounts','eth_chainId'].includes(method))");
+  await check("document.querySelector('#live-token').value === '' && document.querySelector('#live-amount').value === '' && document.querySelector('#cash-preview-target').value === '' && !document.querySelector('#cash-preview-closed').checked && document.querySelector('#live-inspect').disabled && window.fixtureWalletMethods.every(method=>['eth_requestAccounts','eth_accounts','eth_chainId'].includes(method))");
   const errors = await browser('errors');
   assert.deepEqual((errors as { errors?: unknown[] }).errors ?? [], [], 'Unexpected browser errors');
   stage = 'direct dashboard link';

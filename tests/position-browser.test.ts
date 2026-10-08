@@ -124,3 +124,7 @@ test('actual preview page redacts error response data, preserves the fixed error
 test('actual preview page rejects clock rollback or excessive elapsed time during response transport', async () => {
   for (const variant of ['rollback', 'elapsed']) { let page: ReturnType<typeof harness>; page = harness(undefined, async () => { page.clocks(variant === 'rollback' ? time - 1 : time, variant === 'elapsed' ? 15001 : 1); return json(preview()); }); await page.ready(); await page.event('cash-preview'); assert.equal(page.get('cash-preview-result').hidden, true); assert.equal(page.get('cash-preview-output').textContent, ''); }
 });
+test('explicit account Clear removes the cash target and resets permission and risk controls', async () => {
+  const page = harness(); await page.ready(); await page.event('cash-preview'); page.get('cash-preview-closed').checked = true; page.get('cash-preview-retain').value = '0'; page.get('cash-preview-impact').value = '100';
+  await page.event('wallet-forget'); assert.equal(page.get('cash-preview-target').value, ''); assert.equal(page.get('cash-preview-retain').value, '70'); assert.equal(page.get('cash-preview-impact').value, '50'); assert.equal(page.get('cash-preview-closed').checked, false); assert.equal(page.get('cash-preview-result').hidden, true); assert.equal(page.get('cash-preview-retained').textContent, '');
+});
