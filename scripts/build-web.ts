@@ -1,7 +1,7 @@
 import { cp, mkdir, writeFile } from 'node:fs/promises';
 
 await mkdir('dist/web', { recursive: true });
-for (const file of ['index.html', 'app.js', 'proof.js', 'response.js', 'live.js', 'wallet.js', 'demo-receipt.json', 'styles.css', 'logo.png']) await cp(`web/${file}`, `dist/web/${file}`);
+for (const file of ['index.html', 'app.js', 'proof.js', 'response.js', 'live.js', 'wallet.js', 'position.js', 'demo-receipt.json', 'styles.css', 'logo.png']) await cp(`web/${file}`, `dist/web/${file}`);
 const commit = process.env.COMMIT_REF;
 // Bundle the immutable build identity rather than retaining an old runtime env value.
 await mkdir('netlify', { recursive: true });

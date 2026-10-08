@@ -12,6 +12,8 @@ The cash solver, BellGuard, fixture order journal, settlement accounting and rec
 
 This repo stays private until the owner approves public release. Nothing here is financial advice or a claim of Binance endorsement.
 
+The local integration workspace also has a [selected-position preflight](docs/position-preparation.md). It distinguishes reported raw holdings from unknown data and prepares exact inspection units using actual token decimals. It performs no quote/build request, preserves every unverified live gate and is unavailable on the hosted demo.
+
 Private submission preparation is available in [the evidence index](docs/submission/evidence-index.md), [demo storyboard](docs/submission/demo-script.md) and [DevEx worksheet](docs/submission/devex-worksheet.md). The final report must be owner-authored. `npm run check:submission` validates the packet while reporting `submissionStatus: BLOCKED`. `npm run submission:status` exits 1 until the actual gates can be reviewed through a later live-evidence milestone. `npm run screen:history` produces a sanitized tracked-text pattern report, not a proof that secrets are absent. See [release requirements and checks](docs/submission/release-checklist.md).
 
 ![Synthetic Remain planning interface. No live stock holdings or settlement.](docs/assets/planning-desktop.png)

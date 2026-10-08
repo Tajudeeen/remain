@@ -1,5 +1,6 @@
 import { createRehearsalServer } from '../src/rehearsal/server.ts';
 import { localInspector } from '../src/integration/local.ts';
+import { localPositionReader } from '../src/integration/position.ts';
 
 function port(value: string | undefined): number {
   if (value === undefined) return 3000;
@@ -29,10 +30,11 @@ try {
   if (host === '0.0.0.0' && hosts.length === 0) throw new Error('PUBLIC_BIND_REQUIRES_ALLOWED_HOSTS');
   if (host === '0.0.0.0' && process.env.REMAIN_LOCAL_READ_ONLY === 'true') throw new Error('LOCAL_INSPECTION_REQUIRES_LOOPBACK');
   const inspector = localInspector(process.env);
+  const positionReader = localPositionReader(process.env);
 
   const configuredBuildSha = process.env.REMAIN_BUILD_SHA;
   const server = createRehearsalServer({ allowedHosts: hosts,
-    ...(configuredBuildSha ? { buildSha: configuredBuildSha } : {}), ...(inspector ? { inspector } : {}) });
+    ...(configuredBuildSha ? { buildSha: configuredBuildSha } : {}), ...(inspector ? { inspector } : {}), ...(positionReader ? { positionReader } : {}) });
 
   server.listen(listenPort, host, () => {
     const address = host === '0.0.0.0' ? 'configured public host' : `http://${host}:${listenPort}`;
