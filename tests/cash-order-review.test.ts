@@ -14,7 +14,7 @@ const input: OrderReviewInput = { intent: { wallet, token, cashTarget: '25', ret
 const quote = () => ({ binanceChainId: '56', executionMode: 'RFQ', vendorName: 'PcsXRfq', quoteId: 'private-quote-id', fromTokenAmount: '25', toTokenAmount: '25000000',
   fromToken: { tokenContractAddress: token, decimal: '0', isHoneyPot: false, taxRate: '0' }, toToken: { tokenContractAddress: output, decimal: '6', isHoneyPot: false, taxRate: '0' },
   priceImpactPercent: '-0.01', feeAmount: null, feeToken: null, actualSwapAmount: null });
-type Options = { balance?: string; market?: unknown; quote?: unknown; build?: (value: Record<string, unknown>) => unknown; after?: (endpoint: string) => void; clock?: () => number; timestamp?: () => number };
+type Options = { balance?: string; market?: unknown; quote?: unknown; build?: (value: Record<string, unknown>) => unknown; after?: (endpoint: string) => void; clock?: () => number; timestamp?: (endpoint: string) => number };
 function fixture(options: Options = {}) {
   const calls: { endpoint: string; query: Query }[] = [];
   const reader: Reader = { async get(endpoint, query = []) {
@@ -29,7 +29,7 @@ function fixture(options: Options = {}) {
       data = options.build ? options.build(built) : built;
     }
     options.after?.(endpoint);
-    return { data, timestamp: options.timestamp?.() ?? time, responseHash: 'fixture', latencyMs: 0 };
+    return { data, timestamp: options.timestamp?.(endpoint) ?? time, responseHash: 'fixture', latencyMs: 0 };
   } };
   return { reader, calls, clock: options.clock ?? (() => time) };
 }
@@ -92,6 +92,14 @@ test('stale builds, ageing balances and clock regression cannot extend the unsig
       after: e => { if (e.endsWith('/swap')) at += variant === 'regression' ? -1 : variant === 'deadline' ? 12001 : 1100; } });
     await assert.rejects(run(f), code(variant === 'regression' ? 'AUTH_CLOCK_DRIFT' : variant === 'deadline' ? 'UPSTREAM_TIMEOUT' : 'QUOTE_EXPIRED')); assert.equal(f.calls.length, 5);
   }
+});
+test('a quote older than its market or a build older than its selected quote fails despite being within the freshness cap', async () => {
+  for (const endpoint of ['/quote', '/swap']) {
+    const f = fixture({ timestamp: e => e.endsWith(endpoint) ? time - 1 : time });
+    await assert.rejects(run(f), code('UPSTREAM_SCHEMA_INVALID')); assert.equal(f.calls.length, endpoint === '/quote' ? 4 : 5);
+  }
+  const f = fixture({ build: b => ({ ...b, routerResult: { ...(b.routerResult as object), quoteId: 'unrelated-quote' } }) });
+  await assert.rejects(run(f), code('UPSTREAM_SCHEMA_INVALID'));
 });
 test('cancelling an uncooperative build stops promptly and discards its late result', async () => {
   const f = fixture(), c = new AbortController(); let buildSignal: AbortSignal | undefined;

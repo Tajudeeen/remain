@@ -7,7 +7,6 @@ import { randomUUID } from 'node:crypto';
 import { createRehearsalServer } from '../src/rehearsal/server.ts';
 import { digest, BSC_USDT } from '../src/validation.ts';
 import { exploreCashTarget, reviewCashCandidate } from '../src/integration/preview.ts';
-import { fixtureTyped } from '../tests/fixtures/rfq.ts';
 import type { PreviewInput } from '../web/preview.js';
 import { inspectFixtureReceipt } from '../src/receipts/inspection.ts';
 import { inspectionChecks } from '../src/integration/readiness.ts';
@@ -23,7 +22,9 @@ function browserCashReader(input: PreviewInput) {
     const route = { binanceChainId: '56', executionMode: 'RFQ', vendorName: 'PcsXRfq', quoteId: 'browser-fixture-' + amount, fromTokenAmount: amount, toTokenAmount: (BigInt(amount) * 20000n).toString(),
       fromToken: { tokenContractAddress: input.token, decimal: '2', isHoneyPot: false, taxRate: '0' }, toToken: { tokenContractAddress: BSC_USDT, decimal: '6', isHoneyPot: false, taxRate: '0' },
       priceImpactPercent: '-0.01', feeAmount: null, feeToken: null, actualSwapAmount: null };
-    const typed = fixtureTyped(); typed.message.receiver = input.wallet; typed.message.sell.token = input.token; typed.message.sell.amount = amount;
+    // Fictional inspection structure, never a vendor signing profile.
+    const typed = { domain: { chainId: 56, verifyingContract: input.token }, primaryType: 'FixtureOrder',
+      types: { FixtureOrder: [{ name: 'amount', type: 'uint256' }, { name: 'receiver', type: 'address' }] }, message: { amount, receiver: input.wallet } };
     const data = endpoint.endsWith('/tokens') ? [{ binanceChainId: '56', tokenContractAddress: input.token, tokenSymbol: 'FIXon', underlyingTicker: 'FIX', platformId: 'ondo', assetType: 1, decimals: 2 }] :
       endpoint.includes('/balance/') ? [{ page: 1, pageSize: 100, tokenAssets: [{ binanceChainId: '56', address: input.wallet, tokenContractAddress: input.token, rawBalance: '250', isRiskToken: false }] }] :
       endpoint.endsWith('/underlying-market') ? { binanceChainId: '56', tokenContractAddress: input.token, statusInfo: { marketStatus: 'regular', openState: true, reasonCode: 'TRADING' } } :
@@ -314,7 +315,7 @@ try {
   await browser('eval', "sessionStorage.removeItem('remain-introduced')");
   await browser('open', `http://127.0.0.1:${address.port}`);
   await check("matchMedia('(prefers-reduced-motion: reduce)').matches && document.querySelector('#splash').hidden && !document.querySelector('#site-content').inert");
-  console.log('Browser rehearsal passed: landing, splash, keyboard/history/direct routes, planning blocks/download/expiry/races, receipt checks, local position preparation, cash-target RFQ estimates through an injected provider, no-candidate state, intent invalidation, preview tampering/retry and all views at five widths. TEST_FIXTURE only.');
+  console.log('Browser rehearsal passed: landing, splash, keyboard/history/direct routes, planning blocks/download/expiry/races, receipt checks, local position preparation, cash-target RFQ estimates, explicit unsigned candidate review, signature-label tampering/retry, no-candidate state, intent invalidation and all views at five widths. TEST_FIXTURE only.');
 } catch (error) {
   console.error(`Browser rehearsal failed during ${stage}.`);
   await mkdir('evidence', { recursive: true });

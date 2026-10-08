@@ -110,9 +110,11 @@ async function readCashTarget(value: PreviewInput, reader: Reader, signal: Abort
       let routes: PreviewRoute[] = batch.map(r => admit(r));
       let selected: Record<string, unknown> | undefined;
       if (selection) {
-        if (decimals !== selection.cashDecimals) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
+        if (result.timestamp < market.observedAtMs) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
         const matching = routes.map((r, i) => ({ r, i })).filter(({ r }) => r.vendor === selection.vendor);
-        if (matching.length !== 1 || !qualifiesPreview(matching[0]!.r, input, target!)) throw new RemainError('RFQ_UNAVAILABLE');
+        if (matching.length !== 1) throw new RemainError('RFQ_UNAVAILABLE');
+        if (decimals !== selection.cashDecimals) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
+        if (!qualifiesPreview(matching[0]!.r, input, target!)) throw new RemainError('RFQ_UNAVAILABLE');
         selected = dataRecord(batch[matching[0]!.i]); routes = [matching[0]!.r];
       }
       probes.push({ inputRaw: amount, observedAtMs: result.timestamp, routes });
@@ -128,7 +130,10 @@ async function readCashTarget(value: PreviewInput, reader: Reader, signal: Abort
           ['fromTokenAddress', input.token], ['toTokenAddress', BSC_USDT.toLowerCase()], ['userWalletAddress', input.wallet],
           ['quoteId', selected!.quoteId as string], ['slippagePercent', '0.5'], ['autoSlippage', 'false'], ['approveTransaction', 'false'],
           ['priceImpactProtectionPercent', (input.maxImpactBps / 100).toString()]]);
+        if (built.timestamp < result.timestamp) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
         const build = dataRecord(built.data), builtRoute = admit(build.routerResult, false);
+        const builtRawRoute = dataRecord(build.routerResult);
+        if (builtRawRoute.quoteId !== undefined && builtRawRoute.quoteId !== selected!.quoteId) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
         if (builtRoute.impactPercent !== routes[0]!.impactPercent || !qualifiesPreview(builtRoute, input, target!)) throw new RemainError('UPSTREAM_SCHEMA_INVALID');
         review = reviewRfqBuild(build, selected, { token: input.token, amount, wallet: input.wallet });
         fresh(); stopReason = 'EXHAUSTED'; break;
