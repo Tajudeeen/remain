@@ -58,8 +58,10 @@ test('fixture wallet login and original-order recovery keep financial actions di
   await h.engine.sign(h.f.wallet, r.id, await h.f.account.signTypedData(r.auth.typedData!)); await h.engine.submit(h.f.wallet, r.id);
   h.f.flags.settled = true; h.f.flags.orderUid = r.auth.orderUid; await h.click('trade-poll');
   assert.equal(h.get('trade-state').textContent, 'TEST_FIXTURE / RECONCILED'); assert.ok(h.get('trade-receipt').textContent.startsWith('RECONCILED.'));
+  assert.equal(h.get('trade-settled-facts').hidden, false); assert.equal(h.get('trade-actual-cash').textContent, '25 USDT'); assert.equal(h.get('trade-actual-stock').textContent, '75 FIXon');
   h.f.flags.reorg = true; await h.click('trade-poll'); assert.equal(h.get('trade-state').textContent, 'TEST_FIXTURE / INVALIDATED');
   assert.equal(h.get('trade-receipt').textContent.includes('RECONCILED'), false);
+  assert.equal(h.get('trade-settled-facts').hidden, true); assert.equal(h.get('trade-actual-cash').textContent, '');
   assert.ok(h.methods.every(method => ['eth_chainId', 'eth_accounts', 'eth_requestAccounts', 'eth_signTypedData_v4'].includes(method)));
   assert.equal(h.actions.includes('submit'), false); h.listeners.get('accountsChanged')!(); assert.equal(h.get('trade-result').hidden, true); assert.equal(h.get('trade-load').disabled, true);
 });
