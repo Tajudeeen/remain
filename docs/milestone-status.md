@@ -18,6 +18,7 @@ Updated 2026-10-08. Submission target: 2026-10-11 12:00 UTC per the supplied bri
 | 11: Prepared read-only integration | Separate setup workspace, opt-in account discovery, local held-position inspector, cancellation, redacted reports and locked public endpoints | 693 local tests and coverage, green PR/main CI with browser/container checks, Netlify deploy 6ac681fc1a2a910008de5df7, exact-build HTTPS smoke 37659754659 and production setup page | COMPLETE for prepared account/read-only setup. Live vendor semantics, execution and settlement remain BLOCKED/UNVERIFIED |
 | 12: Cash search boundary | Independent elapsed deadline/spacing, interruptible waits, full clock-regression detection and atomic immutable quote-set admission | Eight reproduced failures, 18 new regression tests, 711 local tests/coverage, green remote CI, Netlify deploy 6ac6e53bb10d420008bc3d1a, exact-build HTTPS smoke 37708537529 and production planner | COMPLETE for prepared planning/search boundaries. Live vendor semantics and execution remain BLOCKED/UNVERIFIED |
 | 13: Selected-position preparation | Loopback-only selected stock identity/raw-balance read, honest unknown states, exact human amount preparation and ephemeral UI | 743 local tests/coverage, 32 new regressions, green PR/main CI with real-browser/container checks, deploy 6ac736a6d0023800080e7926, exact-build HTTPS smoke 37737251713 and production setup panel | COMPLETE for prepared local position reads. Actual held-position feasibility remains BLOCKED |
+| 14: Cash-target quote preview | Local-only fresh position/market read, bounded estimated RFQ search, exact retained-input cap and ephemeral cash-first UI | 778 passing local tests/coverage, 35 new regressions; remote real-browser CI and exact-build deployment evidence pending | LOCALLY VERIFIED, remote verification and release pending. Estimated output, live feasibility and execution remain unverified/disabled |
 
 ## Implemented in gate 0
 
@@ -43,6 +44,8 @@ Local and remote checks green, then a real authenticated smoke result with suppo
 Gate 0 completion does not authorize trading or prove signature semantics. Those require vendor field binding, actual approval/settlement analysis and explicit owner approval later.
 
 ## Blueprint clarifications
+
+The owner's 2026-10-08 next-milestone request authorizes Gate 14 to connect cash intent to prepared read-only RFQ estimates while owner setup remains pending. It preserves BellGuard's executable-minimum requirement and adds no build, signing, approval, submission or settlement action. See [cash-target preview](cash-preview.md).
 
 The owner's 2026-10-08 engineering continuation authorizes Gate 12 hardening of the existing cash solver while live setup is pending. This protects the prepared quote-provider port and existing fixture product. It adds no vendor schema assumptions, signatures, approvals, submission or financial actions. See [cash search boundary](search-boundary.md).
 

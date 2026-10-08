@@ -1,6 +1,7 @@
-import { readFixtureJSON } from './response.js';
+import { readFixtureJSON, readReadOnlyJSON } from './response.js';
 import { walletSession } from './wallet.js';
 import { validatePosition, formatPositionUnits, preparePositionAmount } from './position.js';
+import { previewInput, validatePreview } from './preview.js';
 
 const $ = id => document.getElementById(id);
 const checks = ['authenticated_bsc_aggregator', 'supported_bsc_stock_identity', 'market_status_read', 'wallet_balance_covers_input', 'matching_stock_to_usdt_rfq', 'inspectable_bsc_eip712_structure'];
@@ -34,7 +35,16 @@ export function validateInspection(value) {
 if (typeof document !== 'undefined' && $('live-view')) {
   let available = false, statusController, inspectionController, statusVersion = 0, inspectionVersion = 0;
   let positionController, positionVersion = 0, positionSnapshot, positionReceived, positionAge, positionTimer;
+  let previewController, previewVersion = 0, previewTimer;
+  function clearPreview() {
+    previewVersion++; previewController?.abort(); previewController = undefined; clearTimeout(previewTimer);
+    $('cash-preview-result').hidden = true; $('cash-preview-panel').setAttribute('aria-busy', 'false');
+    for (const id of ['cash-preview-label', 'cash-preview-title', 'cash-preview-sale', 'cash-preview-retained', 'cash-preview-output', 'cash-preview-details']) $(id).textContent = '';
+    $('cash-preview-message').textContent = 'Fresh holding, market and bounded RFQ estimates. Nothing is signed.';
+    $('cash-preview-message').classList.remove('error');
+  }
   function clearPosition() {
+    clearPreview();
     positionVersion++; positionController?.abort(); positionController = undefined; clearTimeout(positionTimer);
     positionSnapshot = undefined; positionReceived = undefined; positionAge = undefined;
     $('position-result').hidden = true; $('position-panel').setAttribute('aria-busy', 'false');
@@ -52,8 +62,10 @@ if (typeof document !== 'undefined' && $('live-view')) {
     update();
   }
   function update() {
-    $('live-inspect').disabled = !available || session.state.status !== 'CONNECTED' || Boolean(inspectionController);
-    $('position-read').disabled = !available || session.state.status !== 'CONNECTED' || Boolean(positionController);
+    $('live-inspect').disabled = !available || session.state.status !== 'CONNECTED' || Boolean(inspectionController || previewController || positionController);
+    $('position-read').disabled = !available || session.state.status !== 'CONNECTED' || Boolean(positionController || previewController || inspectionController);
+    $('cash-preview').disabled = !available || session.state.status !== 'CONNECTED' || Boolean(previewController || positionController || inspectionController);
+    $('cash-preview-cancel').disabled = !previewController;
   }
   function walletChanged(state) {
     clearPosition(); $('live-amount').value = '';
@@ -69,7 +81,11 @@ if (typeof document !== 'undefined' && $('live-view')) {
     if (window.ethereum !== provider) { session.destroy(); provider = window.ethereum; session = walletSession(provider, walletChanged); }
     session.connect();
   });
-  $('wallet-forget').addEventListener('click', () => { $('live-token').value = ''; $('live-amount').value = ''; session.forget(); message('Account and inputs cleared from this page. Wallet permissions are managed in your wallet.'); });
+  $('wallet-forget').addEventListener('click', () => {
+    $('live-token').value = ''; $('live-amount').value = ''; $('cash-preview-target').value = '';
+    $('cash-preview-retain').value = '70'; $('cash-preview-impact').value = '50'; $('cash-preview-closed').checked = false;
+    session.forget(); message('Account and inputs cleared from this page. Wallet permissions are managed in your wallet.');
+  });
   async function refresh() {
     statusController?.abort(); const active = new AbortController(); statusController = active; const current = ++statusVersion;
     available = false; clearPosition(); invalidate(); $('live-refresh').disabled = true; $('live-server').textContent = 'Checking server…';
@@ -89,7 +105,54 @@ if (typeof document !== 'undefined' && $('live-view')) {
   }
   $('live-refresh').addEventListener('click', refresh);
   $('live-token').addEventListener('input', () => { clearPosition(); $('live-amount').value = ''; invalidate(); message('Stock changed. Read a fresh position or enter a verified raw amount.'); });
-  $('live-amount').addEventListener('input', () => { invalidate(); message('Amount changed. Run a fresh inspection.'); });
+  $('live-amount').addEventListener('input', () => { clearPreview(); invalidate(); message('Amount changed. Run a fresh inspection.'); });
+  for (const id of ['cash-preview-target', 'cash-preview-retain', 'cash-preview-impact', 'cash-preview-closed']) $(id).addEventListener('input', () => { clearPreview(); update(); });
+  $('cash-preview-cancel').addEventListener('click', () => { clearPreview(); $('cash-preview-message').textContent = 'Preview cancelled. Nothing submitted.'; update(); });
+  $('cash-preview').addEventListener('click', async () => {
+    if (!available || session.state.status !== 'CONNECTED' || previewController || inspectionController || positionController || !$('live-token').reportValidity() ||
+        !['cash-preview-target', 'cash-preview-retain', 'cash-preview-impact'].every(id => $(id).reportValidity())) return;
+    let submitted;
+    try { submitted = previewInput({ wallet: session.state.address, token: $('live-token').value.trim(), cashTarget: $('cash-preview-target').value.trim(),
+      retainBps: Number($('cash-preview-retain').value) * 100, maxImpactBps: Number($('cash-preview-impact').value), allowClosedMarket: $('cash-preview-closed').checked }); }
+    catch { clearPreview(); $('cash-preview-message').textContent = 'Enter a positive plain cash amount and valid exposure and impact limits.'; $('cash-preview-message').classList.add('error'); update(); return; }
+    clearPosition(); invalidate(); const active = new AbortController(); previewController = active; const current = ++previewVersion; update();
+    const started = performance.now(), startedWall = Date.now(), timer = setTimeout(() => active.abort(), 15000);
+    $('cash-preview-panel').setAttribute('aria-busy', 'true'); $('cash-preview-message').textContent = 'Reading a fresh position and market, then sampling up to eight RFQ inputs…';
+    try {
+      const response = await fetch('/api/live/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(submitted), signal: active.signal, credentials: 'omit', cache: 'no-store', redirect: 'error' });
+      const body = await readReadOnlyJSON(response, active.signal);
+      if (current !== previewVersion) return;
+      if (!response.ok) {
+        const code = exact(body, ['code']) && codes.has(body.code) ? body.code : 'UPSTREAM_SCHEMA_INVALID';
+        $('cash-preview-message').textContent = `${code}. ${errorHelp[code] ?? 'The preview was blocked. Check local setup and request a fresh read.'}`;
+        $('cash-preview-message').classList.add('error'); return;
+      }
+      const at = Date.now(), result = validatePreview(body, submitted, at), elapsed = performance.now() - started;
+      if (active.signal.aborted || at < startedWall || !Number.isFinite(elapsed) || elapsed < 0 || elapsed > 15000) throw new Error();
+      const age = at - result.position.observedAtMs;
+      $('cash-preview-label').textContent = `${result.mode} · ESTIMATED OUTPUT`;
+      $('cash-preview-title').textContent = result.candidate ? 'A cash candidate. Signing locked.' : 'No qualifying candidate observed.';
+      if (result.candidate) {
+        const probe = result.probes[result.candidate.probeIndex], route = probe.routes[result.candidate.routeIndex];
+        $('cash-preview-sale').textContent = `${formatPositionUnits(probe.inputRaw, result.position.stock.decimals)} ${result.position.stock.symbol}`;
+        $('cash-preview-retained').textContent = `${formatPositionUnits((BigInt(result.position.balanceRaw) - BigInt(probe.inputRaw)).toString(), result.position.stock.decimals)} ${result.position.stock.symbol}`;
+        $('cash-preview-output').textContent = `${formatPositionUnits(route.estimatedOutputRaw, result.cashDecimals)} USDT`;
+        $('cash-preview-details').textContent = `${route.vendor} · reported impact ${route.impactPercent}% · ${result.market.marketStatus}. Smallest qualifying input observed in ${result.probes.length} probes. Global minimum unproven.`;
+      } else {
+        $('cash-preview-sale').textContent = 'No candidate'; $('cash-preview-retained').textContent = 'No sale proposed'; $('cash-preview-output').textContent = 'No qualifying estimate';
+        $('cash-preview-details').textContent = `${result.probes.length} bounded probes · ${result.market.marketStatus}. Missing impact, your limit or the cash target can rule out a quote. Search exhaustion does not prove the target impossible.`;
+      }
+      $('cash-preview-message').textContent = 'Estimates before unresolved fees. Retained quantity is before any additional stock debit. Minimum payout, total debit, quote expiry and signing semantics remain unverified.';
+      $('cash-preview-result').hidden = false;
+      previewTimer = setTimeout(() => { if (current !== previewVersion) return; clearPreview(); $('cash-preview-message').textContent = 'Position observation expired. Request a fresh preview.'; update(); }, Math.max(0, 15000 - age));
+    } catch {
+      if (current !== previewVersion) return;
+      const timedOut = active.signal.aborted;
+      clearPreview(); $('cash-preview-message').textContent = timedOut ? 'Preview timed out. Nothing submitted.' : 'No valid cash preview. Check the local server and retry.'; $('cash-preview-message').classList.add('error');
+    } finally {
+      clearTimeout(timer); if (current === previewVersion) { previewController = undefined; $('cash-preview-panel').setAttribute('aria-busy', 'false'); } update();
+    }
+  });
   $('position-read').addEventListener('click', async () => {
     if (!available || session.state.status !== 'CONNECTED' || !$('live-token').reportValidity()) return;
     clearPosition(); invalidate(); const active = new AbortController(); positionController = active; const current = ++positionVersion; update();
