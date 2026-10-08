@@ -22,7 +22,10 @@ const inspectionServer = createRehearsalServer({ inspector: async input => {
     report.rfqReview = { profile: 'REMAIN_RFQ_REVIEW_V1', structure: 'VALIDATED', unsignedBuild: 'MATCHES_SELECTED_QUOTE', checksumKind: 'SHA256_JSON_NOT_EIP712', artifactChecksum: 'a'.repeat(64), typeCount: 3, fieldCount: 7, domainTypeDeclared: true, signatureSemantics: 'UNVERIFIED', executionEnabled: false };
   }
   return report;
-} });
+}, positionReader: async input => ({ kind: 'REMAIN_POSITION_READ', mode: 'TEST_FIXTURE', wallet: input.wallet,
+  stock: { chain: '56', token: input.token, symbol: 'FIXon', ticker: 'FIX', issuer: 'ondo', decimals: 2 },
+  status: input.token.endsWith('3') ? 'ZERO_OBSERVED' : 'HELD_OBSERVED', balanceRaw: input.token.endsWith('3') ? '0' : '250',
+  observedAtMs: Date.now(), pagesRead: 1, executionEnabled: false, liveGate: 'UNVERIFIED', ownership: 'NOT_AUTHENTICATED' }) });
 await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
 await new Promise<void>((resolve) => inspectionServer.listen(0, '127.0.0.1', resolve));
 const address = server.address(); assert.ok(address && typeof address === 'object');
@@ -202,7 +205,7 @@ try {
   stage = 'public integration setup';
   await browser('open', `http://127.0.0.1:${address.port}/#live`);
   await browser('wait', '--fn', "document.querySelector('#live-server').textContent === 'Local setup required' && !document.querySelector('#live-refresh').disabled");
-  await check("!document.querySelector('#live-view').hidden && document.querySelector('#fixture-banner').hidden && document.querySelector('#live-inspect').disabled");
+  await check("!document.querySelector('#live-view').hidden && document.querySelector('#fixture-banner').hidden && document.querySelector('#live-inspect').disabled && document.querySelector('#position-read').disabled");
   await browser('click', '#wallet-connect');
   await check("document.querySelector('#live-message').textContent.includes('No browser wallet') && !document.querySelector('#wallet-connect').disabled");
   for (const width of [320, 375, 768, 1024, 1440]) {
@@ -218,6 +221,18 @@ try {
   await check("document.querySelector('#live-inspect').disabled");
   await browser('eval', "window.fixtureWalletChain='0x38'"); await browser('click', '#wallet-connect');
   await browser('wait', '--fn', "document.querySelector('#wallet-state').textContent === 'BSC account selected'");
+  stage = 'selected position and exact amount preparation';
+  await browser('fill', '#live-token', '0x2222222222222222222222222222222222222222'); await browser('click', '#position-read');
+  await browser('wait', '--fn', "!document.querySelector('#position-result').hidden");
+  await check("document.querySelector('#position-label').textContent.includes('TEST_FIXTURE') && document.querySelector('#position-balance').textContent === '2.5 FIXon'");
+  await browser('fill', '#position-units', '2.501'); await browser('click', '#position-use');
+  await check("document.querySelector('#live-amount').value === '' && document.querySelector('#live-message').classList.contains('error')");
+  await browser('fill', '#position-units', '1.00'); await browser('click', '#position-use');
+  await check("document.querySelector('#live-amount').value === '100' && document.querySelector('#live-result').hidden");
+  await browser('fill', '#live-token', '0x3333333333333333333333333333333333333333');
+  await check("document.querySelector('#position-result').hidden && document.querySelector('#live-amount').value === ''");
+  await browser('click', '#position-read'); await browser('wait', '--fn', "!document.querySelector('#position-result').hidden");
+  await check("document.querySelector('#position-balance').textContent === '0 FIXon' && document.querySelector('#position-use').disabled");
   await browser('fill', '#live-token', '0x2222222222222222222222222222222222222222'); await browser('fill', '#live-amount', '1');
   await browser('click', '#live-inspect');
   await browser('wait', '--fn', "!document.querySelector('#live-result').hidden && document.querySelector('#live-error').textContent.includes('INSUFFICIENT_POSITION')");
@@ -234,6 +249,7 @@ try {
   await browser('eval', "window.fixtureWalletListeners.accountsChanged()");
   await check("document.querySelector('#live-result').hidden && document.querySelector('#live-inspect').disabled && document.querySelector('#wallet-address').textContent === 'No account selected'");
   await browser('click', '#wallet-connect'); await browser('wait', '--fn', "document.querySelector('#wallet-state').textContent === 'BSC account selected'");
+  await browser('fill', '#live-amount', '100');
   await browser('eval', "window.fetch=async (...args)=>{const r=await window.integrationFetch(...args);if(String(args[0])==='/api/live/inspect')await new Promise(resolve=>setTimeout(resolve,500));return r}");
   await browser('click', '#live-inspect'); await browser('fill', '#live-amount', '101'); await browser('wait', '700');
   await check("document.querySelector('#live-result').hidden && !document.querySelector('#live-inspect').disabled && document.querySelector('#live-form').getAttribute('aria-busy') === 'false'");

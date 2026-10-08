@@ -47,12 +47,12 @@ export async function handleNetlifyFixture(request: Request, options: NetlifyFix
   } catch { return response(403, { code: 'HOST_REJECTED' }); }
   const origin = request.headers.get('origin');
   if (request.headers.get('sec-fetch-site') === 'cross-site' || origin && origin !== url.origin) return response(403, { code: 'ORIGIN_REJECTED' });
-  if (url.search || !['/healthz', '/api/rehearse', '/api/receipt/verify', '/api/live/status', '/api/live/inspect'].includes(url.pathname)) return response(404, { code: 'NOT_FOUND' });
+  if (url.search || !['/healthz', '/api/rehearse', '/api/receipt/verify', '/api/live/status', '/api/live/inspect', '/api/live/position'].includes(url.pathname)) return response(404, { code: 'NOT_FOUND' });
   if (url.pathname === '/api/live/status') {
     if (!['GET', 'HEAD'].includes(request.method)) return response(405, { code: 'METHOD_REJECTED' });
     return response(200, readinessStatus(false), request.method === 'HEAD');
   }
-  if (url.pathname === '/api/live/inspect') return response(request.method === 'POST' ? 503 : 405, { code: request.method === 'POST' ? 'LOCAL_SETUP_REQUIRED' : 'METHOD_REJECTED' });
+  if (['/api/live/inspect', '/api/live/position'].includes(url.pathname)) return response(request.method === 'POST' ? 503 : 405, { code: request.method === 'POST' ? 'LOCAL_SETUP_REQUIRED' : 'METHOD_REJECTED' });
   if (url.pathname === '/healthz') {
     if (!['GET', 'HEAD'].includes(request.method)) return response(405, { code: 'METHOD_REJECTED' });
     return response(200, { status: 'ok', service: 'remain-rehearsal', mode: 'TEST_FIXTURE', executionEnabled: false,

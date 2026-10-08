@@ -12,12 +12,14 @@ To inspect later on the owner's computer:
 2. Put working developer credentials in the ignored local file. Replace credentials previously shared in chat. Set `REMAIN_LOCAL_READ_ONLY=true`.
 3. Run `npm run dev`. The server binds to `127.0.0.1` by default. Never enable this inspector on a public host.
 4. Open `http://127.0.0.1:3000/#live`. Connect your account and select BNB Smart Chain in the wallet if necessary. Remain never changes chains automatically.
-5. Provide a currently supported stock contract actually held by that address and a positive input in the token's smallest units. Use actual token decimals. This amount is a diagnostic sell input, not the USDT cash target.
+5. Provide a currently supported stock contract and press Read position. A fresh positive raw holding enables exact human amount preparation with the reported decimals. Press Set inspection amount to populate raw units without requesting an RFQ. Alternatively, provide an independently verified positive raw input. This amount is a diagnostic sell input, not the USDT cash target.
 6. Inspect the result. An empty holding blocks before any quote or unsigned build. A successful structural inspection still leaves signature semantics and the global live gate unverified.
 
 The UI does not fund an account or select a stock on the owner's behalf. A wallet with no stocks cannot complete the held-position inspection. The holding-free `market:binance` diagnostic remains available separately.
 
 ## Isolation and invariants
+
+Gate 13 adds a separate [selected-position preflight](position-preparation.md). Its loopback-only response intentionally shows one selected identity, decimals and raw balance in ephemeral local page memory. The redacted RFQ report below stays unchanged. Missing or incomplete position data never becomes zero, and the public endpoint remains unavailable.
 
 | Boundary | Behavior |
 | --- | --- |
