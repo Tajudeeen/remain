@@ -18,6 +18,8 @@ The prepared [cash-target preview](docs/cash-preview.md) reads a fresh selected 
 
 A separate [Review unsigned order](docs/cash-order-review.md) action now connects a fresh cash candidate to the prepared build path. It rereads the holding and market, refreshes the exact selected input and venue, checks the unsigned build against that quote and displays changed estimates separately. It never substitutes a venue or requests a signature. Live trading stays locked while actual held-position and vendor economic evidence are pending.
 
+The unsigned-review release passed 804 tests, complete remote browser/container checks and exact-build HTTPS verification. [PR #35](https://github.com/Tajudeeen/remain/pull/35) is merged and deployed. See [release evidence](docs/netlify-deployment.md#cash-order-review-release-2026-10-08-1315-utc). The new review action is local-only and no live proof gate is closed.
+
 Private submission preparation is available in [the evidence index](docs/submission/evidence-index.md), [demo storyboard](docs/submission/demo-script.md) and [DevEx worksheet](docs/submission/devex-worksheet.md). The final report must be owner-authored. `npm run check:submission` validates the packet while reporting `submissionStatus: BLOCKED`. `npm run submission:status` exits 1 until the actual gates can be reviewed through a later live-evidence milestone. `npm run screen:history` produces a sanitized tracked-text pattern report, not a proof that secrets are absent. See [release requirements and checks](docs/submission/release-checklist.md).
 
 ![Synthetic Remain planning interface. No live stock holdings or settlement.](docs/assets/planning-desktop.png)
