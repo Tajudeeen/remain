@@ -80,7 +80,7 @@ if (typeof document !== 'undefined' && document.getElementById('trade-view')) {
     for (const id of ['trade-poll', 'trade-cancel', 'trade-download']) $(id).disabled = busy || !token || !order;
     $('trade-cancel').disabled ||= ['CANCELLED', 'RECONCILED'].includes(order?.state);
     $('trade-recover').disabled = busy || !token || !order;
-    $('trade-invalidate').disabled = busy || !token || !order || ['PREPARED', 'CANCELLED', 'RECONCILED'].includes(order.state);
+    $('trade-invalidate').disabled = busy || !token || !order || ['CANCELLED', 'RECONCILED'].includes(order.state);
     $('trade-load').disabled = busy || !token;
     const active = order && !['CANCELLED', 'RECONCILED'].includes(order.state);
     $('trade-preview').disabled = busy || !token || active;

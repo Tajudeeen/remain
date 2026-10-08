@@ -29,7 +29,7 @@ Authoritative references checked 2026-10-08:
 | Contract | Pinned runtime SHA-256 bytecode hashes and exact EIP-1967 implementation address/hash. Beacon slot must be zero. | Upgrades and unknown contracts stop execution. An observed hash is not source review. |
 | Economics | Exact total stock debit, capped fee, owner receiver, cash minimum, snapshot floor and short full-fill validity. | Reject the whole payload before a wallet order prompt. |
 | Approval | Exact relayer and debit. Insufficient nonzero allowance requires zero-reset first. | Each approval is a separate wallet transaction. Wait, discard the unsigned draft and refresh. No unlimited approvals. |
-| Signature | Browser rechecks wallet/chain/fields. Server recovers the exact EOA owner. Quote lifetime is 30 seconds. | Stale signatures cannot be submitted by Remain. Signing and submitting require separate clicks. |
+| Signature | Potential signing is journaled before a wallet prompt can open. Browser rechecks wallet/chain/fields. Server recovers the exact EOA owner. Quote lifetime is 30 seconds. | A dropped or rejected prompt cannot prove no signature escaped. The draft stays locked. Stale signatures cannot be submitted by Remain. |
 | Submission | UUID and encrypted signature persist before the network call. SQLite compare-and-swap prevents competing attempts. | Timeout or malformed response becomes `UNKNOWN`. No automatic retry, new UUID or fallback venue. |
 | Storage | AES-256-GCM, random IV, request-ID authenticated data, HMAC indexes, private files, WAL and FULL synchronisation. | Wrong key or tampering blocks reads. Volume and key backups remain operator responsibilities. |
 | Settlement | Both RPCs agree on canonical block, exact Trade UID/economics, transfers, before/after balances and twelve confirmations. | Missing, concurrent, removed, duplicated or insufficient evidence stays waiting/mismatched. Failed rechecks withdraw success. |
@@ -56,6 +56,8 @@ Loopback read-only inspection cannot run on a public bind. Authenticated executi
 ## Recovery and independent checking
 
 Unknown outcomes retain the original UUID/signature across restart. Sign in again and “Load original order.” Poll an observed platform ID or supply an independently located settlement hash. Recovery requires the exact UID and all accounting checks. The server never guesses a vendor lookup endpoint or creates a replacement sale.
+
+Requesting an order-signature prompt durably marks the draft as potentially signed, before returning typed data to the browser. A lost response, page change, prompt timeout or invalid uploaded signature cannot erase that marker. Only a draft that never requested order signing can be discarded as unsigned. Repeated prompts sign the same UID rather than creating new authority. Investigate or invalidate potentially escaped authority before trying a different sale.
 
 For invalidation, confirm its exact wallet transaction and paste the hash into “Check invalidation.” Confirmed revocation leaves `INVALIDATED` with the sale locked until settlement is understood. A provider failure/expiry/cancellation label cannot revoke an escaped signature. Automatic historical no-fill/expiry unlock is not implemented. Preserve the journal and investigate rather than deleting it to clear a lock.
 

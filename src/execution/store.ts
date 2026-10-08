@@ -14,7 +14,7 @@ export type ExecutionRecord = {
   intent: OrderReviewInput;
   stockDecimals: number; stockSymbol: string;
   signature: string | null; platformOrderId: string | null; txHash: string | null; result: unknown;
-  invalidationTxHash?: string; lockReleased?: boolean;
+  invalidationTxHash?: string; lockReleased?: boolean; signaturePrompted?: boolean;
 };
 // A vendor failure or reconciliation mismatch does not revoke a signature.
 const terminal = new Set(['CANCELLED', 'RECONCILED']);

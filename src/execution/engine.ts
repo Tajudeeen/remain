@@ -94,7 +94,11 @@ export class ExecutionEngine {
   }
   async signing(wallet: string, id: string) {
     const r = this.options.store.get(id, wallet); if (r.state !== 'PREPARED') fail('STATE_CONFLICT');
-    await this.fresh(r, true); return projectOrder(r);
+    await this.fresh(r, true);
+    // Persist potential signing before returning anything the browser can sign.
+    // A lost browser response or rejected prompt cannot prove no signature escaped.
+    if (!r.signaturePrompted) return projectOrder(this.options.store.change(id, wallet, r.revision, record => { record.signaturePrompted = true; record.lastAtMs = this.now(); }));
+    return projectOrder(r);
   }
   async approve(wallet: string, id: string) {
     const r = this.options.store.get(id, wallet); if (r.state !== 'PREPARED') fail('STATE_CONFLICT');
@@ -102,7 +106,8 @@ export class ExecutionEngine {
     return { ...projectOrder(r), approval: BigInt(facts.allowance) >= BigInt(r.auth.totalDebitRaw) ? null : approval(r.auth, facts.allowance !== '0') };
   }
   async sign(wallet: string, id: string, signature: unknown) {
-    const r = this.options.store.get(id, wallet); if (r.state !== 'PREPARED') fail('STATE_CONFLICT');
+    let r = this.options.store.get(id, wallet); if (r.state !== 'PREPARED') fail('STATE_CONFLICT');
+    if (!r.signaturePrompted) r = this.options.store.change(id, wallet, r.revision, record => { record.signaturePrompted = true; record.lastAtMs = Math.max(record.lastAtMs, this.now()); });
     await this.fresh(r, true); const verified = await verifyOrderSignature(r.auth, signature);
     return projectOrder(this.options.store.change(id, wallet, r.revision, record => { record.signature = verified; record.state = 'SIGNED'; record.lastAtMs = this.now(); }));
   }
@@ -147,7 +152,7 @@ export class ExecutionEngine {
   }
   async recoverSettlement(wallet: string, id: string, txHash: string) {
     const r = this.options.store.get(id, wallet);
-    if (!['SUBMITTING', 'UNKNOWN', 'PENDING', 'FILLED', 'FAILED', 'INVALIDATED', 'RECONCILED'].includes(r.state)) fail('STATE_CONFLICT');
+    if (!(r.state === 'PREPARED' && r.signaturePrompted) && !['SUBMITTING', 'UNKNOWN', 'PENDING', 'FILLED', 'FAILED', 'INVALIDATED', 'RECONCILED'].includes(r.state)) fail('STATE_CONFLICT');
     const hash = hexHash(txHash); if (r.txHash && r.txHash !== hash) fail('ORDER_ID_MISMATCH');
     const result = await reconcileChain(this.options.rpcs, r.auth, hash, this.options.mode === 'TEST_FIXTURE');
     // An arbitrary transaction hash cannot be attached to an unresolved order.
@@ -157,14 +162,14 @@ export class ExecutionEngine {
   cancel(wallet: string, id: string) {
     const r = this.options.store.get(id, wallet);
     if (r.state === 'CANCELLED' || r.state === 'RECONCILED') fail('STATE_CONFLICT');
-    if (r.state === 'PREPARED') return projectOrder(this.options.store.change(id, wallet, r.revision, record => { record.state = 'CANCELLED'; record.lastAtMs = this.now(); }));
+    if (r.state === 'PREPARED' && !r.signaturePrompted) return projectOrder(this.options.store.change(id, wallet, r.revision, record => { record.state = 'CANCELLED'; record.lastAtMs = this.now(); }));
     // A signed order may have escaped. Only on-chain invalidation or confirmed
     // expiry ends its authority. This payload is never broadcast by the server.
     return { ...projectOrder(r), cancellation: cancellation(r.auth) };
   }
   async invalidate(wallet: string, id: string, hash: string) {
     const r = this.options.store.get(id, wallet);
-    if (!r.signature || r.state === 'RECONCILED') fail('STATE_CONFLICT');
+    if (!r.signature && !r.signaturePrompted || r.state === 'RECONCILED') fail('STATE_CONFLICT');
     const evidence = await confirmInvalidation(this.options.rpcs, r.auth, hash);
     // Invalidation can follow a fill. Keep the unresolved sale locked until its
     // settlement is reconciled. Revocation never proves absence of a prior fill.

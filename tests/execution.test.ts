@@ -182,6 +182,21 @@ test('confirmed invalidation never claims absence of a raced fill or releases th
   await assert.rejects(s.engine.prepare(s.f.wallet, s.f.input), /ACTIVE_ORDER_EXISTS/);
   assert.equal(s.engine.get(s.f.wallet, r.id).result, null);
 });
+test('lost signature-prompt responses persist possible escaped authority before any signature reaches the server', async t => {
+  const s = setup(t), r = await s.engine.prepare(s.f.wallet, s.f.input);
+  await s.engine.signing(s.f.wallet, r.id); assert.equal(s.store.get(r.id, s.f.wallet).signaturePrompted, true);
+  assert.equal(s.store.get(r.id, s.f.wallet).signature, null);
+  const cancellation = s.engine.cancel(s.f.wallet, r.id); assert.equal(cancellation.state, 'PREPARED'); assert.ok('cancellation' in cancellation);
+  await assert.rejects(s.engine.prepare(s.f.wallet, s.f.input), /ACTIVE_ORDER_EXISTS/);
+  const reopened = new ExecutionStore(s.file, s.key); t.after(() => reopened.close()); assert.equal(reopened.get(r.id, s.f.wallet).signaturePrompted, true);
+  s.f.flags.orderUid = r.auth.orderUid; s.f.flags.invalidated = true;
+  assert.equal((await s.engine.invalidate(s.f.wallet, r.id, txHash)).state, 'INVALIDATED'); assert.equal(s.calls(), 0);
+});
+test('an externally filled prompted draft can be reconciled even without server receipt of its signature', async t => {
+  const s = setup(t), r = await s.engine.prepare(s.f.wallet, s.f.input); await s.engine.signing(s.f.wallet, r.id);
+  s.f.flags.orderUid = r.auth.orderUid; s.f.flags.settled = true;
+  assert.equal((await s.engine.recoverSettlement(s.f.wallet, r.id, txHash)).state, 'RECONCILED'); assert.equal(s.calls(), 0);
+});
 test('invalidation requires canonical, confirmed, unique exact-UID events and revoked on-chain authority', async () => {
   const f = executionFixture(), a = auth(f); f.flags.orderUid = a.orderUid;
   await assert.rejects(confirmInvalidation([f.rpc, f.rpc], a, txHash), /CANCELLATION_UNCONFIRMED/);
