@@ -1,6 +1,6 @@
 # Milestone status
 
-Updated 2026-10-07. Submission target: 2026-10-11 12:00 UTC per the supplied brief. Official eligibility, deadline, rubric and deliverables must be confirmed before public submission.
+Updated 2026-10-08. Submission target: 2026-10-11 12:00 UTC per the supplied brief. Official eligibility, deadline, rubric and deliverables must be confirmed before public submission.
 
 | Gate | Implementation | Evidence needed | Status |
 | --- | --- | --- | --- |
@@ -16,6 +16,7 @@ Updated 2026-10-07. Submission target: 2026-10-11 12:00 UTC per the supplied bri
 | 9: Public request boundary | Duplicate-aware planner parsing, strict data/enums, upload deadlines, cancellation cleanup and exact-build deployment smoke | 603 local tests and coverage, green PR/main CI, Netlify deploy 6ac611f78be59c00081c215e, HTTPS smoke 37601461211 and production browser | COMPLETE for TEST_FIXTURE request hardening. Live trading remains BLOCKED |
 | 10: Browser response boundary | Bounded stream reads, duplicate-aware response parsing, submitted-intent display checks, atomic receipt validation, retry and monotonic expiry | 653 local tests and coverage, green PR/main CI with browser/container checks, Netlify deploy 6ac61970871cbf0008eb5b2a, exact-build HTTPS smoke 37605083674 and production browser | COMPLETE for TEST_FIXTURE browser response handling. Live trading remains BLOCKED |
 | 11: Prepared read-only integration | Separate setup workspace, opt-in account discovery, local held-position inspector, cancellation, redacted reports and locked public endpoints | 693 local tests and coverage, green PR/main CI with browser/container checks, Netlify deploy 6ac681fc1a2a910008de5df7, exact-build HTTPS smoke 37659754659 and production setup page | COMPLETE for prepared account/read-only setup. Live vendor semantics, execution and settlement remain BLOCKED/UNVERIFIED |
+| 12: Cash search boundary | Independent elapsed deadline/spacing, interruptible waits, full clock-regression detection and atomic immutable quote-set admission | Eight reproduced failures, 18 new regression tests, full local verification/coverage and remote release checks | Implementation tested locally; remote CI and deployed release evidence pending. Live vendor semantics and execution remain BLOCKED/UNVERIFIED |
 
 ## Implemented in gate 0
 
@@ -41,6 +42,8 @@ Local and remote checks green, then a real authenticated smoke result with suppo
 Gate 0 completion does not authorize trading or prove signature semantics. Those require vendor field binding, actual approval/settlement analysis and explicit owner approval later.
 
 ## Blueprint clarifications
+
+The owner's 2026-10-08 engineering continuation authorizes Gate 12 hardening of the existing cash solver while live setup is pending. This protects the prepared quote-provider port and existing fixture product. It adds no vendor schema assumptions, signatures, approvals, submission or financial actions. See [cash search boundary](search-boundary.md).
 
 The owner's next-milestone request on 2026-10-07 authorizes Gate 10 response handling in the existing synthetic planner and receipt workspace. It adds no wallet, vendor adapter, credential hosting or execution. Numbering follows the independently authorized fixture milestones, and does not mean the original blueprint's live release milestone has passed. See [browser response contract](browser-response.md).
 

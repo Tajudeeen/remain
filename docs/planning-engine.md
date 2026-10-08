@@ -37,6 +37,8 @@ The retained floor preserves token quantity, not dollar value. This snapshot can
 
 Default budget is 24 requests, maximum 64. Default whole-search budget is 12 seconds, maximum 15. Per-request timeout defaults to 3 seconds, maximum 8. At most 16 routes are accepted per response. Live-labelled providers require at least 200 ms between request starts. Compliance and provider failures stop the entire plan with no retry and discard earlier candidates. A timeout aborts the supplied signal and stops the planner. Providers must honor the signal to stop their actual HTTP work.
 
+Gate 12 adds an independent elapsed deadline covering both quotes and spacing, cancellation of stuck waits, comparison against every preceding wall timestamp and atomic immutable quote-set admission. Deadline exhaustion can keep an earlier fully admitted candidate only after fresh final checks. A late response is ignored. Quote arrays must be dense ordinary data with no custom behavior and no duplicate venue/ID within a batch. See [search boundary and regression evidence](search-boundary.md) for the precise contract and event-loop limitations.
+
 When the eligible integer domain fits within the request budget, every positive raw input is observed. Larger domains use evenly spaced seeds then split the widest remaining interval below the current best total debit. The solver does not assume prices, fees or route availability are monotonic. A failed maximum-input quote does not prove all smaller quantities fail.
 
 Input quantities are deduplicated. Input fees participate in optimization, so a slightly larger sell with a lower stock fee can beat a smaller sell. Ties use input amount, expected surplus, vendor and quote ID with deterministic character comparison.
