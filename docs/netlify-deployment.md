@@ -124,3 +124,15 @@ Gate 10 is complete for the fixture browser response boundary. Gate 0, vendor si
 - No credentials were read or hosted, no real Binance request was made, and no signing, approvals, orders or trades were performed. A local read pass cannot establish authenticated ownership, vendor economic enforcement or settlement.
 
 Gate 11 is complete for prepared read-only integration. Actual live RFQ feasibility, signing semantics, execution, settlement and submission readiness remain unresolved. This evidence-only commit uses `[skip netlify]` to preserve the verified production artifact.
+
+## Cash-search release, 2026-10-08 00:35 UTC
+
+[PR #29](https://github.com/Tajudeeen/remain/pull/29) merged as `1a3d8d64d481acda34516473d2ef7488f2754a90`. Production deploy `6ac6e53bb10d420008bc3d1a` published at 00:35:22.405 UTC with that exact commit. The remote proposed and merged trees match the locally tested files. Source remains private and execution remains disabled.
+
+- Eight failures were reproduced before their respective fixes. Eighteen new search-boundary tests bring the suite to 711 passing tests. Full local verification, coverage, source policy and tracked-history pattern checks passed. The search boundary and solver each have 100% line/function coverage, with 95.92% and 95.28% branch coverage respectively. Coverage also caught a scheduler timing edge which was corrected before the final green checks.
+- [PR CI 37708342526](https://github.com/Tajudeeen/remain/actions/runs/37708342526), [push CI 37708340170](https://github.com/Tajudeeen/remain/actions/runs/37708340170) and [main CI 37708537517](https://github.com/Tajudeeen/remain/actions/runs/37708537517) passed full verification, coverage, source/history screens, terminal rehearsals, container smoke and complete real-browser tests. The existing 50-landscape exhaustive search oracle remains green.
+- [Exact-build HTTPS smoke 37708537529](https://github.com/Tajudeeen/remain/actions/runs/37708537529) matched the merged build at 00:35:26 UTC and passed at 00:35:28 UTC. Normal accounting, paused-market blocking, ambiguous-input rejection, receipt consistency checks and absent execution endpoints passed. Public live inspection remains unconfigured.
+- The production browser opened `https://remain-cash.netlify.app/#dashboard` and confirmed the normal 25-cash/70%-floor plan returns 25 stock debit, 75 retained units and minimum 25.00 synthetic USDT. A 40-cash target with the same floor blocked without a selected sell amount. [The viewport screenshot](images/search-boundary-20261008.jpg) captures the passing fictional plan within its review window. No wallet connection was attempted.
+- Stuck waits, clock changes, malformed provider arrays and late replies are prepared-module regression evidence. Production did not receive malformed vendor data, and no live adapter, credentials, Binance request, signing, approval, order or trade was added.
+
+Gate 12 is complete for planning/search boundaries. Live RFQ feasibility, vendor economics, signing semantics, settlement and submission readiness remain unresolved. This evidence-only update uses `[skip netlify]` to preserve the verified runtime.
