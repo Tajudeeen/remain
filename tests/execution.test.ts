@@ -71,7 +71,7 @@ test('zero-first exact approval remains separate from signing and a fresh allowa
 });
 test('one signed sale submits once, uses rfq.orderId, then reconciles the precise UID and two-provider balances', async t => {
   const s = setup(t), r = await s.engine.prepare(s.f.wallet, s.f.input); s.f.flags.orderUid = r.auth.orderUid;
-  const signature = await s.f.account.signTypedData(r.auth.typedData!); assert.equal((await s.engine.sign(s.f.wallet, r.id, signature)).state, 'SIGNED');
+  const signature = await s.f.account.signTypedData(auth(s.f).typedData); assert.equal((await s.engine.sign(s.f.wallet, r.id, signature)).state, 'SIGNED');
   const attempts = await Promise.allSettled([s.engine.submit(s.f.wallet, r.id), s.engine.submit(s.f.wallet, r.id)]);
   assert.equal(attempts.filter(a => a.status === 'fulfilled').length, 1); assert.equal(s.calls(), 1);
   s.f.flags.settled = true; assert.equal((await s.engine.poll(s.f.wallet, r.id)).state, 'FILLED'); const reconciled = await s.engine.poll(s.f.wallet, r.id);
@@ -81,7 +81,7 @@ test('one signed sale submits once, uses rfq.orderId, then reconciles the precis
 });
 test('vendor timeout preserves encrypted signature and UUID across restart, without a second submission', async t => {
   const s = setup(t, async () => { throw new Error('timeout with private provider detail'); }), r = await s.engine.prepare(s.f.wallet, s.f.input);
-  await s.engine.sign(s.f.wallet, r.id, await s.f.account.signTypedData(r.auth.typedData!)); const result = await s.engine.submit(s.f.wallet, r.id);
+  await s.engine.sign(s.f.wallet, r.id, await s.f.account.signTypedData(auth(s.f).typedData)); const result = await s.engine.submit(s.f.wallet, r.id);
   assert.equal(result.state, 'UNKNOWN'); assert.equal(s.calls(), 1); await assert.rejects(s.engine.submit(s.f.wallet, r.id), /STATE_CONFLICT/);
   const reopened = new ExecutionStore(s.file, s.key); t.after(() => reopened.close()); assert.equal(reopened.get(r.id, s.f.wallet).state, 'UNKNOWN');
   assert.equal((await s.engine.poll(s.f.wallet, r.id)).state, 'UNKNOWN'); assert.equal(s.calls(), 1);
@@ -98,7 +98,7 @@ test('expired, changed holding, wrong chain and already-used order all block bef
 test('unsigned cancellation releases the wallet lock, signed cancellation only prepares chain invalidation', async t => {
   const s = setup(t), r = await s.engine.prepare(s.f.wallet, s.f.input); assert.equal(s.engine.cancel(s.f.wallet, r.id).state, 'CANCELLED');
   const f = executionFixture(); Object.assign(s.f.typed.message, f.typed.message, { receiver: s.f.wallet, validTo: time / 1000 + 601 });
-  const next = await s.engine.prepare(s.f.wallet, s.f.input); await s.engine.sign(s.f.wallet, next.id, await s.f.account.signTypedData(next.auth.typedData!));
+  const next = await s.engine.prepare(s.f.wallet, s.f.input); await s.engine.sign(s.f.wallet, next.id, await s.f.account.signTypedData(auth(s.f).typedData));
   const cancellation = s.engine.cancel(s.f.wallet, next.id); assert.equal(cancellation.state, 'SIGNED'); assert.ok('cancellation' in cancellation);
 });
 test('settlement refuses counterfeit UID, shortfall, concurrent transfers, removed logs and duplicate Trade events', async () => {
@@ -151,7 +151,7 @@ test('browser signing validation refuses fictional orders and bound wallet trans
   const selection = { input: s.f.input, floorRaw: '70', balanceRaw: '100', stockDecimals: 0, stockSymbol: 'FIXon' };
   assert.equal(validateTradeOrder(r, selection, time).id, r.id);
   assert.throws(() => validateTradeOrder(r, selection, time, true), /FIXTURE_CANNOT_REQUEST_WALLET/);
-  const live = { ...r, mode: 'LIVE_EXECUTION' }; assert.equal(validateTradeOrder(live, selection, time, true).id, r.id);
+  const live = { ...await s.engine.signing(s.f.wallet, r.id), mode: 'LIVE_EXECUTION' }; assert.equal(validateTradeOrder(live, selection, time, true).id, r.id);
   for (const change of [{ totalDebitRaw: '26' }, { floorRaw: '69' }, { stockFeeRaw: '25' }, { minimumCashRaw: '1' }, { wallet: stock }]) assert.throws(() => validateTradeOrder({ ...live, auth: { ...live.auth, ...change } }, selection, time, true));
   const tx = approval(auth(s.f)); assert.equal(validateWalletTransaction(tx, r).data, tx.data);
   assert.throws(() => validateWalletTransaction({ ...tx, data: tx.data.slice(0, -64) + 'f'.repeat(64) }, r));
@@ -159,7 +159,7 @@ test('browser signing validation refuses fictional orders and bound wallet trans
   assert.throws(() => validateWalletTransaction({ ...cancel, value: '0x1' }, r, true));
 });
 test('independent private-receipt verifier replays the signed economics and rejects tampered floors and fixture provenance', async t => {
-  const s = setup(t), r = await s.engine.prepare(s.f.wallet, s.f.input); s.f.flags.orderUid = r.auth.orderUid; s.f.flags.settled = true;
+  const s = setup(t), r = await s.engine.prepare(s.f.wallet, s.f.input); await s.engine.signing(s.f.wallet, r.id); s.f.flags.orderUid = r.auth.orderUid; s.f.flags.settled = true;
   const receipt = { ...s.engine.receipt(s.f.wallet, r.id), txHash };
   assert.equal((await verifyChainReceipt(receipt, [s.f.rpc, s.f.rpc], true)).status, 'RECONCILED');
   await assert.rejects(verifyChainReceipt(receipt, [s.f.rpc, s.f.rpc]), /RECEIPT_MODE_INVALID/);
@@ -168,15 +168,27 @@ test('independent private-receipt verifier replays the signed economics and reje
 });
 test('a reorg withdraws durable reconciliation and browser-visible success', async t => {
   const s = setup(t), r = await s.engine.prepare(s.f.wallet, s.f.input);
-  await s.engine.sign(s.f.wallet, r.id, await s.f.account.signTypedData(r.auth.typedData!)); await s.engine.submit(s.f.wallet, r.id);
+  await s.engine.sign(s.f.wallet, r.id, await s.f.account.signTypedData(auth(s.f).typedData)); await s.engine.submit(s.f.wallet, r.id);
   s.f.flags.orderUid = r.auth.orderUid; s.f.flags.settled = true; await s.engine.poll(s.f.wallet, r.id); await s.engine.poll(s.f.wallet, r.id);
   assert.equal(s.engine.get(s.f.wallet, r.id).state, 'RECONCILED'); s.f.flags.reorg = true;
   await assert.rejects(s.engine.poll(s.f.wallet, r.id), /REORG_DETECTED/);
   assert.equal(s.engine.get(s.f.wallet, r.id).state, 'INVALIDATED'); assert.equal(s.engine.get(s.f.wallet, r.id).result, null);
 });
+test('a replacement settlement hash is admitted only after withdrawal and exact-UID chain reconciliation', async t => {
+  const s = setup(t), r = await s.engine.prepare(s.f.wallet, s.f.input), replacement = '0x' + '6'.repeat(64);
+  await s.engine.sign(s.f.wallet, r.id, await s.f.account.signTypedData(auth(s.f).typedData)); await s.engine.submit(s.f.wallet, r.id);
+  s.f.flags.orderUid = r.auth.orderUid; s.f.flags.settled = true; await s.engine.poll(s.f.wallet, r.id); await s.engine.poll(s.f.wallet, r.id);
+  await assert.rejects(s.engine.recoverSettlement(s.f.wallet, r.id, replacement), /ORDER_ID_MISMATCH/);
+  s.f.flags.reorg = true; await assert.rejects(s.engine.poll(s.f.wallet, r.id)); s.f.flags.reorg = false;
+  const original = s.f.rpc.call; s.f.rpc.call = async (method, params) => {
+    const value = await original(method, params); return JSON.parse(JSON.stringify(value).replaceAll(txHash, replacement));
+  };
+  s.f.flags.shortfall = true; await assert.rejects(s.engine.recoverSettlement(s.f.wallet, r.id, replacement), /SETTLEMENT_NOT_CONFIRMED/); assert.equal(s.engine.get(s.f.wallet, r.id).txHash, txHash);
+  s.f.flags.shortfall = false; const result = await s.engine.recoverSettlement(s.f.wallet, r.id, replacement); assert.equal(result.state, 'RECONCILED'); assert.equal(result.txHash, replacement); assert.equal(s.calls(), 1);
+});
 test('confirmed invalidation never claims absence of a raced fill or releases the unresolved order lock', async t => {
   const s = setup(t), r = await s.engine.prepare(s.f.wallet, s.f.input);
-  await s.engine.sign(s.f.wallet, r.id, await s.f.account.signTypedData(r.auth.typedData!)); await s.engine.submit(s.f.wallet, r.id);
+  await s.engine.sign(s.f.wallet, r.id, await s.f.account.signTypedData(auth(s.f).typedData)); await s.engine.submit(s.f.wallet, r.id);
   s.f.flags.orderUid = r.auth.orderUid; s.f.flags.invalidated = true;
   assert.equal((await s.engine.invalidate(s.f.wallet, r.id, txHash)).state, 'INVALIDATED'); assert.equal(s.store.get(r.id, s.f.wallet).invalidationTxHash, txHash);
   await assert.rejects(s.engine.prepare(s.f.wallet, s.f.input), /ACTIVE_ORDER_EXISTS/);
@@ -184,7 +196,8 @@ test('confirmed invalidation never claims absence of a raced fill or releases th
 });
 test('lost signature-prompt responses persist possible escaped authority before any signature reaches the server', async t => {
   const s = setup(t), r = await s.engine.prepare(s.f.wallet, s.f.input);
-  await s.engine.signing(s.f.wallet, r.id); assert.equal(s.store.get(r.id, s.f.wallet).signaturePrompted, true);
+  assert.equal(r.auth.typedData, null); assert.equal(s.engine.get(s.f.wallet, r.id).auth.typedData, null); assert.equal(s.engine.receipt(s.f.wallet, r.id).auth.typedData, null);
+  assert.ok((await s.engine.signing(s.f.wallet, r.id)).auth.typedData); assert.equal(s.store.get(r.id, s.f.wallet).signaturePrompted, true);
   assert.equal(s.store.get(r.id, s.f.wallet).signature, null);
   const cancellation = s.engine.cancel(s.f.wallet, r.id); assert.equal(cancellation.state, 'PREPARED'); assert.ok('cancellation' in cancellation);
   await assert.rejects(s.engine.prepare(s.f.wallet, s.f.input), /ACTIVE_ORDER_EXISTS/);

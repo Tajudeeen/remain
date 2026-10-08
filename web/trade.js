@@ -95,6 +95,10 @@ if (typeof document !== 'undefined' && document.getElementById('trade-view')) {
     $('trade-fee').textContent = formatPositionUnits(order.auth.stockFeeRaw, selection.stockDecimals) + ' ' + selection.stockSymbol + ' included in debit';
     $('trade-order-id').textContent = order.id; $('trade-hash').textContent = order.auth.orderDigest;
     $('trade-receipt').textContent = order.result ? `${order.result.status}. ${order.result.confirmations} confirmations. ${order.result.reasons.join(', ')}` : 'Settlement has not been independently observed.';
+    const reconciled = order.state === 'RECONCILED' && order.result?.status === 'RECONCILED';
+    $('trade-settled-facts').hidden = !reconciled;
+    $('trade-actual-cash').textContent = reconciled ? formatPositionUnits(order.result.cashReceivedRaw, 18) + ' USDT' : '';
+    $('trade-actual-stock').textContent = reconciled ? formatPositionUnits(order.result.remainingStockRaw, selection.stockDecimals) + ' ' + selection.stockSymbol : '';
     if (order.recovery) message('Submission outcome unknown. Keep this order ID. Check status or reconcile its settlement hash. Don’t create another sale.');
     if (order.state === 'INVALIDATED') message('This sale needs investigation. A previous receipt may have been withdrawn. Invalidation can race a fill. Reconcile the original settlement before starting another sale.');
     update();
@@ -116,7 +120,7 @@ if (typeof document !== 'undefined' && document.getElementById('trade-view')) {
       Promise.resolve().then(() => selected.request(request)).then(resolve, reject).finally(() => clearTimeout(timer));
     });
   }
-  function clearSession() { version++; token = undefined; wallet = undefined; order = undefined; $('trade-result').hidden = true; message('Wallet or page changed. Sign in again to recover an existing order.'); update(); }
+  function clearSession() { version++; token = undefined; wallet = undefined; order = undefined; $('trade-result').hidden = true; $('trade-settled-facts').hidden = true; $('trade-actual-cash').textContent = ''; $('trade-actual-stock').textContent = ''; $('trade-receipt').textContent = 'No sale has been reconciled.'; message('Wallet or page changed. Sign in again to recover an existing order.'); update(); }
   async function run(action) {
     if (busy) return; busy = true; update(); const current = version;
     try { await action(current); } catch (error) { if (current === version) message(`${error.code ?? 'REQUEST_FAILED'}. Check status before repeating any wallet action. Signing and submission are separate steps.`); }
