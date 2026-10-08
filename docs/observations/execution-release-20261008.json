@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "project": "Remain",
+  "scope": "PREPARED_EXECUTION_RELEASE",
+  "snapshotAt": "2026-10-08T23:50:00Z",
+  "source": {
+    "repository": "Tajudeeen/remain",
+    "private": true,
+    "runtimeSha": "94cbb6d569cc4cbb6837e1f73f84d56963e06b00",
+    "pullRequests": [
+      37,
+      38,
+      39
+    ]
+  },
+  "deployment": {
+    "siteId": "8ac48969-8aff-4caf-834a-5b5a8b0e16bf",
+    "id": "6ac82ad344082b00084e11f6",
+    "commitRef": "94cbb6d569cc4cbb6837e1f73f84d56963e06b00",
+    "publishedAt": "2026-10-08T23:44:33.687Z",
+    "url": "https://remain-cash.netlify.app/#trade",
+    "mode": "TEST_FIXTURE",
+    "executionEnabled": false
+  },
+  "verification": {
+    "localTestCount": 835,
+    "remoteTestCount": 835,
+    "newRegressionCount": 31,
+    "mainWorkflow": 37861084082,
+    "httpsWorkflow": 37861084077,
+    "conclusion": "success",
+    "checks": [
+      "unit-and-adversarial-tests",
+      "coverage",
+      "reachable-tracked-history-pattern-screen",
+      "terminal-rehearsals",
+      "non-root-container-build-and-smoke",
+      "real-browser-five-widths",
+      "exact-runtime-https-smoke",
+      "public-financial-route-denial"
+    ]
+  },
+  "limits": [
+    "Generated accounts, vendor payloads and RPC responses in regression tests are fictional.",
+    "No real signing, approval, submission, invalidation or funded mainnet settlement was performed.",
+    "Two-RPC agreement is an observation, not a consensus proof.",
+    "Retained-floor and market conditions are checked before actions and in receipts, not atomically enforced by standard CoW orders.",
+    "No final interactive production screenshot after workspace/browser disconnection. Final runtime was independently checked by remote CI and HTTPS smoke.",
+    "History pattern checks and dependency audit are not formal security audits.",
+    "Actual vendor profile, reviewed pins, protected persistent host, credentials and wallet confirmations require owner setup."
+  ]
+}
