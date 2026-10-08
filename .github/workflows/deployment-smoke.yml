@@ -12,6 +12,9 @@ on:
       - '.github/workflows/deployment-smoke.yml'
       - 'netlify/**'
       - 'netlify.toml'
+      - 'web/**'
+      - 'scripts/build-web.ts'
+      - 'package*.json'
   workflow_dispatch:
     inputs:
       base_url:
