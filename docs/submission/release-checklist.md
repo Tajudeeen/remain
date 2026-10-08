@@ -6,14 +6,14 @@ Preparation is authorized. Public source release, form submission and live finan
 
 1. Confirm operator, project and host access with Binance. Follow `docs/access-troubleshooting.md`; do not bypass a restriction.
 2. Run discovery and the read-only held-stock RFQ feasibility harness from the authorized environment. Preserve sanitized evidence.
-3. Review actual signing fields, minimum-output/fee enforcement, allowance/spender and settlement attribution. Build the live adapter only after the feasibility gate passes.
+3. Review actual signing fields, minimum-output/fee enforcement, allowance/spender and settlement attribution. The strict CoW adapter is prepared, but its actual vendor compatibility must pass before activation. Review and pin the settlement, relayer and proxy implementation code through the two-RPC inspection tool. Configure the persistent HTTPS Node service described in `docs/execution.md`. Netlify financial routes remain disabled.
 4. Obtain specific approval for any tiny live sale and reconcile its actual outcome. Fixture receipts cannot close this step.
 
 ## Prepare the owner decisions
 
 - Confirm hackathon registration and applicable eligibility/terms.
 - Write the final DevEx narrative personally and complete the AI stack section.
-- Record and test a video under four minutes.
+- Optionally record and test a recommended video under four minutes.
 - Review the exact source commit, privacy changes and history findings before public release.
 - Stop/remove any self-hosted runner and review workflow access before the repository becomes public. No runner is assumed to exist.
 
