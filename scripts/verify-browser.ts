@@ -6,7 +6,8 @@ import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { createRehearsalServer } from '../src/rehearsal/server.ts';
 import { digest, BSC_USDT } from '../src/validation.ts';
-import { exploreCashTarget } from '../src/integration/preview.ts';
+import { exploreCashTarget, reviewCashCandidate } from '../src/integration/preview.ts';
+import type { PreviewInput } from '../web/preview.js';
 import { inspectFixtureReceipt } from '../src/receipts/inspection.ts';
 import { inspectionChecks } from '../src/integration/readiness.ts';
 import type { SmokeReport } from '../src/feasibility.ts';
@@ -15,6 +16,22 @@ import type { SmokeReport } from '../src/feasibility.ts';
 // empty browser session, fictional data and an ephemeral loopback-only port.
 const exec = promisify(execFile); const session = `remain-${randomUUID().slice(0, 8)}`;
 const server = createRehearsalServer();
+function browserCashReader(input: PreviewInput) {
+  return { async get(endpoint: string, query: import('../src/signing.ts').Query = []) {
+    const amount = new Map(query).get('amount') ?? '1';
+    const route = { binanceChainId: '56', executionMode: 'RFQ', vendorName: 'PcsXRfq', quoteId: 'browser-fixture-' + amount, fromTokenAmount: amount, toTokenAmount: (BigInt(amount) * 20000n).toString(),
+      fromToken: { tokenContractAddress: input.token, decimal: '2', isHoneyPot: false, taxRate: '0' }, toToken: { tokenContractAddress: BSC_USDT, decimal: '6', isHoneyPot: false, taxRate: '0' },
+      priceImpactPercent: '-0.01', feeAmount: null, feeToken: null, actualSwapAmount: null };
+    // Fictional inspection structure, never a vendor signing profile.
+    const typed = { domain: { chainId: 56, verifyingContract: input.token }, primaryType: 'FixtureOrder',
+      types: { FixtureOrder: [{ name: 'amount', type: 'uint256' }, { name: 'receiver', type: 'address' }] }, message: { amount, receiver: input.wallet } };
+    const data = endpoint.endsWith('/tokens') ? [{ binanceChainId: '56', tokenContractAddress: input.token, tokenSymbol: 'FIXon', underlyingTicker: 'FIX', platformId: 'ondo', assetType: 1, decimals: 2 }] :
+      endpoint.includes('/balance/') ? [{ page: 1, pageSize: 100, tokenAssets: [{ binanceChainId: '56', address: input.wallet, tokenContractAddress: input.token, rawBalance: '250', isRiskToken: false }] }] :
+      endpoint.endsWith('/underlying-market') ? { binanceChainId: '56', tokenContractAddress: input.token, statusInfo: { marketStatus: 'regular', openState: true, reasonCode: 'TRADING' } } :
+      endpoint.endsWith('/swap') ? { executionMode: 'RFQ', routerResult: route, tx: { from: input.wallet }, rfq: { vendor: 'PcsXRfq', signingScheme: 'EIP712', typedDataToSign: typed } } : [route];
+    return { data, timestamp: Date.now(), responseHash: 'browser-fixture', latencyMs: 0 };
+  } };
+}
 const inspectionServer = createRehearsalServer({ inspector: async input => {
   const report: SmokeReport = { runId: 'browser-fixture', startedAt: new Date().toISOString(), mode: 'TEST_FIXTURE', status: 'blocked', executionEnabled: false,
     checks: inspectionChecks.slice(0, 3), observations: [], notes: [], error: { code: 'INSUFFICIENT_POSITION', message: 'Fixture only' } };
@@ -27,16 +44,8 @@ const inspectionServer = createRehearsalServer({ inspector: async input => {
   stock: { chain: '56', token: input.token, symbol: 'FIXon', ticker: 'FIX', issuer: 'ondo', decimals: 2 },
   status: input.token.endsWith('3') ? 'ZERO_OBSERVED' : 'HELD_OBSERVED', balanceRaw: input.token.endsWith('3') ? '0' : '250',
   observedAtMs: Date.now(), pagesRead: 1, executionEnabled: false, liveGate: 'UNVERIFIED', ownership: 'NOT_AUTHENTICATED' }),
-  cashPreviewer: (input, signal) => exploreCashTarget(input, { async get(endpoint, query = []) {
-    const amount = new Map(query).get('amount') ?? '1';
-    const data = endpoint.endsWith('/tokens') ? [{ binanceChainId: '56', tokenContractAddress: input.token, tokenSymbol: 'FIXon', underlyingTicker: 'FIX', platformId: 'ondo', assetType: 1, decimals: 2 }] :
-      endpoint.includes('/balance/') ? [{ page: 1, pageSize: 100, tokenAssets: [{ binanceChainId: '56', address: input.wallet, tokenContractAddress: input.token, rawBalance: '250', isRiskToken: false }] }] :
-      endpoint.endsWith('/underlying-market') ? { binanceChainId: '56', tokenContractAddress: input.token, statusInfo: { marketStatus: 'regular', openState: true, reasonCode: 'TRADING' } } :
-      [{ binanceChainId: '56', executionMode: 'RFQ', vendorName: 'PcsXRfq', quoteId: 'browser-fixture-' + amount, fromTokenAmount: amount, toTokenAmount: (BigInt(amount) * 20000n).toString(),
-        fromToken: { tokenContractAddress: input.token, decimal: '2', isHoneyPot: false, taxRate: '0' }, toToken: { tokenContractAddress: BSC_USDT, decimal: '6', isHoneyPot: false, taxRate: '0' },
-        priceImpactPercent: '-0.01', feeAmount: null, feeToken: null, actualSwapAmount: null }];
-    return { data, timestamp: Date.now(), responseHash: 'browser-fixture', latencyMs: 0 };
-  } }, signal) });
+  cashPreviewer: (input, signal) => exploreCashTarget(input, browserCashReader(input), signal),
+  cashReviewer: (input, signal) => reviewCashCandidate(input, browserCashReader(input.intent), signal) });
 await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
 await new Promise<void>((resolve) => inspectionServer.listen(0, '127.0.0.1', resolve));
 const address = server.address(); assert.ok(address && typeof address === 'object');
@@ -248,6 +257,17 @@ try {
   await check("document.querySelector('#cash-preview-result').hidden"); await browser('eval', 'window.fetch=window.previewFetch');
   await browser('click', '#cash-preview'); await browser('wait', '--fn', "!document.querySelector('#cash-preview-result').hidden");
   await browser('screenshot', 'evidence/rehearsal-cash-target-preview.png', '--full');
+  stage = 'explicit unsigned cash order review';
+  await check("!document.querySelector('#cash-review').disabled && document.querySelector('#cash-review-result').hidden");
+  await browser('click', '#cash-review'); await browser('wait', '--fn', "!document.querySelector('#cash-review-result').hidden");
+  await check("document.querySelector('#cash-review-sale').textContent === '0.5 FIXon' && document.querySelector('#cash-review-before').textContent === '1 USDT' && document.querySelector('#cash-review-after').textContent === '1 USDT' && document.querySelector('#cash-review-label').textContent.includes('TEST_FIXTURE') && document.querySelector('#cash-review-message').textContent.includes('Trading remains locked') && document.querySelector('#live-amount').value === ''");
+  await browser('screenshot', 'evidence/rehearsal-cash-order-review.png', '--full');
+  stage = 'unsigned review tampering and recovery';
+  await browser('eval', "window.reviewFetch=window.fetch;window.fetch=async (...args)=>{const r=await window.reviewFetch(...args);if(String(args[0])!=='/api/live/review')return r;const body=await r.json();body.rfqReview.signatureSemantics='VERIFIED';return new Response(JSON.stringify(body),{headers:{'content-type':'application/json'}})}");
+  await browser('click', '#cash-review'); await browser('wait', '--fn', "document.querySelector('#cash-review-message').classList.contains('error') && !document.querySelector('#cash-review').disabled");
+  await check("document.querySelector('#cash-review-result').hidden && document.querySelector('#cash-review-after').textContent === ''");
+  await browser('eval', 'window.fetch=window.reviewFetch'); await browser('click', '#cash-review'); await browser('wait', '--fn', "!document.querySelector('#cash-review-result').hidden");
+  await browser('fill', '#cash-preview-target', '2'); await check("document.querySelector('#cash-review-result').hidden && document.querySelector('#cash-review-proof').textContent === ''");
   stage = 'selected position and exact amount preparation';
   await browser('fill', '#live-token', '0x2222222222222222222222222222222222222222'); await browser('click', '#position-read');
   await browser('wait', '--fn', "!document.querySelector('#position-result').hidden");
@@ -295,7 +315,7 @@ try {
   await browser('eval', "sessionStorage.removeItem('remain-introduced')");
   await browser('open', `http://127.0.0.1:${address.port}`);
   await check("matchMedia('(prefers-reduced-motion: reduce)').matches && document.querySelector('#splash').hidden && !document.querySelector('#site-content').inert");
-  console.log('Browser rehearsal passed: landing, splash, keyboard/history/direct routes, planning blocks/download/expiry/races, receipt checks, local position preparation, cash-target RFQ estimates through an injected provider, no-candidate state, intent invalidation, preview tampering/retry and all views at five widths. TEST_FIXTURE only.');
+  console.log('Browser rehearsal passed: landing, splash, keyboard/history/direct routes, planning blocks/download/expiry/races, receipt checks, local position preparation, cash-target RFQ estimates, explicit unsigned candidate review, signature-label tampering/retry, no-candidate state, intent invalidation and all views at five widths. TEST_FIXTURE only.');
 } catch (error) {
   console.error(`Browser rehearsal failed during ${stage}.`);
   await mkdir('evidence', { recursive: true });

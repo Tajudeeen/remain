@@ -19,6 +19,7 @@ Updated 2026-10-08. Submission target: 2026-10-11 12:00 UTC per the supplied bri
 | 12: Cash search boundary | Independent elapsed deadline/spacing, interruptible waits, full clock-regression detection and atomic immutable quote-set admission | Eight reproduced failures, 18 new regression tests, 711 local tests/coverage, green remote CI, Netlify deploy 6ac6e53bb10d420008bc3d1a, exact-build HTTPS smoke 37708537529 and production planner | COMPLETE for prepared planning/search boundaries. Live vendor semantics and execution remain BLOCKED/UNVERIFIED |
 | 13: Selected-position preparation | Loopback-only selected stock identity/raw-balance read, honest unknown states, exact human amount preparation and ephemeral UI | 743 local tests/coverage, 32 new regressions, green PR/main CI with real-browser/container checks, deploy 6ac736a6d0023800080e7926, exact-build HTTPS smoke 37737251713 and production setup panel | COMPLETE for prepared local position reads. Actual held-position feasibility remains BLOCKED |
 | 14: Cash-target quote preview | Local-only fresh position/market read, bounded estimated RFQ search, exact retained-input cap and ephemeral cash-first UI | 778 local tests/coverage, 35 new regressions, green PR/main CI with real-browser/container checks, deploy 6ac78352f1239d00084828ed, exact-build HTTPS smoke 37772634474 and production browser | COMPLETE for prepared cash-target estimates. Executable minimums, vendor fees and actual held-position feasibility remain UNVERIFIED/BLOCKED |
+| 15: Cash-candidate unsigned review | Explicit exact-input/venue selection, fresh position/market/quote checks and bound unsigned build with separate changed estimates | Local adversarial checks, remote CI, browser/container and exact-build HTTPS release evidence pending | Implementation under verification. Vendor economic semantics and live trading remain UNVERIFIED/BLOCKED |
 
 ## Implemented in gate 0
 
@@ -44,6 +45,8 @@ Local and remote checks green, then a real authenticated smoke result with suppo
 Gate 0 completion does not authorize trading or prove signature semantics. Those require vendor field binding, actual approval/settlement analysis and explicit owner approval later.
 
 ## Blueprint clarifications
+
+The owner's 2026-10-08 request to enable trading and advance authorizes Gate 15 prepared unsigned cash-order review. It connects the cash candidate to a fresh, explicitly selected quote/build without substituting input or venue. Actual held-position and signed economic evidence are missing, so the trading gate remains locked. See [cash-order review](cash-order-review.md).
 
 The owner's 2026-10-08 next-milestone request authorizes Gate 14 to connect cash intent to prepared read-only RFQ estimates while owner setup remains pending. It preserves BellGuard's executable-minimum requirement and adds no build, signing, approval, submission or settlement action. See [cash-target preview](cash-preview.md).
 
