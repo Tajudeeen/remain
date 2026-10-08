@@ -5,7 +5,8 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { createRehearsalServer } from '../src/rehearsal/server.ts';
-import { digest } from '../src/validation.ts';
+import { digest, BSC_USDT } from '../src/validation.ts';
+import { exploreCashTarget } from '../src/integration/preview.ts';
 import { inspectFixtureReceipt } from '../src/receipts/inspection.ts';
 import { inspectionChecks } from '../src/integration/readiness.ts';
 import type { SmokeReport } from '../src/feasibility.ts';
@@ -25,7 +26,17 @@ const inspectionServer = createRehearsalServer({ inspector: async input => {
 }, positionReader: async input => ({ kind: 'REMAIN_POSITION_READ', mode: 'TEST_FIXTURE', wallet: input.wallet,
   stock: { chain: '56', token: input.token, symbol: 'FIXon', ticker: 'FIX', issuer: 'ondo', decimals: 2 },
   status: input.token.endsWith('3') ? 'ZERO_OBSERVED' : 'HELD_OBSERVED', balanceRaw: input.token.endsWith('3') ? '0' : '250',
-  observedAtMs: Date.now(), pagesRead: 1, executionEnabled: false, liveGate: 'UNVERIFIED', ownership: 'NOT_AUTHENTICATED' }) });
+  observedAtMs: Date.now(), pagesRead: 1, executionEnabled: false, liveGate: 'UNVERIFIED', ownership: 'NOT_AUTHENTICATED' }),
+  cashPreviewer: (input, signal) => exploreCashTarget(input, { async get(endpoint, query = []) {
+    const amount = new Map(query).get('amount') ?? '1';
+    const data = endpoint.endsWith('/tokens') ? [{ binanceChainId: '56', tokenContractAddress: input.token, tokenSymbol: 'FIXon', underlyingTicker: 'FIX', platformId: 'ondo', assetType: 1, decimals: 2 }] :
+      endpoint.includes('/balance/') ? [{ page: 1, pageSize: 100, tokenAssets: [{ binanceChainId: '56', address: input.wallet, tokenContractAddress: input.token, rawBalance: '250', isRiskToken: false }] }] :
+      endpoint.endsWith('/underlying-market') ? { binanceChainId: '56', tokenContractAddress: input.token, statusInfo: { marketStatus: 'regular', openState: true, reasonCode: 'TRADING' } } :
+      [{ binanceChainId: '56', executionMode: 'RFQ', vendorName: 'PcsXRfq', quoteId: 'browser-fixture-' + amount, fromTokenAmount: amount, toTokenAmount: (BigInt(amount) * 20000n).toString(),
+        fromToken: { tokenContractAddress: input.token, decimal: '2', isHoneyPot: false, taxRate: '0' }, toToken: { tokenContractAddress: BSC_USDT, decimal: '6', isHoneyPot: false, taxRate: '0' },
+        priceImpactPercent: '-0.01', feeAmount: null, feeToken: null, actualSwapAmount: null }];
+    return { data, timestamp: Date.now(), responseHash: 'browser-fixture', latencyMs: 0 };
+  } }, signal) });
 await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
 await new Promise<void>((resolve) => inspectionServer.listen(0, '127.0.0.1', resolve));
 const address = server.address(); assert.ok(address && typeof address === 'object');
@@ -205,7 +216,7 @@ try {
   stage = 'public integration setup';
   await browser('open', `http://127.0.0.1:${address.port}/#live`);
   await browser('wait', '--fn', "document.querySelector('#live-server').textContent === 'Local setup required' && !document.querySelector('#live-refresh').disabled");
-  await check("!document.querySelector('#live-view').hidden && document.querySelector('#fixture-banner').hidden && document.querySelector('#live-inspect').disabled && document.querySelector('#position-read').disabled");
+  await check("!document.querySelector('#live-view').hidden && document.querySelector('#fixture-banner').hidden && document.querySelector('#live-inspect').disabled && document.querySelector('#position-read').disabled && document.querySelector('#cash-preview').disabled");
   await browser('click', '#wallet-connect');
   await check("document.querySelector('#live-message').textContent.includes('No browser wallet') && !document.querySelector('#wallet-connect').disabled");
   for (const width of [320, 375, 768, 1024, 1440]) {
@@ -221,6 +232,22 @@ try {
   await check("document.querySelector('#live-inspect').disabled");
   await browser('eval', "window.fixtureWalletChain='0x38'"); await browser('click', '#wallet-connect');
   await browser('wait', '--fn', "document.querySelector('#wallet-state').textContent === 'BSC account selected'");
+  stage = 'cash-target estimates from an injected read-only provider';
+  await browser('fill', '#live-token', '0x2222222222222222222222222222222222222222');
+  await browser('fill', '#cash-preview-target', '1'); await browser('click', '#cash-preview');
+  await browser('wait', '--fn', "!document.querySelector('#cash-preview-result').hidden");
+  await check("document.querySelector('#cash-preview-label').textContent.includes('TEST_FIXTURE') && document.querySelector('#cash-preview-output').textContent === '1 USDT' && document.querySelector('#cash-preview-sale').textContent === '0.5 FIXon' && document.querySelector('#cash-preview-retained').textContent === '2 FIXon' && document.querySelector('#live-amount').value === '' && document.querySelector('#cash-preview-message').textContent.includes('unverified')");
+  stage = 'cash intent change clears the observed candidate';
+  await browser('fill', '#cash-preview-target', '2'); await check("document.querySelector('#cash-preview-result').hidden && document.querySelector('#cash-preview-output').textContent === ''");
+  await browser('click', '#cash-preview'); await browser('wait', '--fn', "!document.querySelector('#cash-preview-result').hidden");
+  await check("document.querySelector('#cash-preview-title').textContent === 'No qualifying candidate observed.'");
+  stage = 'cash preview response tampering and retry';
+  await browser('fill', '#cash-preview-target', '1');
+  await browser('eval', "window.previewFetch=window.fetch;window.fetch=async (...args)=>{const r=await window.previewFetch(...args);if(String(args[0])!=='/api/live/preview')return r;const body=await r.json();body.floorRaw='0';return new Response(JSON.stringify(body),{headers:{'content-type':'application/json'}})}");
+  await browser('click', '#cash-preview'); await browser('wait', '--fn', "document.querySelector('#cash-preview-message').classList.contains('error') && !document.querySelector('#cash-preview').disabled");
+  await check("document.querySelector('#cash-preview-result').hidden"); await browser('eval', 'window.fetch=window.previewFetch');
+  await browser('click', '#cash-preview'); await browser('wait', '--fn', "!document.querySelector('#cash-preview-result').hidden");
+  await browser('screenshot', 'evidence/cash-target-preview.png', '--full');
   stage = 'selected position and exact amount preparation';
   await browser('fill', '#live-token', '0x2222222222222222222222222222222222222222'); await browser('click', '#position-read');
   await browser('wait', '--fn', "!document.querySelector('#position-result').hidden");
@@ -268,7 +295,7 @@ try {
   await browser('eval', "sessionStorage.removeItem('remain-introduced')");
   await browser('open', `http://127.0.0.1:${address.port}`);
   await check("matchMedia('(prefers-reduced-motion: reduce)').matches && document.querySelector('#splash').hidden && !document.querySelector('#site-content').inert");
-  console.log('Browser rehearsal passed: landing, splash, keyboard/history/direct routes, planning blocks/download/expiry/races, altered-response rejection and retry, receipt replay/source and report downloads, tampering, duplicate fields, size limits, malformed-success recovery, retry/clear/races, and all three views at five widths. TEST_FIXTURE only.');
+  console.log('Browser rehearsal passed: landing, splash, keyboard/history/direct routes, planning blocks/download/expiry/races, receipt checks, local position preparation, cash-target RFQ estimates through an injected provider, no-candidate state, intent invalidation, preview tampering/retry and all views at five widths. TEST_FIXTURE only.');
 } catch (error) {
   console.error(`Browser rehearsal failed during ${stage}.`);
   await mkdir('evidence', { recursive: true });

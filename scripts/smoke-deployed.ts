@@ -39,7 +39,7 @@ const browserResponse = await fetch(new URL('/response.js', base), { redirect: '
 assert.equal(browserResponse.status, 200);
 assert.match(browserResponse.headers.get('content-type') ?? '', /(?:java|ecma)script/);
 assert.match(await browserResponse.text(), /export function validatePlanningRecord/);
-for (const file of ['live.js', 'wallet.js', 'position.js']) {
+for (const file of ['live.js', 'wallet.js', 'position.js', 'preview.js']) {
   const response = await fetch(new URL('/' + file, base), { redirect: 'error', signal: AbortSignal.timeout(5000) });
   assert.equal(response.status, 200); assert.match(response.headers.get('content-type') ?? '', /(?:java|ecma)script/);
 }
@@ -50,6 +50,8 @@ const inspect = await fetch(new URL('/api/live/inspect', base), { method: 'POST'
 assert.equal(inspect.status, 503); assert.deepEqual(await readJson(inspect), { code: 'LOCAL_SETUP_REQUIRED' });
 const position = await fetch(new URL('/api/live/position', base), { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(5000) });
 assert.equal(position.status, 503); assert.deepEqual(await readJson(position), { code: 'LOCAL_SETUP_REQUIRED' });
+const preview = await fetch(new URL('/api/live/preview', base), { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(5000) });
+assert.equal(preview.status, 503); assert.deepEqual(await readJson(preview), { code: 'LOCAL_SETUP_REQUIRED' });
 
 const input = { cashTarget: '25', retainPercent: 70, maxImpactPercent: '0.50', market: 'regular', allowClosedMarket: false };
 const planResponse = await fetch(new URL('/api/rehearse', base), {

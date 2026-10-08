@@ -74,10 +74,10 @@ export function parseFixtureJSON(text) {
   catch { throw failure(); }
 }
 
-export async function readFixtureText(response, signal) {
+async function boundedResponseText(response, signal, allowError = false) {
   let reader; let onAbort; let complete = false;
   try {
-    if (signal.aborted || !response.ok || response.redirected ||
+    if (signal.aborted || (!response.ok && !(allowError && response.status >= 400 && response.status <= 599)) || response.redirected ||
         !/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(response.headers.get('content-type') || '')) throw failure();
     const declared = response.headers.get('content-length');
     if (declared !== null && (!/^(0|[1-9][0-9]*)$/.test(declared) || Number(declared) > maxBytes)) throw failure();
@@ -106,8 +106,14 @@ export async function readFixtureText(response, signal) {
     else if (response.body && !response.body.locked) void response.body.cancel().catch(() => {});
   }
 }
+export async function readFixtureText(response, signal) { return boundedResponseText(response, signal); }
 export async function readFixtureJSON(response, signal) {
   return parseFixtureJSON(await readFixtureText(response, signal));
+}
+// Error bodies share exactly the same byte, stream and duplicate-key limits.
+// The read-only caller projects only its fixed local error-code vocabulary.
+export async function readReadOnlyJSON(response, signal) {
+  return parseFixtureJSON(await boundedResponseText(response, signal, true));
 }
 
 export function validateReceiptReport(value) {

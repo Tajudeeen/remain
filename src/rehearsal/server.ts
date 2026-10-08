@@ -6,6 +6,7 @@ import { RECEIPT_MAX_BYTES, parseReceiptJSON } from '../receipts/canonical.ts';
 import { inspectionInput, readinessStatus, projectInspection, type LocalInspector } from '../integration/readiness.ts';
 import { RemainError } from '../errors.ts';
 import { positionInput, projectPosition, type LocalPositionReader } from '../integration/position.ts';
+import { cashPreviewInput, projectCashPreview, type LocalCashPreviewer } from '../integration/preview.ts';
 
 const assets = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']], ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
@@ -15,6 +16,7 @@ const assets = new Map([
   ['/live.js', ['live.js', 'text/javascript; charset=utf-8']],
   ['/wallet.js', ['wallet.js', 'text/javascript; charset=utf-8']],
   ['/position.js', ['position.js', 'text/javascript; charset=utf-8']],
+  ['/preview.js', ['preview.js', 'text/javascript; charset=utf-8']],
   ['/demo-receipt.json', ['demo-receipt.json', 'application/json; charset=utf-8']]
 ]);
 
@@ -25,6 +27,7 @@ export type RehearsalServerOptions = Readonly<{
   bodyReadTimeoutMs?: number;
   inspector?: LocalInspector;
   positionReader?: LocalPositionReader;
+  cashPreviewer?: LocalCashPreviewer;
   inspectionTimeoutMs?: number;
 }>;
 
@@ -142,13 +145,14 @@ export function createRehearsalServer(options: RehearsalServerOptions = {}) {
       } catch { json(response, 503, { code: 'ASSET_UNAVAILABLE' }); }
       return;
     }
-    if (!['/api/rehearse', '/api/receipt/verify', '/api/live/inspect', '/api/live/position'].includes(request.url ?? '')) { json(response, 404, { code: 'NOT_FOUND' }); return; }
+    if (!['/api/rehearse', '/api/receipt/verify', '/api/live/inspect', '/api/live/position', '/api/live/preview'].includes(request.url ?? '')) { json(response, 404, { code: 'NOT_FOUND' }); return; }
     const receipt = request.url === '/api/receipt/verify';
     const position = request.url === '/api/live/position';
-    const live = request.url === '/api/live/inspect' || position;
+    const preview = request.url === '/api/live/preview';
+    const live = request.url === '/api/live/inspect' || position || preview;
     const limit = receipt ? RECEIPT_MAX_BYTES : 4096;
     if (request.method !== 'POST') { response.setHeader('Allow', 'POST'); json(response, 405, { code: 'METHOD_REJECTED' }); return; }
-    if (live && !(position ? options.positionReader && loopback : inspectionAvailable)) { json(response, 503, { code: 'LOCAL_SETUP_REQUIRED' }); return; }
+    if (live && !(preview ? options.cashPreviewer && loopback : position ? options.positionReader && loopback : inspectionAvailable)) { json(response, 503, { code: 'LOCAL_SETUP_REQUIRED' }); return; }
     if (live && !request.headers.origin) { json(response, 403, { code: 'ORIGIN_REJECTED' }); return; }
     if (!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(request.headers['content-type'] ?? '')) { json(response, 415, { code: 'CONTENT_TYPE_REJECTED' }); return; }
     if (request.headers['content-encoding'] && request.headers['content-encoding'] !== 'identity') { json(response, 415, { code: 'ENCODING_REJECTED' }); return; }
@@ -172,7 +176,12 @@ export function createRehearsalServer(options: RehearsalServerOptions = {}) {
           signal.addEventListener('abort', onAbort, { once: true }); if (signal.aborted) onAbort();
         });
         try {
-          if (position) {
+          if (preview) {
+            const input = cashPreviewInput(parsed);
+            const report = await Promise.race([options.cashPreviewer!(input, signal), interrupted]);
+            if (signal.aborted) throw new RemainError('REQUEST_CANCELLED');
+            json(response, 200, projectCashPreview(report, input));
+          } else if (position) {
             const input = positionInput(parsed);
             const report = await Promise.race([options.positionReader!(input, signal), interrupted]);
             if (signal.aborted) throw new RemainError('REQUEST_CANCELLED');
@@ -191,7 +200,7 @@ export function createRehearsalServer(options: RehearsalServerOptions = {}) {
       json(response, 200, await rehearsePlan(input, controller.signal));
     } catch (error) {
       if (live && error instanceof RemainError && error.code === 'REQUEST_CANCELLED') { json(response, 408, { code: 'REQUEST_CANCELLED' }); return; }
-      if (position && error instanceof RemainError) { json(response, error.code === 'INVALID_INPUT' ? 400 : 502, { code: error.code }); return; }
+      if ((position || preview) && error instanceof RemainError) { json(response, error.code === 'INVALID_INPUT' ? 400 : 502, { code: error.code }); return; }
       const tooLarge = error instanceof RehearsalError && error.code === 'BODY_TOO_LARGE';
       const timedOut = error instanceof RehearsalError && error.code === 'BODY_TIMEOUT';
       if (!request.complete) response.setHeader('Connection', 'close');
