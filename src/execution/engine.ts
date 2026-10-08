@@ -88,7 +88,7 @@ export class ExecutionEngine {
   get(wallet: string, id: string) { return projectOrder(this.options.store.get(id, wallet)); }
   receipt(wallet: string, id: string) {
     const r = this.options.store.get(id, wallet);
-    return { kind: 'REMAIN_CHAIN_RECEIPT_V1', mode: r.mode, id: r.id, state: r.state, auth: r.auth, intent: r.intent,
+    return { kind: 'REMAIN_CHAIN_RECEIPT_V1', mode: r.mode, id: r.id, state: r.state, auth: { ...r.auth, typedData: r.signaturePrompted ? r.auth.typedData : null }, intent: r.intent,
       stockDecimals: r.stockDecimals, stockSymbol: r.stockSymbol, createdAtMs: r.createdAtMs, observedAtMs: r.lastAtMs, txHash: r.txHash, result: r.result,
       provenance: 'RPC_OBSERVATIONS_RECHECK_BEFORE_RELYING' };
   }
@@ -184,7 +184,7 @@ function applyObservation(r: ExecutionRecord, value: ReturnType<typeof vendorObs
 }
 export function projectOrder(r: ExecutionRecord) {
   return { kind: 'REMAIN_EXECUTION_ORDER', mode: r.mode, id: r.id, state: r.state, revision: r.revision,
-    auth: { ...r.auth, typedData: r.state === 'PREPARED' ? r.auth.typedData : null }, txHash: r.txHash, result: r.result,
+    auth: { ...r.auth, typedData: r.state === 'PREPARED' && r.signaturePrompted ? r.auth.typedData : null }, txHash: r.txHash, result: r.result,
     recovery: r.state === 'UNKNOWN' || r.state === 'SUBMITTING' ? 'DO_NOT_REPEAT_SALE_INVESTIGATE_OR_INVALIDATE_ORDER' : null };
 }
 export function configuredEngine(env: Record<string, string | undefined>) {

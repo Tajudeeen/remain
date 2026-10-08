@@ -37,6 +37,8 @@ Authoritative references checked 2026-10-08:
 
 The retained-token floor is a preflight and receipt invariant. Standard CoW orders do not encode remaining-wallet-balance conditions. Other wallet transfers, orders, token restrictions or upgrades before settlement can invalidate it. Reconciliation refuses to certify a breach. Absolute enforcement needs a separately reviewed on-chain guard profile, which this release does not implement. Visible remaining quantity uses the reviewed snapshot until actual balances reconcile.
 
+Market checks use API flags during preparation, signing and submission. A later flag change does not automatically revoke an already signed order. These checks are observations, not independent exchange-session evidence or an on-chain market-hours condition.
+
 There is no custom fund-holding contract or server wallet key. CoW's settlement uses its documented solver restrictions and reentrancy guard. Remain's durable submit claim handles application concurrency, not a new on-chain defence. BNB approval/invalidation gas is separate from the USDT target and confirmed in the wallet.
 
 Two RPC operators provide a cross-check, not consensus proof. Historical calls and canonical block-hash calls must work. Concurrent transfers in the same settlement block are rejected conservatively. Deep reorgs, compromised RPCs, token mechanics and key/volume loss remain risks. A reorg after a wallet lock was released withdraws the old receipt but cannot undo a later wallet action. Use one service replica on one local durable volume. Distributed orchestration/throttling is outside this profile.
@@ -58,6 +60,8 @@ Loopback read-only inspection cannot run on a public bind. Authenticated executi
 Unknown outcomes retain the original UUID/signature across restart. Sign in again and “Load original order.” Poll an observed platform ID or supply an independently located settlement hash. Recovery requires the exact UID and all accounting checks. The server never guesses a vendor lookup endpoint or creates a replacement sale.
 
 Requesting an order-signature prompt durably marks the draft as potentially signed, before returning typed data to the browser. A lost response, page change, prompt timeout or invalid uploaded signature cannot erase that marker. Only a draft that never requested order signing can be discarded as unsigned. Repeated prompts sign the same UID rather than creating new authority. Investigate or invalidate potentially escaped authority before trying a different sale.
+
+Preparation, ordinary reads and downloads omit raw typed data until that durable marker exists. Reviewing decoded economic bounds does not export a signable artifact early. The owner can still perform unrelated wallet actions outside Remain, which remain outside its retained-floor guarantee.
 
 For invalidation, confirm its exact wallet transaction and paste the hash into “Check invalidation.” Confirmed revocation leaves `INVALIDATED` with the sale locked until settlement is understood. A provider failure/expiry/cancellation label cannot revoke an escaped signature. Automatic historical no-fill/expiry unlock is not implemented. Preserve the journal and investigate rather than deleting it to clear a lock.
 
