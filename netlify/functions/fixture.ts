@@ -15,7 +15,7 @@ export default async (request: Request, context: Context) => {
   // Never accept an arbitrary caller-supplied Host as an allowed origin.
   try {
     const target = new URL(request.url);
-    const site = context.site.name;
+    const site = context.site.name ?? '';
     const suffix = '--' + site + '.netlify.app';
     const prefix = target.hostname.endsWith(suffix) ? target.hostname.slice(0,-suffix.length) : '';
     if (context.deploy.context === 'deploy-preview' && /^[a-z0-9-]+$/.test(site) &&
