@@ -66,8 +66,15 @@ for(const route of ['inspect','position','preview','review']){
   assert.deepEqual(await readJson(actual),{code:marketConfigured?'METHOD_REJECTED':'LOCAL_SETUP_REQUIRED'});
 }
 const catalog=await fetch(new URL('/api/live/catalog',base),{method:marketConfigured?'POST':'GET',redirect:'error',signal:AbortSignal.timeout(5000)});
-assert.equal(catalog.status,marketConfigured?405:503);
-assert.deepEqual(await readJson(catalog),{code:marketConfigured?'METHOD_REJECTED':'LOCAL_SETUP_REQUIRED'});
+// The container's localhost-only API intentionally has no catalog route;
+ // the hosted Netlify function exposes the provider catalog when configured.
+if(market.deployment==='LOCAL_ONLY'||base.hostname==='localhost'||base.hostname==='127.0.0.1'){
+  assert.equal(catalog.status,404);
+  assert.deepEqual(await readJson(catalog),{code:'NOT_FOUND'});
+}else{
+  assert.equal(catalog.status,marketConfigured?405:503);
+  assert.deepEqual(await readJson(catalog),{code:marketConfigured?'METHOD_REJECTED':'LOCAL_SETUP_REQUIRED'});
+}
 const executionStatus=await fetch(new URL('/api/execution/status',base),{redirect:'error',signal:AbortSignal.timeout(5000)});
 assert.equal(executionStatus.status,200);
 const execution=await readJson(executionStatus);
