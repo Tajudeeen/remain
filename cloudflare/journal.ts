@@ -26,7 +26,8 @@ const maxRows = 512;
 function checkedRow(source: Record<string,unknown>): EncryptedJournalRow {
   const {id,uid,wallet,active,revision,payload}=source;
   if (typeof id!=='string'||typeof uid!=='string'||typeof wallet!=='string'||
-      typeof payload!=='string'||!Number.isSafeInteger(active)||!Number.isSafeInteger(revision)||
+      typeof payload!=='string'||typeof active!=='number'||typeof revision!=='number'||
+      !Number.isSafeInteger(active)||!Number.isSafeInteger(revision)||
       !/^[a-f0-9]{64}$/.test(uid)||!/^[a-f0-9]{64}$/.test(wallet)||
       (active!==0&&active!==1)||revision<0||revision>100000000||
       payload.length>LIMIT*2) fail('STORAGE_CORRUPT');
