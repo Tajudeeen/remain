@@ -17,9 +17,9 @@ export function inspectionInput(input: unknown): InspectionInput {
   } catch { throw new RemainError('INVALID_INPUT'); }
 }
 
-export function readinessStatus(available: boolean) {
+export function readinessStatus(available: boolean, availableDeployment: 'LOCAL_ONLY' | 'HOSTED_READ_ONLY' = 'LOCAL_ONLY') {
   return { kind: 'REMAIN_INTEGRATION_READINESS' as const, mode: 'READ_ONLY_SETUP' as const,
-    inspectionAvailable: available, deployment: available ? 'LOCAL_ONLY' as const : 'NOT_CONFIGURED' as const,
+    inspectionAvailable: available, deployment: available ? availableDeployment : 'NOT_CONFIGURED' as const,
     executionEnabled: false as const, liveGate: 'UNVERIFIED' as const, signatureSemantics: 'UNVERIFIED' as const };
 }
 export function projectInspection(report: SmokeReport) {
