@@ -121,8 +121,21 @@ export default {
   async fetch(request,env) {
     let url;
     try {url=new URL(request.url);} catch {return reply(400,{code:'INVALID_REQUEST'});}
-    if (url.search || !allowedOrigin(request,env) || url.protocol!=='https:' && url.hostname!=='localhost' && url.hostname!=='127.0.0.1')
+    // Public health and status GET/HEAD reveal no session, wallet or order data.
+    // Browser navigations from ChatGPT, GitHub and bookmarks may carry
+    // Sec-Fetch-Site: cross-site; do not mistake safe navigation for CSRF.
+    // The strict Origin/Sec-Fetch-Site gate still applies to every POST.
+    const publicRead = ['GET','HEAD'].includes(request.method) &&
+      ['/', '/healthz', '/api/execution/status'].includes(url.pathname);
+    if (url.search || (!publicRead && !allowedOrigin(request,env)) ||
+        (url.protocol!=='https:' && url.hostname!=='localhost' && url.hostname!=='127.0.0.1'))
       return reply(403,{code:'ORIGIN_REJECTED'});
+    if (url.pathname==='/') {
+      if (!['GET','HEAD'].includes(request.method)) return reply(405,{code:'METHOD_REJECTED'});
+      return reply(200,{kind:'REMAIN_EXECUTION_API',service:'remain-cloudflare-execution',
+        health:'/healthz',executionStatus:'/api/execution/status',executionEnabled:eligibleForEngine(env)},
+        request.method==='HEAD');
+    }
     if (url.pathname==='/healthz') {
       if (!['GET','HEAD'].includes(request.method)) return reply(405,{code:'METHOD_REJECTED'});
       let journal='NOT_CONFIGURED';
