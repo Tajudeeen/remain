@@ -109,7 +109,7 @@ if (typeof document !== 'undefined' && $('live-view')) {
       const result = validateReadiness(await readFixtureJSON(response, active.signal));
       if (current !== statusVersion) return;
       available = result.inspectionAvailable;
-      $('live-server').textContent = available ? (result.deployment === 'HOSTED_READ_ONLY' ? 'Live market service connected' : 'Local read-only inspector ready') : 'Market integration not configured';
+      $('live-server').textContent = available ? (result.deployment === 'HOSTED_READ_ONLY' ? 'Live market service connected' : 'Local read-only inspector ready') : 'Local setup required';
       $('live-server-copy').textContent = available ? (result.deployment === 'HOSTED_READ_ONLY' ? 'Live BSC stock positions, market checks and RFQ estimates are available from the server. Your wallet must hold a supported asset. Trading requires separate execution readiness.' : 'Your local server can read Binance data. This does not validate the credentials or enable execution.') : 'The Binance read-only service is not configured for this deployment. Wallet-native BSC token balance verification is still available.';
     } catch {
       if (current !== statusVersion) return;
