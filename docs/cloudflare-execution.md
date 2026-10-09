@@ -3,7 +3,7 @@
 ## Scope / default
 
 The Worker adds an HTTPS API and **one global named SQLite-backed Durable Object**
-for the existing validated CoW BSC sale engine. All three gates are **false**
+for the existing validated CoW BSC sale engine. All four operator gates are **false**
 in `wrangler.toml`, including an independent Cloudflare-specific approval
 gate. In this state no challenge, login, quote, signature, approval,
 submission or poll endpoint can execute: they respond 503.
@@ -98,3 +98,70 @@ Source:
 - https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/
 - https://developers.cloudflare.com/durable-objects/reference/durable-object-class-migrations-legacy/
 - https://developers.cloudflare.com/workers/runtime-apis/nodejs/crypto/
+
+## October 9 build identity and hosted Worker naming
+
+Cloudflare's existing production Worker is named `remain` at
+`https://remain.tajudeenowoeteniyan.workers.dev`.
+`wrangler.toml` matches this exact script name and keeps the existing
+`RemainLedger` class and global DO name stable.
+During every Wrangler build, `scripts/stamp-cloudflare-build.js` requires
+a real Git checkout and replaces `cloudflare/build-identity.js` with the
+exact 40-hex commit. `/healthz.buildSha` is compiled from that value;
+the build fails if Git identity is unavailable. The former mutable
+`REMAIN_BUILD_SHA=unverified` Wrangler variable is no longer used.
+This is source provenance, not a deployed functional or safety audit.
+
+## Encrypted offsite snapshot preparation (R2 not enabled in account)
+
+The Cloudflare account currently replies `10042: Please enable R2 through
+the Cloudflare Dashboard`. **No private R2 bucket or external backup
+exists yet**. Never claim that `journal: READY` means backup/recovery.
+
+`cloudflare/backup.ts` provides an independently AES-256-GCM sealed,
+versioned journal snapshot (`RMB1` format). It authenticates every byte
+and hides even the per-row HMAC indexes; no plaintext wallets, orders or
+signatures appear in the file. `DurableSqlExecutionJournal.exportRows()`
+authenticates every row before export. `restoreRows()` requires a
+**fresh empty SQLite journal**, checks every restored row's GCM tag and
+wallet/UID lock, and atomically rolls back on corruption or conflicts.
+Both directions cap row count and backup size; exceeding these caps
+fails closed instead of silently truncating history.
+
+`RemainLedger.alarm()` supports writing uniquely named encrypted
+snapshots into a *private* `REMAIN_BACKUP_BUCKET` R2 binding when a
+separate `REMAIN_BACKUP_APPROVED=true` operator flag is present.
+Alarms retry failures, and there is no public backup/restore endpoint.
+The Worker remains off by default. Financial execution additionally
+requires the bucket binding and backup-approval gate. These mechanisms
+are not considered verified until the real bucket, production alarm and
+isolated restore drill have been observed.
+
+When R2 becomes available:
+
+1. Create a private bucket (for example, `remain-execution-backups`);
+   leave all public access disabled.
+2. Add this to `wrangler.toml` and redeploy to the **existing** `remain`
+   Worker without changing `REMAIN_LEDGER`, its name or the storage key:
+
+   ```toml
+   [[r2_buckets]]
+   binding = "REMAIN_BACKUP_BUCKET"
+   bucket_name = "remain-execution-backups"
+   ```
+
+3. Run tests for a disposable journal and a separate backup/restore drill.
+   Confirm the uploaded object exists under `v1/YYYY-MM-DD/`,
+   R2 public access is disabled, and the recovered journal retains
+   all active-wallet locks, revisions and one-shot submission states.
+4. Make a separate encrypted **offline** copy under independently
+   controlled credentials; a bucket on the same account alone is not
+   an independent disaster recovery plan.
+5. Only after that, allow an explicitly operator-reviewed change to
+   `REMAIN_BACKUP_APPROVED`. Do **not** enable execution: Binance and
+   remaining contract/financial gates are still independent.
+
+The snapshot library and CI drill exercise a disposable Node SQLite
+adapter. They do not prove an R2 production restore. Never run a restore
+against `remain-execution-all-wallets-v1`: it is intentionally
+empty-only and immutable live order records must not be overwritten.
