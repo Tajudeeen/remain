@@ -36,6 +36,8 @@ test('wallet discovery handles valid EIP-6963 announcements, duplicates, malform
   const list=availableWallets(win);
   assert.equal(list.length,1);assert.equal(list[0]!.name,'Wallet from extension');
   assert.ok(requests>=1);
+  assert.equal(additions,1);
+  unsubscribe();
 });
 
 test('multiple legacy browser extensions are surfaced without silently selecting one',()=>{
