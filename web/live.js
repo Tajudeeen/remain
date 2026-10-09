@@ -89,7 +89,7 @@ if (typeof document !== 'undefined' && $('live-view')) {
     $('wallet-forget').disabled = state.status === 'IDLE';
     const help = { WALLET_UNAVAILABLE: 'No browser wallet found. Open Remain in a wallet-enabled browser.', WALLET_REJECTED: 'You declined account access. You can try again.', WALLET_TIMEOUT: 'Account discovery timed out. Close the old wallet prompt before retrying.', WALLET_INVALID: 'The wallet returned an invalid account response.', WALLET_CHANGED: 'The selected account changed during discovery. Connect again.' };
     message(state.error ? help[state.error] : state.status === 'CONNECTED' ? 'Wallet connected on BSC. Your next step is an on-chain balance read.' : 'No funds move while browsing.', Boolean(state.error));
-    window.dispatchEvent(new CustomEvent('remain-wallet-state', { detail: { status: state.status, address: state.address } }));
+    if (typeof CustomEvent === 'function') window.dispatchEvent(new CustomEvent('remain-wallet-state', { detail: { status: state.status, address: state.address } }));
   }
   let provider, session = walletSession(undefined, walletChanged);
   $('wallet-connect').addEventListener('click', () => {
