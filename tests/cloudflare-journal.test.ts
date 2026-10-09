@@ -72,9 +72,9 @@ test('Cloudflare journal reclaims wallet lock only for unsigned cancelled order'
   const original=s.store.get(s.order.id,s.f.wallet);
   const cancelled=s.store.change(s.order.id,s.f.wallet,0,r=>{r.state='CANCELLED';r.lastAtMs=time;});
   assert.equal(cancelled.state,'CANCELLED');
-  const next=s.store.create({...original,id:randomUUID(),auth:{...original.auth,orderUid:'0x'+'9'.repeat(112)}});
+  const next=s.store.create({...original,id:randomUUID(),auth:{...original.auth,orderUid:('0x'+'9'.repeat(112)) as `0x${string}`}});
   assert.equal(next.state,'PREPARED');
-  assert.throws(()=>s.store.create({...original,id:randomUUID(),auth:{...original.auth,orderUid:'0x'+'8'.repeat(112)}}),/ACTIVE_ORDER_EXISTS/);
+  assert.throws(()=>s.store.create({...original,id:randomUUID(),auth:{...original.auth,orderUid:('0x'+'8'.repeat(112)) as `0x${string}`}}),/ACTIVE_ORDER_EXISTS/);
 });
 test('Cloudflare journal refuses invalid encryption keys',()=>{
   const {db,storage}=mockDurableStore();
