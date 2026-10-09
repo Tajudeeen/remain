@@ -1,6 +1,9 @@
 services:
   remain:
-    build: .
+    build:
+      context: .
+      args:
+        REMAIN_NODE_IMAGE: ${REMAIN_NODE_IMAGE:?Set a reviewed Node 24 image with immutable sha256 digest}
     restart: unless-stopped
     env_file: .env.execution
     environment:
@@ -8,6 +11,7 @@ services:
       PORT: 3000
       REMAIN_EXECUTION_DB: /app/state/execution.sqlite
       REMAIN_LOCAL_READ_ONLY: "false"
+      REMAIN_BUILD_SHA: ${REMAIN_BUILD_SHA:?Set the exact tested commit SHA}
     volumes:
       - execution_state:/app/state
     read_only: true
@@ -19,8 +23,14 @@ services:
       - ALL
     expose:
       - "3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
   edge:
-    image: caddy:2.10.2-alpine
+    image: ${REMAIN_CADDY_IMAGE:?Set a reviewed caddy image with immutable sha256 digest}
     restart: unless-stopped
     environment:
       REMAIN_PUBLIC_HOST: ${REMAIN_PUBLIC_HOST:?Set the approved HTTPS host}
@@ -32,7 +42,8 @@ services:
       - edge_data:/data
       - edge_config:/config
     depends_on:
-      - remain
+      remain:
+        condition: service_healthy
 volumes:
   execution_state:
   edge_data:

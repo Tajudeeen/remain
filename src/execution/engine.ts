@@ -12,6 +12,7 @@ import { BinanceExecutionVendor, vendorObservation, type ExecutionVendor } from 
 import { bytecodeHash, hexHash, HttpRpc, quantity, tokenValue, type Rpc } from './rpc.ts';
 import { reconcileChain } from './settlement.ts';
 import { confirmInvalidation } from './invalidation.ts';
+import { contractPins, rpcPair } from './configuration.ts';
 
 export type ContractPin = { address: string; codeHash: string; implementation: { address: string; codeHash: string } | null };
 export type ExecutionOptions = { reader: Reader; vendor: ExecutionVendor; rpcs: readonly [Rpc, Rpc]; store: ExecutionStore;
@@ -197,15 +198,7 @@ export function configuredEngine(env: Record<string, string | undefined>) {
   const required = ['BINANCE_WEB3_API_KEY', 'BINANCE_WEB3_SECRET_KEY', 'REMAIN_RPC_PRIMARY', 'REMAIN_RPC_SECONDARY', 'REMAIN_STORAGE_KEY', 'REMAIN_CONTRACT_PINS', 'REMAIN_MAXIMUM_STOCK_FEE_RAW'];
   if (required.some(key => !env[key]?.trim())) fail('EXECUTION_CONFIG_MISSING');
   uint(env.REMAIN_MAXIMUM_STOCK_FEE_RAW);
-  const first = new URL(env.REMAIN_RPC_PRIMARY!), second = new URL(env.REMAIN_RPC_SECONDARY!);
-  if (first.hostname === second.hostname) fail('INDEPENDENT_RPC_REQUIRED');
-  const values: unknown = JSON.parse(env.REMAIN_CONTRACT_PINS!); if (!Array.isArray(values) || values.length < 4 || values.length > 32) fail('CONTRACT_UNVERIFIED');
-  const pins = values.map(value => {
-    const p = dataRecord(value); if (Object.keys(p).sort().join(',') !== 'address,codeHash,implementation' || typeof p.codeHash !== 'string' || !/^[a-f0-9]{64}$/.test(p.codeHash)) fail('CONTRACT_UNVERIFIED');
-    let implementation: ContractPin['implementation'] = null;
-    if (p.implementation !== null) { const i = dataRecord(p.implementation); if (Object.keys(i).sort().join(',') !== 'address,codeHash' || typeof i.codeHash !== 'string' || !/^[a-f0-9]{64}$/.test(i.codeHash)) fail('CONTRACT_UNVERIFIED'); implementation = { address: address(i.address), codeHash: i.codeHash }; }
-    return { address: address(p.address), codeHash: p.codeHash, implementation };
-  });
+  const [first, second] = rpcPair(env), pins = contractPins(env.REMAIN_CONTRACT_PINS!);
   const credentials = { apiKey: env.BINANCE_WEB3_API_KEY!, secretKey: env.BINANCE_WEB3_SECRET_KEY! };
   const store = new ExecutionStore(env.REMAIN_EXECUTION_DB ?? 'state/execution.sqlite', env.REMAIN_STORAGE_KEY!);
   const engine = new ExecutionEngine({ reader: new ReadOnlyBinanceClient(credentials), vendor: new BinanceExecutionVendor(credentials),

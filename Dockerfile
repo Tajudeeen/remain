@@ -1,4 +1,5 @@
-FROM node:24-bookworm-slim AS build
+ARG REMAIN_NODE_IMAGE=node:24-bookworm-slim
+FROM ${REMAIN_NODE_IMAGE} AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -8,7 +9,7 @@ COPY scripts ./scripts
 COPY web ./web
 RUN npm run build && npm prune --omit=dev
 
-FROM node:24-bookworm-slim AS runtime
+FROM ${REMAIN_NODE_IMAGE} AS runtime
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
