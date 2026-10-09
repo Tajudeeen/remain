@@ -29,6 +29,11 @@ async function statusJSON(endpoint, signal) {
   return JSON.parse(payload);
 }
 if (typeof document !== 'undefined' && document.getElementById('status-market')) {
+  const wallet = document.getElementById('status-wallet');
+  window.addEventListener('remain-wallet-state', event => {
+    const state=event.detail;
+    wallet.textContent=state?.status==='CONNECTED' && typeof state.address==='string' ? 'BSC wallet connected · '+state.address.slice(0,6)+'…'+state.address.slice(-4) : 'Connect to inspect holdings';
+  });
   const market = document.getElementById('status-market');
   const execution = document.getElementById('status-execution');
   const detail = document.getElementById('status-detail');
