@@ -65,10 +65,10 @@ test('doctor reports only fixed checks and never converts flags into verified li
   const env = { BINANCE_WEB3_API_KEY: 'private-a', BINANCE_WEB3_SECRET_KEY: 'private-b', REMAIN_RPC_PRIMARY: 'https://rpc.one/?key=private', REMAIN_RPC_SECONDARY: 'https://rpc.two',
     REMAIN_STORAGE_KEY: key, REMAIN_CONTRACT_PINS: JSON.stringify(f.pins), REMAIN_MAXIMUM_STOCK_FEE_RAW: '1', REMAIN_EXECUTION_ORIGIN: 'https://remain.example',
     REMAIN_EXECUTION_DB: '/private/state.sqlite', HOST: '0.0.0.0', REMAIN_ALLOWED_HOSTS: 'remain.example', REMAIN_EXECUTION_ENABLED: 'false',
-    REMAIN_NODE_IMAGE: 'node:24-bookworm-slim@sha256:' + 'a'.repeat(64), REMAIN_CADDY_IMAGE: 'caddy:2.10.2-alpine@sha256:' + 'b'.repeat(64) };
+    REMAIN_NODE_IMAGE: 'node:24-bookworm-slim@sha256:' + 'a'.repeat(64), REMAIN_CADDY_IMAGE: 'caddy:2.10.2-alpine@sha256:' + 'b'.repeat(64), REMAIN_BUILD_SHA: 'a'.repeat(40) };
   const r = executionDoctor(env); assert.equal(r.status, 'CONFIGURED'); assert.equal(r.activationRequested, false); assert.equal(r.liveGate, 'UNVERIFIED');
   for (const s of ['private-a', 'private-b', key, '/private/state.sqlite', f.wallet, 'rpc.one']) assert.equal(JSON.stringify(r).includes(s), false);
-  for (const patch of [{ REMAIN_LOCAL_READ_ONLY: 'true' }, { REMAIN_ALLOWED_HOSTS: 'wrong.example' }, { REMAIN_EXECUTION_ORIGIN: 'http://remain.example' }, { REMAIN_EXECUTION_ENABLED: 'TRUE' }, { REMAIN_NODE_IMAGE: 'node:24-bookworm-slim' }, { REMAIN_CADDY_IMAGE: 'caddy:latest' }]) assert.equal(executionDoctor({ ...env, ...patch }).status, 'BLOCKED');
+  for (const patch of [{ REMAIN_LOCAL_READ_ONLY: 'true' }, { REMAIN_ALLOWED_HOSTS: 'wrong.example' }, { REMAIN_EXECUTION_ORIGIN: 'http://remain.example' }, { REMAIN_EXECUTION_ENABLED: 'TRUE' }, { REMAIN_EXECUTION_ENABLED: 'true', REMAIN_COW_PROFILE_REVIEWED: 'false' }, { REMAIN_NODE_IMAGE: 'node:24-bookworm-slim' }, { REMAIN_CADDY_IMAGE: 'caddy:latest' }, { REMAIN_BUILD_SHA: 'unknown' }]) assert.equal(executionDoctor({ ...env, ...patch }).status, 'BLOCKED');
   assert.equal(executionDoctor({}).status, 'BLOCKED');
 });
 test('private JSON rejects duplicate keys, oversized data, public permissions and symlinks', async t => {
@@ -105,6 +105,8 @@ test('journal backup and drill reject a wrong key and leave destination absent',
 test('backup preserves an uncertain one-attempt submission and its encrypted signature without enabling replay', async t => {
   const s = await journal(t);
   await s.engine.sign(s.f.wallet, s.order.id, await s.f.account.signTypedData(s.f.typed as Parameters<typeof s.f.account.signTypedData>[0]));
+  const signedBackup = join(s.dir, 'signed.sqlite');
+  const signed = await backupExecutionJournal(s.file, signedBackup, s.key); assert.equal(signed.unresolvedRecords, 1);
   await s.engine.submit(s.f.wallet, s.order.id);
   const original = s.store.get(s.order.id, s.f.wallet); assert.equal(original.state, 'UNKNOWN'); assert.equal(original.attempts, 1);
   const dest = join(s.dir, 'uncertain.sqlite'); await backupExecutionJournal(s.file, dest, s.key);

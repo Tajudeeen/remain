@@ -25,7 +25,7 @@ const f = executionFixture(Date.now()), store = new ExecutionStore(join(folder, 
 let submissions = 0, signingPrompts = 0;
 const reader = { async get(endpoint: string, query: import('../../src/signing.ts').Query = []) {
   const amount = new Map(query).get('amount') ?? '25', result = await f.reader.get(endpoint, query);
-  const route = { ...f.quote, fromTokenAmount: amount, toTokenAmount: (BigInt(amount) * 10n ** 18n).toString() };
+  const route = { ...f.quote, quoteId: 'fixture-cache-' + amount, fromTokenAmount: amount, toTokenAmount: (BigInt(amount) * 10n ** 18n).toString() };
   if (endpoint.endsWith('/quote')) result.data = [route];
   if (endpoint.endsWith('/swap')) result.data = { executionMode: 'RFQ', routerResult: route, tx: { from: f.wallet },
     rfq: { vendor: 'CowSwap', orderId: 'fixture-order', signingScheme: 'EIP712', typedDataToSign: { ...f.typed,
@@ -77,6 +77,7 @@ try {
   stage = 'cash composer';
   await browser('fill', '#trade-stock', f.input.intent.token); await browser('fill', '#trade-target', '25'); await browser('fill', '#trade-retain', '70');
   await browser('click', '#trade-preview'); await browser('wait', '--fn', "!document.querySelector('#trade-prepare').disabled");
+  stage = 'exact sale preparation';
   await browser('click', '#trade-prepare'); await browser('wait', '--fn', "!document.querySelector('#trade-sign').disabled");
   await check("document.querySelector('#trade-debit').textContent.includes('25') && document.querySelector('#trade-cash').textContent.includes('25')");
   stage = 'sign and submit separately';
@@ -105,6 +106,9 @@ try {
   console.log('TEST_FIXTURE browser execution passed: authenticated cash composer, exact review, separate signing and one submission, reconciled display, reorg withdrawal and account-change clearing. No live provider or funded wallet was used.');
 } catch {
   console.error('TEST_FIXTURE browser execution failed at ' + stage + '. No signing material or wallet state is printed.');
+  try {
+    console.error(JSON.stringify(await browser('eval', "({fixedCode:document.querySelector('#trade-message').textContent.match(/^[A-Z_]+/)?.[0]??'NO_FIXED_CODE',previewDisabled:document.querySelector('#trade-preview').disabled,prepareDisabled:document.querySelector('#trade-prepare').disabled,signDisabled:document.querySelector('#trade-sign').disabled,submitDisabled:document.querySelector('#trade-submit').disabled})")));
+  } catch { console.error('FIXTURE_BROWSER_DIAGNOSTICS_UNAVAILABLE'); }
   throw new Error('FIXTURE_EXECUTION_BROWSER_FAILED');
 } finally {
   try { await browser('close'); } catch { /* Fixed failure only, no browser data. */ }

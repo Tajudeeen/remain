@@ -52,7 +52,9 @@ export function executionDoctor(env: Record<string, string | undefined>) {
   check('PUBLIC_IMAGE_DIGESTS', () => env.HOST !== '0.0.0.0' ||
     /^node:24-bookworm-slim@sha256:[a-f0-9]{64}$/.test(env.REMAIN_NODE_IMAGE ?? '') &&
     /^caddy:2\.10\.2-alpine@sha256:[a-f0-9]{64}$/.test(env.REMAIN_CADDY_IMAGE ?? ''));
+  check('PUBLIC_BUILD_IDENTITY', () => env.HOST !== '0.0.0.0' || /^[a-f0-9]{40}$/.test(env.REMAIN_BUILD_SHA ?? ''));
   check('ACTIVATION_FLAGS_VALID', () => [env.REMAIN_EXECUTION_ENABLED, env.REMAIN_COW_PROFILE_REVIEWED].every(v => v === undefined || ['true', 'false'].includes(v)));
+  check('PROFILE_REVIEW_FOR_ACTIVATION', () => env.REMAIN_EXECUTION_ENABLED !== 'true' || env.REMAIN_COW_PROFILE_REVIEWED === 'true');
   return { kind: 'REMAIN_EXECUTION_DOCTOR', scope: 'OFFLINE_CONFIGURATION_ONLY',
     status: checks.every(c => c.status === 'PASS') ? 'CONFIGURED' : 'BLOCKED', checks,
     activationRequested: env.REMAIN_EXECUTION_ENABLED === 'true', profileReviewAsserted: env.REMAIN_COW_PROFILE_REVIEWED === 'true',

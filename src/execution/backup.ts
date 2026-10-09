@@ -42,7 +42,7 @@ function audit(db: DatabaseSync, keyText: string) {
       const locked = Number(!['CANCELLED', 'RECONCILED'].includes(String(r.state)) && r.lockReleased !== true);
       if (locked !== row.active) fail('STORAGE_CORRUPT');
       active += locked;
-      if (['SUBMITTING', 'UNKNOWN', 'PENDING', 'FILLED', 'FAILED', 'INVALIDATED'].includes(String(r.state)) || r.state === 'PREPARED' && r.signaturePrompted === true) unresolved++;
+      if (['SIGNED', 'SUBMITTING', 'UNKNOWN', 'PENDING', 'FILLED', 'FAILED', 'INVALIDATED'].includes(String(r.state)) || r.state === 'PREPARED' && r.signaturePrompted === true) unresolved++;
     }
     return { records: count, activeLocks: active, unresolvedRecords: unresolved, keyAuthenticated: count > 0 };
   } finally { key.fill(0); }
@@ -66,8 +66,9 @@ export async function backupExecutionJournal(source: string, destination: string
   const temp = resolve(folder, '.remain-backup-' + randomUUID() + '.sqlite');
   const handle = await open(temp, constants.O_CREAT | constants.O_EXCL | constants.O_RDWR | (constants.O_NOFOLLOW ?? 0), 0o600);
   await handle.close();
-  const db = new DatabaseSync(from, { readOnly: true });
+  let db: DatabaseSync | undefined;
   try {
+    db = new DatabaseSync(from, { readOnly: true });
     // SQLite's backup API includes committed WAL data. Copying the DB alone can
     // silently lose the last signing/submission marker.
     await backup(db, temp, { rate: 64 });
@@ -79,7 +80,7 @@ export async function backupExecutionJournal(source: string, destination: string
     const directory = await open(folder, 'r'); try { await directory.sync(); } finally { await directory.close(); }
     return { ...result, kind: 'REMAIN_JOURNAL_BACKUP', status: 'VERIFIED', overwritePerformed: false };
   } finally {
-    db.close(); await unlink(temp).catch(() => {});
+    db?.close(); await unlink(temp).catch(() => {});
   }
 }
 
