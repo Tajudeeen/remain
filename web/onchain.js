@@ -1,3 +1,4 @@
+import { activeWalletProvider } from './wallet-providers.js';
 // Independent, read-only BSC ERC-20 balance verification using the user's wallet RPC.
 // This reports token units, never claims that an arbitrary contract represents a stock.
 export const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
@@ -71,7 +72,7 @@ if (typeof document !== 'undefined') {
       busy=true;button.disabled=true;amount.hidden=true;meta.hidden=true;body.textContent='Reading actual BSC chain state from your wallet provider…';
       try {
         const result=await readWalletToken(walletProvider,token);
-        if(current!==version||wallet?.toLowerCase()!==owner||tokenField.value.trim().toLowerCase()!==result.token||window.ethereum!==walletProvider)return;
+        if(current!==version||wallet?.toLowerCase()!==owner||tokenField.value.trim().toLowerCase()!==result.token||activeWalletProvider()!==walletProvider)return;
         amount.textContent=result.formatted+' token units';
         amount.hidden=false;meta.hidden=false;
         meta.textContent='Observed '+new Date(result.observedAt).toLocaleTimeString()+' · BSC chain 56 · '+result.token;
