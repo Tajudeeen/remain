@@ -1,5 +1,6 @@
 import './proof.js';
 import './live.js';
+import './onchain.js';
 import './trade.js';
 import { readFixtureJSON, validatePlanningRecord } from './response.js';
 
