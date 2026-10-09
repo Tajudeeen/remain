@@ -15,7 +15,7 @@ test('catalog scan returns only observed positive holdings, with a partial-scan 
   throw Error('UNEXPECTED_REQUEST');
  }};
  const a=await scanCatalogPage(catalog,provider,owner,0,1);
- assert.equal(a.cursor,1);assert.equal(a.complete,false);assert.equal(a.holdings[0].formatted,'2.5');
+ assert.equal(a.cursor,1);assert.equal(a.complete,false);assert.equal(a.holdings[0]!.formatted,'2.5');
  const b=await scanCatalogPage(catalog,provider,owner,1,1);
  assert.equal(b.complete,true);assert.deepEqual(b.holdings,[]);assert.deepEqual(b.failed,[]);
  assert.ok(methods.every(method=>['eth_accounts','eth_chainId','eth_call'].includes(method)));
@@ -26,7 +26,7 @@ test('a failed provider read is unknown rather than an observed zero holding',as
  assert.equal(result.holdings.length,0);assert.deepEqual(result.failed,[token]);
 });
 test('wrong chain, account mismatch, and scan limits fail closed',async()=>{
- const p={request:async ({method})=>method==='eth_accounts'?[owner]: '0x1'};
+ const p={request:async ({method}:{method:string})=>method='eth_accounts'?[owner]: '0x1'};
  await assert.rejects(scanCatalogPage(catalog,p,owner,0,1),/WALLET_CHANGED/);
  await assert.rejects(scanCatalogPage(catalog,p,owner,0,9),/INVALID_SCAN/);
 });
