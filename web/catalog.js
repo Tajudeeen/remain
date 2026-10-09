@@ -28,7 +28,7 @@ if (typeof document !== 'undefined' && document.getElementById('live-token')) {
   let controller;
   button.addEventListener('click',async()=>{
     controller?.abort(); controller = new AbortController(); const active=controller, timeout=setTimeout(()=>active.abort(),12000);
-    button.disabled=true; select.disabled=true; select.replaceChildren(); status.textContent='Loading a fresh Binance BSC stock catalog...';
+    button.disabled=true; select.disabled=true; select.replaceChildren(); window.dispatchEvent(new CustomEvent('remain-catalog-loaded',{detail:null})); status.textContent='Loading a fresh Binance BSC stock catalog...';
     try {
       const res = await fetch('/api/live/catalog',{signal:active.signal,cache:'no-store',credentials:'omit',redirect:'error'});
       if (!res.ok) throw Error(res.status===503?'MARKET_SERVICE_NOT_CONFIGURED':'CATALOG_UNAVAILABLE');
@@ -38,6 +38,7 @@ if (typeof document !== 'undefined' && document.getElementById('live-token')) {
       const placeholder=document.createElement('option'); placeholder.value='';placeholder.textContent='Select a supported token';select.append(placeholder);
       for(const s of data.stocks){const option=document.createElement('option');option.value=s.token;option.textContent=s.ticker+' · '+s.symbol+' · '+s.issuer;select.append(option);}
       select.disabled=data.stocks.length===0;
+      window.dispatchEvent(new CustomEvent('remain-catalog-loaded',{detail:data}));
       status.textContent=data.stocks.length+' BSC tokenized-stock identities reported. Market status, wallet balance, price, and trading availability require fresh independent checks.';
     } catch(e) { if(active.signal.aborted) status.textContent='Catalog request cancelled or timed out.'; else status.textContent='Catalog unavailable. '+(e instanceof Error?e.message:'UNKNOWN')+'. Enter a supported contract manually.'; }
     finally{clearTimeout(timeout);if(controller===active){controller=undefined;button.disabled=false;}}

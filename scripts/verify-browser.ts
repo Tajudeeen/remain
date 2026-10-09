@@ -224,7 +224,7 @@ try {
   await browser('eval', 'window.fetch = window.remainRealFetch');
   stage = 'public integration setup';
   await browser('open', `http://127.0.0.1:${address.port}/#live`);
-  await browser('wait', '--fn', "document.querySelector('#live-server').textContent === 'Local setup required' && !document.querySelector('#live-refresh').disabled");
+  await browser('wait', '--fn', "document.querySelector('#live-server').textContent === 'Market data unavailable' && !document.querySelector('#live-refresh').disabled");
   await check("!document.querySelector('#live-view').hidden && document.querySelector('#fixture-banner').hidden && document.querySelector('#live-inspect').disabled && document.querySelector('#position-read').disabled && document.querySelector('#cash-preview').disabled");
   await browser('click', '#wallet-connect');
   await check("document.querySelector('#live-message').textContent.includes('No browser wallet') && !document.querySelector('#wallet-connect').disabled");

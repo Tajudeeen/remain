@@ -60,7 +60,7 @@ if (typeof document !== 'undefined' && $('live-view')) {
     $('position-result').hidden = true; $('position-panel').setAttribute('aria-busy', 'false');
     for (const id of ['position-label', 'position-stock', 'position-balance', 'position-details']) $(id).textContent = '';
     $('position-units').value = ''; $('position-units').disabled = true; $('position-use').disabled = true;
-    $('position-message').textContent = 'Read a fresh selected position locally. Missing data stays unknown.';
+    $('position-message').textContent = 'Select a supported stock and request a current position. Missing data stays unknown.';
     $('position-message').classList.remove('error');
   }
   const message = (text, error = false) => { $('live-message').textContent = text; $('live-message').classList.toggle('error', error); };
@@ -88,7 +88,8 @@ if (typeof document !== 'undefined' && $('live-view')) {
     $('wallet-connect').disabled = state.status === 'CONNECTING';
     $('wallet-forget').disabled = state.status === 'IDLE';
     const help = { WALLET_UNAVAILABLE: 'No browser wallet found. Open Remain in a wallet-enabled browser.', WALLET_REJECTED: 'You declined account access. You can try again.', WALLET_TIMEOUT: 'Account discovery timed out. Close the old wallet prompt before retrying.', WALLET_INVALID: 'The wallet returned an invalid account response.', WALLET_CHANGED: 'The selected account changed during discovery. Connect again.' };
-    message(state.error ? help[state.error] : state.status === 'CONNECTED' ? 'Account discovery complete. Ownership is unverified. No signature was requested.' : 'No funds move during setup.', Boolean(state.error));
+    message(state.error ? help[state.error] : state.status === 'CONNECTED' ? 'Wallet connected on BSC. Your next step is an on-chain balance read.' : 'No funds move while browsing.', Boolean(state.error));
+    if (typeof CustomEvent === 'function') window.dispatchEvent(new CustomEvent('remain-wallet-state', { detail: { status: state.status, address: state.address } }));
   }
   let provider, session = walletSession(undefined, walletChanged);
   $('wallet-connect').addEventListener('click', () => {
@@ -113,7 +114,7 @@ if (typeof document !== 'undefined' && $('live-view')) {
       if (location.hash === '#live') $('network-mode').textContent = result.deployment === 'HOSTED_READ_ONLY' ? 'BSC · Live reads' : 'BSC · Wallet reads';
       $('live-mode-copy').textContent = result.deployment === 'HOSTED_READ_ONLY' ? 'Live supported-stock data, positions and quotes are available on request. Market and order eligibility are checked independently.' : 'Wallet-native token reads are available. Binance market integration needs an authorized, configured server.';
       $('live-mode-status').textContent = 'Trading separately gated';
-      $('live-server').textContent = available ? (result.deployment === 'HOSTED_READ_ONLY' ? 'Live market service connected' : 'Local read-only inspector ready') : 'Local setup required';
+      $('live-server').textContent = available ? (result.deployment === 'HOSTED_READ_ONLY' ? 'Live market service connected' : 'Local read-only inspector ready') : 'Market data unavailable';
       $('live-server-copy').textContent = available ? (result.deployment === 'HOSTED_READ_ONLY' ? 'Live BSC stock positions, market checks and RFQ estimates are available from the server. Your wallet must hold a supported asset. Trading requires separate execution readiness.' : 'Your local server can read Binance data. This does not validate the credentials or enable execution.') : 'The Binance read-only service is not configured for this deployment. Wallet-native BSC token balance verification is still available.';
     } catch {
       if (current !== statusVersion) return;

@@ -71,7 +71,7 @@ async function check(expression: string) { await browser('eval', `(() => {if (!(
 let stage = 'login';
 try {
   await browser('open', origin + '/#trade');
-  await browser('wait', '--fn', "document.querySelector('#trade-server').textContent === 'Wallet confirmation required'");
+  await browser('wait', '--fn', "document.querySelector('#trade-server').textContent === 'Execution backend configured'");
   await browser('eval', `window.fixtureCalls=[];window.fixtureListeners={};window.ethereum={request:async q=>{window.fixtureCalls.push(q.method);if(['eth_accounts','eth_requestAccounts'].includes(q.method))return [${JSON.stringify(f.wallet)}];if(q.method==='eth_chainId')return '0x38';if(q.method==='eth_signTypedData_v4'){const r=await fetch('/__test_fixture_sign',{method:'POST',headers:{'Content-Type':'application/json'},body:q.params[1]});if(!r.ok)throw new Error('FIXTURE_SIGNATURE_BLOCKED');return (await r.json()).signature;}throw new Error('FIXTURE_WALLET_METHOD_BLOCKED');},on:(e,h)=>window.fixtureListeners[e]=h,removeListener:e=>delete window.fixtureListeners[e]};const label=document.createElement('p');label.textContent='TEST_FIXTURE: synthetic wallet, vendor and RPC. No funded sale or live proof.';document.querySelector('#trade-view').prepend(label);`);
   await browser('click', '#trade-login'); await browser('wait', '--fn', "!document.querySelector('#trade-preview').disabled");
   stage = 'cash composer';
