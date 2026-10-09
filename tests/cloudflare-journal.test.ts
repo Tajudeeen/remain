@@ -81,3 +81,27 @@ test('Cloudflare journal refuses invalid encryption keys',()=>{
   try {assert.throws(()=>new DurableSqlExecutionJournal(storage,'invalid'),/STORAGE_KEY_INVALID/);}
   finally{db.close();}
 });
+
+test('Durable Object journal persists one submit attempt on ambiguous vendor failure',async t=>{
+  const s=await prepared();t.after(()=>s.db.close());
+  const order=s.store.get(s.order.id,s.f.wallet);
+  const signature=await s.f.account.signTypedData(order.auth.typedData);
+  await s.engine.sign(s.f.wallet,s.order.id,signature);
+  const current=s.store.get(s.order.id,s.f.wallet);
+  assert.equal(current.state,'SIGNED');
+  let submitted=0;
+  const engine=new ExecutionEngine({
+    reader:s.f.reader,
+    vendor:{
+      async submit(){submitted++;throw Error('simulated timeout');},
+      async status(){throw Error('unexpected status');}
+    },
+    rpcs:[s.f.rpc,s.f.rpc],store:s.store,pins:s.f.pins,
+    maximumStockFeeRaw:'3',mode:'TEST_FIXTURE',now:()=>time
+  });
+  assert.equal((await engine.submit(s.f.wallet,s.order.id)).state,'UNKNOWN');
+  assert.equal(submitted,1);
+  assert.equal(new DurableSqlExecutionJournal(s.storage,s.key).get(s.order.id,s.f.wallet).state,'UNKNOWN');
+  await assert.rejects(engine.submit(s.f.wallet,s.order.id),/STATE_CONFLICT/);
+  assert.equal(submitted,1);
+});
