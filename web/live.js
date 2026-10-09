@@ -144,12 +144,12 @@ if (typeof document !== 'undefined' && $('live-view')) {
       const result = validateReadiness(await readFixtureJSON(response, active.signal));
       if (current !== statusVersion) return;
       available = result.inspectionAvailable;
-      $('live-mode-tag').textContent = result.deployment === 'HOSTED_READ_ONLY' ? 'LIVE_READ_ONLY' : 'READ_ONLY_SETUP';
-      if (location.hash === '#live') $('network-mode').textContent = result.deployment === 'HOSTED_READ_ONLY' ? 'BSC · Live reads' : 'BSC · Wallet reads';
-      $('live-mode-copy').textContent = result.deployment === 'HOSTED_READ_ONLY' ? 'Live supported-stock data, positions and quotes are available on request. Market and order eligibility are checked independently.' : 'Wallet-native token reads are available. Binance market integration needs an authorized, configured server.';
+      $('live-mode-tag').textContent = result.deployment === 'HOSTED_READ_ONLY' ? 'MARKET_CONFIGURED' : 'READ_ONLY_SETUP';
+      if (location.hash === '#live') $('network-mode').textContent = result.deployment === 'HOSTED_READ_ONLY' ? 'BSC · Market configured' : 'BSC · Wallet reads';
+      $('live-mode-copy').textContent = result.deployment === 'HOSTED_READ_ONLY' ? 'The market API is configured, but successful Binance responses are unverified. Wallet-native BSC balance reads work independently. Market and order eligibility remain separate checks.' : 'Wallet-native token reads are available. Binance market integration needs an authorized, configured server.';
       $('live-mode-status').textContent = 'Trading separately gated';
-      $('live-server').textContent = available ? (result.deployment === 'HOSTED_READ_ONLY' ? 'Live market service connected' : 'Local read-only inspector ready') : 'Market data unavailable';
-      $('live-server-copy').textContent = available ? (result.deployment === 'HOSTED_READ_ONLY' ? 'Live BSC stock positions, market checks and RFQ estimates are available from the server. Your wallet must hold a supported asset. Trading requires separate execution readiness.' : 'Your local server can read Binance data. This does not validate the credentials or enable execution.') : 'The Binance read-only service is not configured for this deployment. Wallet-native BSC token balance verification is still available.';
+      $('live-server').textContent = available ? (result.deployment === 'HOSTED_READ_ONLY' ? 'Market API configured · access unverified' : 'Local read-only inspector ready') : 'Market data unavailable';
+      $('live-server-copy').textContent = available ? (result.deployment === 'HOSTED_READ_ONLY' ? 'The server is configured for Binance reads, but provider availability may still be blocked. Connect your wallet for independent BSC token-balance reads. No quote or trade is promised.' : 'Your local server can read Binance data. This does not validate the credentials or enable execution.') : 'The Binance read-only service is not configured for this deployment. Wallet-native BSC token balance verification is still available.';
     } catch {
       if (current !== statusVersion) return;
       $('live-server').textContent = 'Server status unavailable';
