@@ -12,6 +12,27 @@ export function configuredExecutionProxy(env: Record<string,string|undefined>): 
     /^(?:127\.|10\.|192\.168\.|0\.|169\.254\.)/.test(url.hostname) || /\.local$/.test(url.hostname)) return undefined;
   return {origin:url.origin};
 }
+async function boundedText(body: ReadableStream<Uint8Array> | null, maxBytes: number, signal: AbortSignal): Promise<string> {
+  if(!body) throw Error('MISSING_BODY');
+  const reader=body.getReader();
+  const parts:Uint8Array[]=[]; let total=0;
+  const interrupt=()=>{void reader.cancel().catch(()=>{});};
+  signal.addEventListener('abort',interrupt,{once:true});
+  try {
+    while(true){
+      signal.throwIfAborted();
+      const {value,done}=await reader.read();
+      signal.throwIfAborted();
+      if(done) break;
+      total+=value.byteLength;
+      if(total>maxBytes) throw Error('BODY_TOO_LARGE');
+      parts.push(value);
+    }
+    const bytes=new Uint8Array(total);let at=0;
+    for(const part of parts){bytes.set(part,at);at+=part.byteLength;}
+    return new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+  } finally {signal.removeEventListener('abort',interrupt);reader.releaseLock();}
+}
 const paths = new Set(['status','challenge','login','preview','prepare','approve','signing','sign','submit','poll','get','cancel','recover','invalidate','receipt']);
 function fail(status:number,code:string) { return new Response(JSON.stringify({code}),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer','x-frame-options':'DENY','content-security-policy':"default-src 'none'; frame-ancestors 'none'; base-uri 'none'"}}); }
 export async function proxyExecution(request:Request, action:string, config:ExecutionProxy):Promise<Response> {
@@ -27,10 +48,9 @@ export async function proxyExecution(request:Request, action:string, config:Exec
     const announced=Number(request.headers.get('content-length')??'0');
     if(!Number.isSafeInteger(announced)||announced>4096) return fail(413,'BODY_TOO_LARGE');
     try {
-      body=await request.text();
-      if(new TextEncoder().encode(body).length>4096) return fail(413,'BODY_TOO_LARGE');
+      body=await boundedText(request.body,4096,AbortSignal.any([request.signal,AbortSignal.timeout(20000)]));
       JSON.parse(body);
-    }catch{return fail(400,'INVALID_REQUEST');}
+    }catch(e){return fail(e instanceof Error && e.message==='BODY_TOO_LARGE'?413:400,e instanceof Error && e.message==='BODY_TOO_LARGE'?'BODY_TOO_LARGE':'INVALID_REQUEST');}
   }
   const headers=new Headers({'origin':origin});
   if(!statusAction) headers.set('content-type','application/json');
@@ -50,8 +70,7 @@ export async function proxyExecution(request:Request, action:string, config:Exec
     if(!/^application\/json\b/i.test(upstream.headers.get('content-type')??'')) return fail(502,'EXECUTION_UPSTREAM_INVALID');
     const length=Number(upstream.headers.get('content-length')??'0');
     if(!Number.isSafeInteger(length)||length>262144) return fail(502,'EXECUTION_UPSTREAM_INVALID');
-    const text=await upstream.text();
-    if(new TextEncoder().encode(text).length>262144) return fail(502,'EXECUTION_UPSTREAM_INVALID');
+    const text=await boundedText(upstream.body,262144,AbortSignal.any([request.signal,AbortSignal.timeout(20000)]));
     const data:unknown=JSON.parse(text);
     if(!data || typeof data!=='object' || Array.isArray(data)) return fail(502,'EXECUTION_UPSTREAM_INVALID');
     if(statusAction) {
