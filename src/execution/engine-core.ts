@@ -3,7 +3,7 @@ import { encodeFunctionData, parseAbi } from 'viem';
 import type { Reader } from '../feasibility.ts';
 import { prepareCashCandidate, cashOrderInput, cashPreviewInput, exploreCashTarget } from '../integration/preview.ts';
 import { dataRecord } from '../input/data.ts';
-import { address, BSC_USDT, selectedMarket, uint } from '../validation.ts';
+import { address, BSC_USDT, selectedMarket } from '../validation.ts';
 import { identifier } from '../orders/model.ts';
 import { authorizeCow, approval, cancellation, COW_RELAYER, COW_SETTLEMENT, fail, verifyOrderSignature } from './cow.ts';
 import type { ExecutionJournal, ExecutionRecord } from './store.ts';
