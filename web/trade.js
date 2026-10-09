@@ -1,3 +1,4 @@
+import { activeWalletProvider } from './wallet-providers.js';
 import { readReadOnlyJSON } from './response.js';
 import { validatePreview, previewInput, cashTargetRaw, qualifiesPreview } from './preview.js';
 import { orderReviewInput } from './order-review.js';
@@ -133,7 +134,7 @@ if (typeof document !== 'undefined' && document.getElementById('trade-view')) {
   });
   window.addEventListener('hashchange', () => { if (location.hash !== '#trade') clearSession(); });
   $('trade-login').addEventListener('click', () => run(async current => {
-    provider = window.ethereum; if (!provider?.request) fail('WALLET_UNAVAILABLE');
+    provider = activeWalletProvider(); if (!provider?.request) fail('WALLET_UNAVAILABLE');
     const accounts = await walletRequest({ method: 'eth_requestAccounts' }); wallet = accounts?.[0]?.toLowerCase(); if (!/^0x[0-9a-f]{40}$/.test(wallet ?? '')) fail('WALLET_UNAVAILABLE'); await accountCheck();
     if (selection && wallet !== selection.input.intent.wallet) fail('WALLET_CHANGED');
     const challenge = await api('challenge', { wallet });
