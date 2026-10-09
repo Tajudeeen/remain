@@ -14,7 +14,7 @@ Remain uses a **real EIP-1193 wallet provider**, not a demo account. It never as
 
 - No wallet access requests, chain switches, typed-data signatures or transactions occur on page load.
 - Choosing a wallet stores only an in-memory provider reference. No wallet address is persisted or sent in a wallet-app deep link.
-- The mobile handoff generates a **fixed public URL** ending in `#live`, with URL query parameters, existing hash fragments and user inputs excluded. Deep-link hosts are the public MetaMask and Trust domains.
+- The mobile handoff generates a **fixed public origin**: MetaMask's in-app browser handoff opens the homepage, and Trust Wallet's link targets the `#live` portfolio route. Existing page query parameters, hash fragments and user inputs are excluded. Deep-link hosts are the public MetaMask and Trust domains.
 - A wallet's EIP-6963 `name` and `rdns` are self-declared, not proof that it is the authentic wallet. No externally supplied wallet icons or markup are rendered.
 - Account, chain and token changes invalidate wallet and cached preview state. A successful connection is not proof of asset eligibility, an executable price or a completed trade.
 - **Not yet included**: cross-app WalletConnect v2 QR-code / universal-link session pairing from ordinary mobile browsers or desktops with no wallet extension. For that, integrate a supported WalletConnect/Reown SDK, register a project ID, allow the required relay endpoints in the site's restrictive CSP, and test session recovery/disconnection on Android and iOS. Do not use a made-up QR code or claim pairing without a live session.
