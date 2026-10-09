@@ -1,0 +1,19 @@
+name = "remain-execution"
+main = "cloudflare/worker.js"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[[durable_objects.bindings]]
+name = "REMAIN_LEDGER"
+class_name = "RemainLedger"
+
+[[migrations]]
+tag = "v1-sqlite-ledger"
+new_sqlite_classes = ["RemainLedger"]
+
+[vars]
+REMAIN_EXECUTION_ENABLED = "false"
+REMAIN_COW_PROFILE_REVIEWED = "false"
+REMAIN_CLOUDFLARE_LIVE_APPROVED = "false"
+REMAIN_BUILD_SHA = "unverified"
