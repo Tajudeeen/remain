@@ -2,6 +2,7 @@ export interface WalletChoice {id:string;name:string;provider:{request(request:{
 export declare function startWalletDiscovery(target?:any):void;
 export declare function requestWalletDiscovery(target?:any):void;
 export declare function availableWallets(target?:any):WalletChoice[];
+export declare function subscribeWalletProviders(listener:()=>void):()=>void;
 export declare function chooseWalletProvider(provider:any):any;
 export declare function activeWalletProvider(target?:any):any;
 export declare function clearWalletProvider():void;
