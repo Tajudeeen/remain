@@ -75,3 +75,7 @@ export class ExecutionStore {
     });
   }
 }
+
+// Portable synchronous journal contract: both Node SQLite and Cloudflare's
+// SQLite-backed Durable Object implement the same compare-and-swap boundary.
+export type ExecutionJournal = Pick<ExecutionStore, 'create' | 'get' | 'change'>;

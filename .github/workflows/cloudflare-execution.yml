@@ -1,0 +1,52 @@
+name: Cloudflare durable execution verification
+on:
+  pull_request:
+    paths:
+      - 'cloudflare/**'
+      - 'src/execution/**'
+      - 'wrangler.toml'
+      - 'tests/cloudflare-journal.test.ts'
+      - 'scripts/smoke-cloudflare.ts'
+      - '.github/workflows/cloudflare-execution.yml'
+  push:
+    branches: [main, feat/cloudflare-durable-execution]
+    paths:
+      - 'cloudflare/**'
+      - 'src/execution/**'
+      - 'wrangler.toml'
+      - 'tests/cloudflare-journal.test.ts'
+      - 'scripts/smoke-cloudflare.ts'
+      - '.github/workflows/cloudflare-execution.yml'
+permissions:
+  contents: read
+jobs:
+  dry-run-and-local-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+      - name: Build real Cloudflare Worker bundle (no deployment)
+        run: npx --yes wrangler@4.149.0 deploy --dry-run --outdir=/tmp/remain-worker
+      - name: Start disposable SQLite-backed Durable Object
+        run: |
+          npx --yes wrangler@4.149.0 dev --local --ip 127.0.0.1 --port 8788 --var REMAIN_STORAGE_KEY:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa > /tmp/remain-worker.log 2>&1 &
+          echo $! > /tmp/remain-worker.pid
+          for n in $(seq 1 50); do
+            if curl --silent --fail http://127.0.0.1:8788/api/execution/status > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/remain-worker.log
+          exit 1
+      - name: Verify journal, status and trading fail-closed in workerd
+        run: node scripts/smoke-cloudflare.ts http://127.0.0.1:8788
+      - name: Stop disposable runtime
+        if: always()
+        run: |
+          if [ -f /tmp/remain-worker.pid ]; then kill "$(cat /tmp/remain-worker.pid)" || true; fi
+          if [ -f /tmp/remain-worker.log ]; then tail -n 60 /tmp/remain-worker.log; fi
