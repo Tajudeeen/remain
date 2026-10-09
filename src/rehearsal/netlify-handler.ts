@@ -72,6 +72,7 @@ export async function handleNetlifyFixture(request: Request, options: NetlifyFix
       {code:error instanceof RemainError ? error.code : 'UPSTREAM_UNAVAILABLE'}); }
   }
   const liveAction = ['/api/live/inspect', '/api/live/position', '/api/live/preview', '/api/live/review'].includes(url.pathname);
+  if (liveAction && origin !== url.origin) return response(403, { code: 'ORIGIN_REJECTED' });
   if (liveAction && !options.live) return response(request.method === 'POST' ? 503 : 405, { code: request.method === 'POST' ? 'LOCAL_SETUP_REQUIRED' : 'METHOD_REJECTED' });
   if (url.pathname === '/healthz') {
     if (!['GET', 'HEAD'].includes(request.method)) return response(405, { code: 'METHOD_REJECTED' });
