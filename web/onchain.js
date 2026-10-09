@@ -35,25 +35,43 @@ export async function readWalletToken(provider, token) {
 if (typeof document !== 'undefined') {
   const card = document.querySelector('#live-view .wallet-card');
   if (card) {
-    const panel = document.createElement('div');
-    panel.className = 'wallet-onchain-read';
-    const button = document.createElement('button');
-    button.type = 'button'; button.className = 'secondary'; button.textContent = 'Verify token balance on BSC';
-    const output = document.createElement('p'); output.setAttribute('role','status'); output.setAttribute('aria-live','polite');
-    output.textContent = 'Works on this deployed site with a connected BSC wallet. Uses live wallet RPC reads without a server key.';
-    panel.append(button,output); card.append(panel);
-    const clear = () => { output.textContent = 'Previous balance cleared. Verify again to read current chain state.'; };
-    window.ethereum?.on?.('accountsChanged', clear);
-    window.ethereum?.on?.('chainChanged', clear);
-    button.addEventListener('click', async () => {
-      const token = document.getElementById('live-token')?.value.trim();
-      if (!ADDRESS.test(token ?? '')) { output.textContent = 'Enter an ERC-20 contract address first.'; return; }
-      button.disabled = true; output.textContent = 'Reading BSC token balance through your wallet...';
+    const panel=document.createElement('section');panel.className='wallet-onchain-read';panel.setAttribute('aria-label','Verified BSC token balance');
+    const title=document.createElement('h4');title.textContent='On-chain position check';
+    const body=document.createElement('p');body.setAttribute('role','status');body.setAttribute('aria-live','polite');
+    body.textContent='Connect a BSC wallet, choose a token, then read its actual on-chain balance.';
+    const amount=document.createElement('strong');amount.className='verified-amount';amount.hidden=true;
+    const meta=document.createElement('p');meta.className='verified-source';meta.hidden=true;
+    const button=document.createElement('button');button.type='button';button.className='secondary';button.textContent='Read balance on BSC ↗';button.disabled=true;
+    panel.append(title,body,amount,meta,button);card.append(panel);
+    let wallet=null, version=0, busy=false;
+    const tokenField=document.getElementById('live-token');
+    function clear(message) {
+      version++;amount.hidden=true;meta.hidden=true;amount.textContent='';meta.textContent='';
+      body.textContent=message;busy=false;button.disabled=!wallet;
+    }
+    window.addEventListener('remain-wallet-state',event=>{
+      const state=event.detail;
+      wallet=state?.status==='CONNECTED' && ADDRESS.test(state?.address??'')?state.address:null;
+      clear(wallet?'Connected. Choose a token contract to read its current balance.':'Connect a BSC wallet to read its tokens.');
+    });
+    tokenField.addEventListener('input',()=>clear('Token selection changed. Read again to avoid displaying a stale balance.'));
+    window.addEventListener('pagehide',()=>{wallet=null;clear('Connect a BSC wallet to read its tokens.');});
+    button.addEventListener('click',async()=>{
+      if(!wallet||busy)return;
+      const token=tokenField.value.trim();
+      if(!ADDRESS.test(token)){body.textContent='Select or enter a valid ERC-20 contract address.';return;}
+      const current=++version, owner=wallet.toLowerCase(), walletProvider=window.ethereum;
+      busy=true;button.disabled=true;amount.hidden=true;meta.hidden=true;body.textContent='Reading actual BSC chain state from your wallet provider…';
       try {
-        const result = await readWalletToken(window.ethereum, token);
-        output.textContent = result.formatted + ' token units at ' + result.owner.slice(0,8) + '… (BSC, observed ' + result.observedAt + '). Token identity and trade eligibility remain unverified.';
-      } catch (error) { output.textContent = 'Unable to verify balance: ' + (error instanceof Error ? error.message : 'RPC_ERROR') + '. No transaction was sent.'; }
-      finally { button.disabled = false; }
+        const result=await readWalletToken(walletProvider,token);
+        if(current!==version||wallet?.toLowerCase()!==owner||tokenField.value.trim().toLowerCase()!==result.token||window.ethereum!==walletProvider)return;
+        amount.textContent=result.formatted+' token units';
+        amount.hidden=false;meta.hidden=false;
+        meta.textContent='Observed '+new Date(result.observedAt).toLocaleTimeString()+' · BSC chain 56 · '+result.token;
+        body.textContent=result.raw==='0'?'Zero units at this contract. No holding is inferred.':'A positive on-chain token balance was observed. Tokenized-stock identity, quote availability, market price and cash value need separate checks.';
+      } catch(error) {
+        if(current===version)body.textContent='Balance could not be verified: '+(error instanceof Error?error.message:'RPC_UNAVAILABLE')+'. No balance has been assumed.';
+      } finally{if(current===version){busy=false;button.disabled=!wallet;}}
     });
   }
 }
