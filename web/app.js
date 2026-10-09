@@ -3,6 +3,7 @@ import './live.js';
 import './onchain.js';
 import './catalog.js';
 import './service-status.js';
+import './portfolio.js';
 import './trade.js';
 import { readFixtureJSON, validatePlanningRecord } from './response.js';
 
