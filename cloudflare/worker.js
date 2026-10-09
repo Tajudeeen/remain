@@ -1,3 +1,4 @@
+import { BUILD_SHA } from './build-identity.js';
 import { DurableObject } from 'cloudflare:workers';
 import { ReadOnlyBinanceClient } from '../src/client.ts';
 import { ExecutionEngine } from '../src/execution/engine-core.ts';
@@ -148,7 +149,7 @@ export default {
         } catch {journal='UNVERIFIED';}
       }
       return reply(200,{status:'ok',service:'remain-cloudflare-execution',
-        buildSha:env.REMAIN_BUILD_SHA??'unverified', journal,
+        buildSha:BUILD_SHA, journal,
         executionEnabled:eligibleForEngine(env),liveGate:'UNVERIFIED'}, request.method==='HEAD');
     }
     if (url.pathname==='/api/execution/status') {
