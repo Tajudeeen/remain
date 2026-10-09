@@ -77,3 +77,21 @@
 #trade-view .setup-instructions input{display:block;width:100%;min-width:0;padding:13px 12px;border:1px solid #535b47;background:#20241d;color:var(--ink);font:inherit;font-size:12px;margin:10px 0 14px}
 #trade-view .setup-instructions .field-label{display:block;font-size:11px;color:var(--muted);margin-top:20px}#trade-view .integration-source .setup-instructions{border-color:#b8b4a7}#trade-view .integration-source .setup-instructions summary{color:#715716}#trade-view .integration-source .setup-instructions p,#trade-view .integration-source .setup-instructions code{color:#58604f}#trade-result>.setup-state{color:#715716}
 @media(max-width:480px){#trade-view .wallet-actions{flex-wrap:wrap}#trade-view .wallet-actions button{width:100%;flex-basis:100%}}
+
+/* A service status console replaces fictional financial figures in the product entry. */
+.service-console{min-width:0;border:1px solid #4a5144;background:linear-gradient(160deg,#242a22,#141914);padding:30px;box-shadow:0 20px 55px #0002}
+.service-console-head{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}.service-console-head .eyebrow{margin:0}
+.chain-tag{font-size:9px;letter-spacing:.4px;color:#afb9a9;border:1px solid #505b4b;padding:6px 9px}
+.service-console h2{font-size:clamp(28px,3vw,41px);line-height:1.07;letter-spacing:-1.5px;font-weight:500;margin:28px 0 12px}
+.service-intro{color:var(--muted);font-size:12px;line-height:1.8;margin:0 0 24px;max-width:450px}
+.service-lines>div{display:grid;gap:4px;padding:15px 0;border-top:1px solid #3e473b}
+.service-lines span{color:#b3beae;font-size:10px}.service-lines strong{font-size:14px;font-weight:500;color:var(--cream);overflow-wrap:anywhere}
+.service-lines strong[data-state="CONFIGURED"]{color:#dbbd67}
+.service-lines small{font-size:10px;color:#8e998c;line-height:1.6}
+.service-foot{display:flex;gap:14px;align-items:center;justify-content:space-between;border-top:1px solid #3e473b;padding:13px 0 17px;flex-wrap:wrap}
+.service-foot p{font-size:10px;line-height:1.7;color:#aab4a5;max-width:270px;margin:0}
+.service-foot button{font-size:10px;border:1px solid #596151;background:transparent;color:var(--ink);padding:10px;cursor:pointer}
+.service-action{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;background:var(--yellow);color:var(--dark);font-size:12px;font-weight:600}
+.service-action span{font-size:17px}
+@media(max-width:768px){.service-console{padding:24px}.service-foot{align-items:stretch}.service-foot button{width:100%}}
+@media(max-width:375px){.service-console{padding:18px}.service-console h2{font-size:32px}}
