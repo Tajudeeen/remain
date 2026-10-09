@@ -65,7 +65,7 @@ test('restore recreates exact persisted revision and enforces active-wallet lock
   assert.equal(target.get(s.order.id,s.f.wallet).signaturePrompted,true);
   assert.throws(()=>target.restoreRows(openEncryptedBackup(blob,s.key).rows),/RESTORE_REQUIRES_EMPTY_JOURNAL/);
   assert.throws(()=>target.create({...s.journal.get(s.order.id,s.f.wallet),id:'00000000-0000-4000-8000-000000000001',
-    auth:{...s.order.auth,orderUid:('0x'+'a'.repeat(112)) as `0x${string}`}}),/ACTIVE_ORDER_EXISTS/);
+    auth:{...s.journal.get(s.order.id,s.f.wallet).auth,orderUid:('0x'+'a'.repeat(112)) as `0x${string}`}}),/ACTIVE_ORDER_EXISTS/);
 });
 test('wrong secret, any altered byte and truncated snapshot fail authentication',async t=>{
   const s=await fixture(t);
