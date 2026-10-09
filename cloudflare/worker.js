@@ -1,5 +1,7 @@
 import { BUILD_SHA } from './build-identity.js';
 import { DurableObject } from 'cloudflare:workers';
+import { randomUUID } from 'node:crypto';
+import { sealEncryptedBackup } from './backup.ts';
 import { ReadOnlyBinanceClient } from '../src/client.ts';
 import { ExecutionEngine } from '../src/execution/engine-core.ts';
 import { ExecutionHttp, executionError } from '../src/execution/http.ts';
@@ -40,6 +42,7 @@ function eligibleForEngine(env) {
   if (env.REMAIN_EXECUTION_ENABLED !== 'true' ||
       env.REMAIN_COW_PROFILE_REVIEWED !== 'true' ||
       env.REMAIN_CLOUDFLARE_LIVE_APPROVED !== 'true' ||
+      env.REMAIN_BACKUP_APPROVED !== 'true' || !env.REMAIN_BACKUP_BUCKET ||
       !/^[a-f0-9]{64}$/.test(env.REMAIN_STORAGE_KEY ?? '') ||
       !/^https:\/\/[^/]+$/.test(env.REMAIN_EXECUTION_ORIGIN ?? '')) return false;
   try {
@@ -92,12 +95,39 @@ export class RemainLedger extends DurableObject {
     this.http = undefined;
     this.journal = undefined;
   }
+  // Optional private offsite backups; no public backup/restore HTTP route exists.
+  // Do not approve real orders without configuring R2, a verified restore drill,
+  // and an independently held copy of the encryption key.
+  async scheduleBackup() {
+    if (!this.env.REMAIN_BACKUP_BUCKET || this.env.REMAIN_BACKUP_APPROVED!=='true') return;
+    if ((await this.ctx.storage.getAlarm())===null)
+      await this.ctx.storage.setAlarm(Date.now()+5*60*1000);
+  }
+  async alarm() {
+    if (!this.env.REMAIN_BACKUP_BUCKET || this.env.REMAIN_BACKUP_APPROVED!=='true' ||
+        !/^[a-f0-9]{64}$/.test(this.env.REMAIN_STORAGE_KEY??'')) return;
+    const at=Date.now();
+    const journal=this.journal ??= new DurableSqlExecutionJournal(this.ctx.storage,this.env.REMAIN_STORAGE_KEY);
+    const rows=journal.exportRows();
+    if(rows.length>0) {
+      const snapshot=sealEncryptedBackup(rows,this.env.REMAIN_STORAGE_KEY,at);
+      const path='v1/'+new Date(at).toISOString().slice(0,10)+'/'+at+'-'+randomUUID()+'.rmb';
+      const written=await this.env.REMAIN_BACKUP_BUCKET.put(path,snapshot,{
+        httpMetadata:{contentType:'application/octet-stream'},
+        customMetadata:{format:'remain-encrypted-backup-v1'}
+      });
+      if(!written) throw Error('BACKUP_WRITE_NOT_CONFIRMED');
+    }
+    // Cloudflare replays a failed alarm; only a successful snapshot reschedules.
+    await this.ctx.storage.setAlarm(at+60*60*1000);
+  }
   async fetch(request) {
     const url=new URL(request.url);
     if (url.pathname === '/_internal/health' && request.method === 'GET') {
       try {
         if (!this.env.REMAIN_STORAGE_KEY) return reply(200,{journal:'KEY_NOT_CONFIGURED'});
         const journal = this.journal ??= new DurableSqlExecutionJournal(this.ctx.storage,this.env.REMAIN_STORAGE_KEY);
+        await this.scheduleBackup();
         return reply(200,{journal:journal.probe()?'READY':'UNVERIFIED'});
       } catch { return reply(503,{journal:'UNVERIFIED'}); }
     }
@@ -110,6 +140,7 @@ export class RemainLedger extends DurableObject {
     try {
       const journal = this.journal ??= new DurableSqlExecutionJournal(this.ctx.storage,this.env.REMAIN_STORAGE_KEY);
       const http = this.http ??= makeHttp(this.env,journal);
+      await this.scheduleBackup();
       const value = await http.handle(action,input,request.headers.get('authorization')??undefined);
       return reply(200,value);
     } catch(e) {return reply(400,{code:executionError(e)});}
@@ -150,6 +181,7 @@ export default {
       }
       return reply(200,{status:'ok',service:'remain-cloudflare-execution',
         buildSha:BUILD_SHA, journal,
+        backup:env.REMAIN_BACKUP_BUCKET && env.REMAIN_BACKUP_APPROVED==='true' ? 'CONFIGURED_UNVERIFIED' : 'NOT_CONFIGURED',
         executionEnabled:eligibleForEngine(env),liveGate:'UNVERIFIED'}, request.method==='HEAD');
     }
     if (url.pathname==='/api/execution/status') {
