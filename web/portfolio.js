@@ -1,3 +1,4 @@
+import { activeWalletProvider } from './wallet-providers.js';
 import { readWalletToken, ADDRESS } from './onchain.js';
 import { validateCatalog } from './catalog.js';
 
@@ -72,12 +73,12 @@ if(typeof document!=='undefined' && document.querySelector('.stock-catalog-picke
   window.addEventListener('pagehide',()=>{wallet=null;catalog=null;reset('Wallet scan cleared.');});
   button.addEventListener('click',async()=>{
     if(!catalog||!wallet||busy)return;
-    const current=++version,owner=wallet,provider=window.ethereum;
+    const current=++version,owner=wallet,provider=activeWalletProvider();
     abort=new AbortController();busy=true;button.disabled=true;
     progress.textContent='Checking real on-chain balances for this catalog page…';
     try{
       const result=await scanCatalogPage(catalog,provider,owner,cursor,8,abort.signal);
-      if(current!==version||wallet!==owner||window.ethereum!==provider)return;
+      if(current!==version||wallet!==owner||activeWalletProvider()!==provider)return;
       cursor=result.cursor;failed+=result.failed.length;found+=result.holdings.length;
       for(const item of result.holdings){
         const row=document.createElement('button');row.type='button';row.className='holding-row';
