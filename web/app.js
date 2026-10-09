@@ -2,6 +2,7 @@ import './proof.js';
 import './live.js';
 import './onchain.js';
 import './catalog.js';
+import './service-status.js';
 import './trade.js';
 import { readFixtureJSON, validatePlanningRecord } from './response.js';
 
@@ -22,7 +23,7 @@ function route(focus = false) {
   $('trade-view').hidden = !trade;
   $('fixture-banner').hidden = !(dashboard || proof);
   $('network-mode').textContent = dashboard || proof ? 'BSC · Rehearsal' : live ? 'BSC · Wallet reads' : trade ? 'BSC · Sale review' : 'BSC · Wallet';
-  document.title = trade ? 'Sale review | Remain' : live ? 'Integration setup | Remain' : proof ? 'Receipt inspection | Remain' : dashboard ? 'Cash planner | Remain' : 'Remain | Raise cash. Stay invested.';
+  document.title = trade ? 'Sale review | Remain' : live ? 'My portfolio | Remain' : proof ? 'Receipt inspection | Remain' : dashboard ? 'Cash planner | Remain' : 'Remain | Raise cash. Stay invested.';
   for (const link of document.querySelectorAll('nav a')) {
     if (link.getAttribute('href') === (trade ? '#trade' : live ? '#live' : proof ? '#proof' : dashboard ? '#dashboard' : hash)) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
