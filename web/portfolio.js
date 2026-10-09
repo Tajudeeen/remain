@@ -4,7 +4,11 @@ import { validateCatalog } from './catalog.js';
 // Explicit, bounded, read-only BSC scans. A failed RPC is unknown, never a zero holding.
 // The total portfolio is never fabricated or valued without supported market prices.
 export async function scanCatalogPage(catalog, provider, owner, cursor=0, limit=8, signal) {
-  const verified=validateCatalog(catalog);
+  // Stock identities are immutable contract addresses, unlike expiring quotes.
+  // Bound the browsing snapshot to 15 minutes so multi-page RPC scans can finish.
+  const age=Date.now()-catalog?.observedAtMs;
+  if(!Number.isSafeInteger(age)||age<0||age>900000)throw Error('CATALOG_EXPIRED');
+  const verified=validateCatalog(catalog,Math.min(Date.now(),catalog.observedAtMs+59999));
   if (!ADDRESS.test(owner)||!Number.isInteger(cursor)||cursor<0||cursor>verified.stocks.length||
       !Number.isInteger(limit)||limit<1||limit>8) throw Error('INVALID_SCAN');
   signal?.throwIfAborted();
