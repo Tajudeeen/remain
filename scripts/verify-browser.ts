@@ -226,6 +226,24 @@ try {
   await browser('open', `http://127.0.0.1:${address.port}/#live`);
   await browser('wait', '--fn', "document.querySelector('#live-server').textContent === 'Market data unavailable' && !document.querySelector('#live-refresh').disabled");
   await check("!document.querySelector('#live-view').hidden && document.querySelector('#fixture-banner').hidden && document.querySelector('#live-inspect').disabled && document.querySelector('#position-read').disabled && document.querySelector('#cash-preview').disabled");
+
+  // A configured service is not a successful Binance call. Do not promise a
+  // quote or describe API credentials as a working vendor connection.
+  await browser('eval', `window.fixtureOriginalFetch=window.fetch;
+    window.fetch=(...args)=>String(args[0])==='/api/live/status'
+      ?Promise.resolve(new Response(JSON.stringify({
+        kind:'REMAIN_INTEGRATION_READINESS',mode:'READ_ONLY_SETUP',
+        inspectionAvailable:true,deployment:'HOSTED_READ_ONLY',
+        executionEnabled:false,liveGate:'UNVERIFIED',signatureSemantics:'UNVERIFIED'
+      }),{headers:{'content-type':'application/json'}}))
+      :window.fixtureOriginalFetch(...args)`);
+  await browser('click','#live-refresh');
+  await browser('wait','--fn',"document.querySelector('#live-server').textContent.includes('access unverified')");
+  await check("document.querySelector('#live-mode-tag').textContent==='MARKET_CONFIGURED' && document.querySelector('#live-mode-copy').textContent.includes('unverified') && document.querySelector('#live-server-copy').textContent.includes('may still be blocked') && document.querySelector('#live-inspect').disabled");
+  await browser('eval','window.fetch=window.fixtureOriginalFetch');
+  await browser('click','#live-refresh');
+  await browser('wait','--fn',"document.querySelector('#live-server').textContent==='Market data unavailable'");
+
   await browser('click', '#wallet-connect');
   await check("!document.querySelector('#wallet-chooser').hidden && document.querySelector('#wallet-chooser').textContent.includes('No compatible browser wallet') && document.querySelector('#wallet-state').textContent === 'Not connected' && document.querySelector('#live-inspect').disabled && !document.querySelector('#wallet-connect').disabled");
 
