@@ -145,8 +145,44 @@ approval. Original off-chain intent and source-review assertions remain explicit
 unauthenticated. Binance route provenance, deployed flow, registration, original
 owner DevEx report, source release and signed-out links remain separate checks.
 
-`npm run submission:status` remains blocked for the private fixture packet. The
-new live checker complements it without relabeling a rehearsal as a live release.
+`npm run submission:status` remains blocked for the private fixture packet. After
+real technical evidence exists, create a private live manifest in ignored `state/`:
+
+```json
+{
+  "kind": "REMAIN_LIVE_SUBMISSION_V1",
+  "deploymentOrigin": "https://YOUR_EXECUTION_HOST",
+  "buildSha": "EXACT_40_CHARACTER_TESTED_COMMIT",
+  "receiptPath": "state/private-chain-receipt.json",
+  "ownerReportPath": "state/owner-devex-report.txt",
+  "ownerAssertions": {
+    "registrationConfirmed": false,
+    "eligibilityConfirmed": false,
+    "ownerAuthorshipConfirmed": false,
+    "publicReleaseApproved": false,
+    "contractSourcesReviewed": false,
+    "independentRpcOperatorsConfirmed": false
+  }
+}
+```
+
+Replace placeholders from actual deployment evidence. Only update declarations
+after their corresponding owner review. Write your DevEx report personally. Set
+both files' modes to 600. Then run:
+
+```sh
+npm run submission:status -- --live state/private-live-manifest.json
+```
+
+This path reruns the genuine supported-stock settlement check, enabled execution
+host smoke with the exact build, signed-out public source/commit access and private
+report existence. A fixture or missing receipt stops downstream requests. Missing
+host, private source or absent report blocks review. Owner declarations alone
+cannot satisfy technical evidence. Even after all checks pass, the highest result
+is `READY_FOR_OWNER_REVIEW`, not automatic submission approval. Registration,
+authorship, independent operator identity, source review and Binance route-use
+provenance still require the owner's judgment. No source release or form submission
+is performed by this command. The optional video remains optional.
 
 ## Limits kept explicit
 

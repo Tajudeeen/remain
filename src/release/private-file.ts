@@ -11,7 +11,7 @@ export async function noSymlinks(file: string) {
   }
   return path;
 }
-export async function privateJSON(file: string) {
+export async function privateText(file: string) {
   const path = await noSymlinks(file);
   const handle = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
   try {
@@ -23,6 +23,7 @@ export async function privateJSON(file: string) {
       const n = await handle.read(bytes, count, bytes.length - count, null); if (!n.bytesRead) break; count += n.bytesRead;
     }
     if (count > 262144) throw new Error('PRIVATE_FILE_INVALID');
-    return parseReceiptJSON(new TextDecoder('utf-8', { fatal: true }).decode(bytes.subarray(0, count)));
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes.subarray(0, count));
   } finally { await handle.close(); }
 }
+export async function privateJSON(file: string) { return parseReceiptJSON(await privateText(file)); }

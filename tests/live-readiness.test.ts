@@ -13,6 +13,7 @@ import { backupExecutionJournal, inspectExecutionBackup } from '../src/execution
 import { privateJSON } from '../src/release/private-file.ts';
 import { smokeExecutionHost } from '../src/release/execution-smoke.ts';
 import { checkLiveEvidence } from '../src/release/live-evidence.ts';
+import { assessLiveSubmission, liveSubmissionManifest, publicSourceCheck } from '../src/release/live-submission.ts';
 import { createRehearsalServer } from '../src/rehearsal/server.ts';
 import { executionFixture, time, stock, txHash } from './fixtures/execution.ts';
 
@@ -174,4 +175,36 @@ test('live evidence rejects a forged stock identity, pin mismatch and stale cata
   await assert.rejects(checkLiveEvidence(receipt, { ...preflightOptions(s.f), pins: [] }), /CONTRACT_UNVERIFIED/);
   await assert.rejects(checkLiveEvidence(receipt, { ...preflightOptions(s.f), now: () => time + 15001 }), /CATALOG_UNVERIFIED/);
   await assert.rejects(checkLiveEvidence(receipt, { ...preflightOptions(s.f), reader: { async get() { return { data: [], timestamp: time, responseHash: 'fixture', latencyMs: 0 }; } } }), /CATALOG_UNVERIFIED/);
+});
+function manifest() {
+  return { kind: 'REMAIN_LIVE_SUBMISSION_V1', deploymentOrigin: 'https://remain.example', buildSha: sha,
+    receiptPath: 'state/private-receipt.json', ownerReportPath: 'state/owner-report.txt',
+    ownerAssertions: { registrationConfirmed: true, eligibilityConfirmed: true, ownerAuthorshipConfirmed: true, publicReleaseApproved: true, contractSourcesReviewed: true, independentRpcOperatorsConfirmed: true } };
+}
+test('owner declarations cannot bypass missing technical settlement evidence', async () => {
+  let downstream = 0;
+  const report = await assessLiveSubmission(manifest(), { settlement: async () => ({ technicalStatus: 'BLOCKED' }),
+    host: async () => { downstream++; return { status: 'PASS' }; }, source: async () => { downstream++; return true; }, ownerReport: async () => { downstream++; return true; } });
+  assert.equal(report.submissionStatus, 'BLOCKED'); assert.equal(downstream, 0); assert.equal(report.automaticApproval, false);
+});
+test('live submission checks source and owner report separately, and never submits or publishes', async () => {
+  const checks = { settlement: async () => ({ technicalStatus: 'SETTLEMENT_RECHECKED' }), host: async () => ({ status: 'PASS' }), source: async () => true, ownerReport: async () => true };
+  const reviewed = await assessLiveSubmission(manifest(), checks); assert.equal(reviewed.submissionStatus, 'READY_FOR_OWNER_REVIEW');
+  assert.equal(reviewed.publicationPerformed, false); assert.equal(reviewed.submissionPerformed, false);
+  assert.equal((await assessLiveSubmission(manifest(), { ...checks, source: async () => false })).submissionStatus, 'BLOCKED');
+  assert.equal((await assessLiveSubmission(manifest(), { ...checks, ownerReport: async () => false })).submissionStatus, 'BLOCKED');
+  const input = manifest(); input.ownerAssertions.ownerAuthorshipConfirmed = false;
+  assert.equal((await assessLiveSubmission(input, checks)).submissionStatus, 'BLOCKED');
+  assert.ok(reviewed.ownerAssertions.every(a => a.trust === 'OWNER_ASSERTION_NOT_INDEPENDENTLY_VERIFIED'));
+});
+test('malformed live manifests and mismatched public source commits fail closed', async () => {
+  for (const patch of [{ kind: 'TEST_FIXTURE' }, { buildSha: 'unknown' }, { deploymentOrigin: 'http://remain.example' }, { extra: true }, { ownerReportPath: 'state/private-receipt.json' }]) assert.throws(() => liveSubmissionManifest({ ...manifest(), ...patch }));
+  const calls: string[] = [];
+  const source = (privateRepo: boolean, commit: string) => (async (url, init) => {
+    assert.equal(init?.method, 'GET'); assert.equal(init?.credentials, 'omit'); calls.push(String(url));
+    return new Response(JSON.stringify(String(url).endsWith('/' + sha) ? { sha: commit } : { full_name: 'Tajudeeen/remain', visibility: privateRepo ? 'private' : 'public', private: privateRepo, archived: false }));
+  }) as typeof fetch;
+  assert.equal(await publicSourceCheck(sha, source(false, sha)), true); assert.equal(calls.length, 2);
+  assert.equal(await publicSourceCheck(sha, source(true, sha)), false);
+  assert.equal(await publicSourceCheck(sha, source(false, 'b'.repeat(40))), false);
 });

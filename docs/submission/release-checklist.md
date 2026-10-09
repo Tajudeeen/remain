@@ -30,7 +30,7 @@ npm run check:submission
 npm run submission:status
 ```
 
-The last command currently exits 1 with `submissionStatus: BLOCKED`. The packet validator is deliberately limited to the fixture preparation packet and cannot be changed into a live release certificate by flipping status fields. Replace it through a reviewed live-evidence milestone after the real flow is proven.
+The last command currently exits 1 with `submissionStatus: BLOCKED`. Its default packet validator is deliberately limited to fixture preparation and cannot become a live certificate by flipping status fields. After real evidence exists, the separate `submission:status -- --live state/private-live-manifest.json` path rechecks supported-stock settlement, exact deployed build, signed-out public source commit and owner report existence. Its maximum status is `READY_FOR_OWNER_REVIEW`; manual declarations stay explicitly unauthenticated and publication/submission remain separate owner actions. See [live operations](../live-operations.md).
 
 `screen:history` scans available reachable Git refs. Run it on a non-shallow checkout after the final commit, then examine its sanitized artifact and review all release surfaces. Its pattern pass is not a formal audit or proof of secret absence. Ignored files, binary content, dangling objects and external workflow/deployment logs are not cleared. Any credential ever exposed needs rotation, regardless of a later clean scan.
 
