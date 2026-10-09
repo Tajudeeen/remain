@@ -22,6 +22,10 @@ The non-vendor release checklist is [here](docs/submission/non-vendor-evidence.m
 Remain works backward from a USDT cash target to a bounded partial sale of a tokenized-stock position on BNB Smart Chain. BellGuard checks market state, quote freshness and user limits. The intended result is a reconciled settlement receipt showing cash received and exposure retained.
 
 
+### Verifiable on-chain balance observations
+
+The wallet workspace can capture an ERC-20 balance at a specific BSC block, download a private JSON record, and recheck it against another BSC RPC without signing, custody, a fabricated holding or a price estimate. This is a replayable RPC observation, **not** a Merkle storage proof or settlement proof. See [how to verify recorded balances](docs/onchain-balance-evidence.md).
+
 ### Wallets on mobile and desktop
 
 Remain now discovers EIP-6963 wallets (with a legacy injected fallback), lets you choose the provider, and can hand off a phone browser to MetaMask or Trust Wallet's in-app browser. An explicit BSC network-switch prompt is available when the chosen wallet is on the wrong chain. [Mobile wallet setup and remaining WalletConnect limitation](docs/mobile-wallet.md). All connection requests require user action; app handoff is not a WalletConnect QR pairing session.

@@ -39,27 +39,57 @@ const browserResponse = await fetch(new URL('/response.js', base), { redirect: '
 assert.equal(browserResponse.status, 200);
 assert.match(browserResponse.headers.get('content-type') ?? '', /(?:java|ecma)script/);
 assert.match(await browserResponse.text(), /export function validatePlanningRecord/);
-for (const file of ['live.js', 'wallet.js', 'position.js', 'preview.js', 'order-review.js', 'trade.js']) {
+for (const file of ['live.js', 'wallet.js', 'wallet-providers.js', 'wallet-ui.js', 'position.js', 'preview.js', 'order-review.js', 'trade.js', 'onchain.js', 'balance-evidence.js', 'balance-evidence-ui.js', 'portfolio.js', 'catalog.js', 'service-status.js']) {
   const response = await fetch(new URL('/' + file, base), { redirect: 'error', signal: AbortSignal.timeout(5000) });
   assert.equal(response.status, 200); assert.match(response.headers.get('content-type') ?? '', /(?:java|ecma)script/);
 }
 const readiness = await fetch(new URL('/api/live/status', base), { redirect: 'error', signal: AbortSignal.timeout(5000) });
 assert.equal(readiness.status, 200);
-assert.deepEqual(await readJson(readiness), { kind: 'REMAIN_INTEGRATION_READINESS', mode: 'READ_ONLY_SETUP', inspectionAvailable: false, deployment: 'NOT_CONFIGURED', executionEnabled: false, liveGate: 'UNVERIFIED', signatureSemantics: 'UNVERIFIED' });
-const inspect = await fetch(new URL('/api/live/inspect', base), { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(5000) });
-assert.equal(inspect.status, 503); assert.deepEqual(await readJson(inspect), { code: 'LOCAL_SETUP_REQUIRED' });
-const position = await fetch(new URL('/api/live/position', base), { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(5000) });
-assert.equal(position.status, 503); assert.deepEqual(await readJson(position), { code: 'LOCAL_SETUP_REQUIRED' });
-const preview = await fetch(new URL('/api/live/preview', base), { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(5000) });
-assert.equal(preview.status, 503); assert.deepEqual(await readJson(preview), { code: 'LOCAL_SETUP_REQUIRED' });
-const review = await fetch(new URL('/api/live/review', base), { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(5000) });
-assert.equal(review.status, 503); assert.deepEqual(await readJson(review), { code: 'LOCAL_SETUP_REQUIRED' });
-const executionStatus = await fetch(new URL('/api/execution/status', base), { redirect: 'error', signal: AbortSignal.timeout(5000) });
-assert.equal(executionStatus.status, 200);
-assert.deepEqual(await readJson(executionStatus), { kind: 'REMAIN_EXECUTION_STATUS', available: false, profile: 'COW_BSC_SELL_V1', userConfirmationRequired: true });
-for (const action of ['challenge', 'login', 'prepare', 'sign', 'submit', 'recover', 'invalidate']) {
-  const response = await fetch(new URL('/api/execution/' + action, base), { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(5000) });
-  assert.equal(response.status, 503); assert.deepEqual(await readJson(response), { code: 'EXECUTION_SETUP_REQUIRED' });
+const market = await readJson(readiness);
+assert.deepEqual(Object.keys(market).sort(), ['kind','mode','inspectionAvailable','deployment','executionEnabled','liveGate','signatureSemantics'].sort());
+assert.equal(market.kind,'REMAIN_INTEGRATION_READINESS');
+assert.equal(market.mode,'READ_ONLY_SETUP');
+assert.equal(market.executionEnabled,false);
+assert.equal(market.liveGate,'UNVERIFIED');
+assert.equal(market.signatureSemantics,'UNVERIFIED');
+assert.equal(typeof market.inspectionAvailable,'boolean');
+const marketConfigured=market.inspectionAvailable===true;
+assert.ok(marketConfigured?['LOCAL_ONLY','HOSTED_READ_ONLY'].includes(String(market.deployment)):market.deployment==='NOT_CONFIGURED');
+if(process.env.REMAIN_REQUIRE_HOSTED_READ_ONLY==='true')
+  assert.ok(marketConfigured && market.deployment==='HOSTED_READ_ONLY','HOSTED_READ_ONLY_NOT_ENABLED');
+for(const route of ['inspect','position','preview','review']){
+  const endpoint=new URL('/api/live/'+route,base);
+  // No wallet data is supplied. An unconfigured service must block with 503,
+  // while a configured server must reject incorrect methods without any vendor call.
+  const actual=await fetch(endpoint,{method:marketConfigured?'GET':'POST',redirect:'error',signal:AbortSignal.timeout(5000)});
+  assert.equal(actual.status,marketConfigured?405:503);
+  assert.deepEqual(await readJson(actual),{code:marketConfigured?'METHOD_REJECTED':'LOCAL_SETUP_REQUIRED'});
+}
+const catalog=await fetch(new URL('/api/live/catalog',base),{method:marketConfigured?'POST':'GET',redirect:'error',signal:AbortSignal.timeout(5000)});
+// The container's localhost-only API intentionally has no catalog route;
+ // the hosted Netlify function exposes the provider catalog when configured.
+if(market.deployment==='LOCAL_ONLY'||base.hostname==='localhost'||base.hostname==='127.0.0.1'){
+  assert.equal(catalog.status,404);
+  assert.deepEqual(await readJson(catalog),{code:'NOT_FOUND'});
+}else{
+  assert.equal(catalog.status,marketConfigured?405:503);
+  assert.deepEqual(await readJson(catalog),{code:marketConfigured?'METHOD_REJECTED':'LOCAL_SETUP_REQUIRED'});
+}
+const executionStatus=await fetch(new URL('/api/execution/status',base),{redirect:'error',signal:AbortSignal.timeout(5000)});
+assert.equal(executionStatus.status,200);
+const execution=await readJson(executionStatus);
+assert.deepEqual(Object.keys(execution).sort(),['kind','available','profile','userConfirmationRequired'].sort());
+assert.equal(execution.kind,'REMAIN_EXECUTION_STATUS');
+assert.equal(typeof execution.available,'boolean');
+assert.equal(execution.profile,'COW_BSC_SELL_V1');
+assert.equal(execution.userConfirmationRequired,true);
+const executionConfigured=execution.available===true;
+if(process.env.REMAIN_REQUIRE_EXECUTION==='true')assert.equal(executionConfigured,true,'EXECUTION_NOT_ENABLED');
+for(const action of ['challenge','login','prepare','sign','submit','recover','invalidate']){
+  const checked=await fetch(new URL('/api/execution/'+action,base),
+    {method:executionConfigured?'GET':'POST',redirect:'error',signal:AbortSignal.timeout(5000)});
+  assert.equal(checked.status,executionConfigured?405:503);
+  assert.deepEqual(await readJson(checked),{code:executionConfigured?'METHOD_REJECTED':'EXECUTION_SETUP_REQUIRED'});
 }
 
 const input = { cashTarget: '25', retainPercent: 70, maxImpactPercent: '0.50', market: 'regular', allowClosedMarket: false };
@@ -130,5 +160,7 @@ console.log(JSON.stringify({
   liveGate: 'BLOCKED',
   baseOrigin: base.origin,
   buildSha: healthBody.buildSha,
+  marketService: marketConfigured?'CONFIGURED_NOT_VERIFIED':'NOT_CONFIGURED',
+  executionService: executionConfigured?'CONFIGURED_NOT_SETTLED':'NOT_CONFIGURED',
   checks: ['health-build', 'static-page', 'browser-response-module', 'integration-modules', 'public-inspector-locked', 'planning-accounting', 'paused-market-guard', 'invalid-input', 'planner-duplicate-fields', 'planner-enum-coercion', 'receipt-replay', 'receipt-tampering', 'receipt-duplicate-fields', 'receipt-size-limit', 'execution-endpoints-absent']
 }, null, 2));

@@ -1,6 +1,7 @@
 import './proof.js';
 import './live.js';
 import './onchain.js';
+import './balance-evidence-ui.js';
 import './catalog.js';
 import './service-status.js';
 import './portfolio.js';
