@@ -25,7 +25,7 @@ const errorHelp = {
 const codes = new Set(['CONFIG_MISSING', 'INVALID_INPUT', 'READ_ONLY_VIOLATION', 'REQUEST_CANCELLED', 'AUTH_KEY_INVALID', 'AUTH_SIGNATURE_INVALID', 'AUTH_CLOCK_DRIFT', 'AUTH_PERMISSION_DENIED', 'RATE_LIMITED', 'UPSTREAM_TIMEOUT', 'ACCESS_REGION_RESTRICTED', 'ACCESS_PROXY_REJECTED', 'ACCESS_IP_RESTRICTED', 'ACCESS_COMPLIANCE_RESTRICTED', 'UPSTREAM_UNAVAILABLE', 'UPSTREAM_REJECTED', 'UPSTREAM_SCHEMA_INVALID', 'UNSUPPORTED_ASSET', 'INSUFFICIENT_POSITION', 'MARKET_BLOCKED', 'QUOTE_EXPIRED', 'RFQ_UNAVAILABLE', 'RFQ_OPAQUE']);
 const exact = (value, keys) => value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 export function validateReadiness(value) {
-  if (!exact(value, ['kind', 'mode', 'inspectionAvailable', 'deployment', 'executionEnabled', 'liveGate', 'signatureSemantics']) || value.kind !== 'REMAIN_INTEGRATION_READINESS' || value.mode !== 'READ_ONLY_SETUP' || typeof value.inspectionAvailable !== 'boolean' || value.deployment !== (value.inspectionAvailable ? 'LOCAL_ONLY' : 'NOT_CONFIGURED') || value.executionEnabled !== false || value.liveGate !== 'UNVERIFIED' || value.signatureSemantics !== 'UNVERIFIED') throw new Error('INVALID_READINESS');
+  if (!exact(value, ['kind', 'mode', 'inspectionAvailable', 'deployment', 'executionEnabled', 'liveGate', 'signatureSemantics']) || value.kind !== 'REMAIN_INTEGRATION_READINESS' || value.mode !== 'READ_ONLY_SETUP' || typeof value.inspectionAvailable !== 'boolean' || !(value.inspectionAvailable ? ['LOCAL_ONLY', 'HOSTED_READ_ONLY'].includes(value.deployment) : value.deployment === 'NOT_CONFIGURED') || value.executionEnabled !== false || value.liveGate !== 'UNVERIFIED' || value.signatureSemantics !== 'UNVERIFIED') throw new Error('INVALID_READINESS');
   return value;
 }
 export function validateInspection(value) {
@@ -109,8 +109,12 @@ if (typeof document !== 'undefined' && $('live-view')) {
       const result = validateReadiness(await readFixtureJSON(response, active.signal));
       if (current !== statusVersion) return;
       available = result.inspectionAvailable;
-      $('live-server').textContent = available ? 'Local read-only inspector ready' : 'Local setup required';
-      $('live-server-copy').textContent = available ? 'Your local server can read Binance data. This does not validate the credentials or enable execution.' : 'This deployment has no Binance credentials. Run the local server to inspect a real held position.';
+      $('live-mode-tag').textContent = result.deployment === 'HOSTED_READ_ONLY' ? 'LIVE_READ_ONLY' : 'READ_ONLY_SETUP';
+      if (location.hash === '#live') $('network-mode').textContent = result.deployment === 'HOSTED_READ_ONLY' ? 'BSC · Live reads' : 'BSC · Wallet reads';
+      $('live-mode-copy').textContent = result.deployment === 'HOSTED_READ_ONLY' ? 'Live supported-stock data, positions and quotes are available on request. Market and order eligibility are checked independently.' : 'Wallet-native token reads are available. Binance market integration needs an authorized, configured server.';
+      $('live-mode-status').textContent = 'Trading separately gated';
+      $('live-server').textContent = available ? (result.deployment === 'HOSTED_READ_ONLY' ? 'Live market service connected' : 'Local read-only inspector ready') : 'Local setup required';
+      $('live-server-copy').textContent = available ? (result.deployment === 'HOSTED_READ_ONLY' ? 'Live BSC stock positions, market checks and RFQ estimates are available from the server. Your wallet must hold a supported asset. Trading requires separate execution readiness.' : 'Your local server can read Binance data. This does not validate the credentials or enable execution.') : 'The Binance read-only service is not configured for this deployment. Wallet-native BSC token balance verification is still available.';
     } catch {
       if (current !== statusVersion) return;
       $('live-server').textContent = 'Server status unavailable';

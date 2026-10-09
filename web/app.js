@@ -1,5 +1,7 @@
 import './proof.js';
 import './live.js';
+import './onchain.js';
+import './catalog.js';
 import './trade.js';
 import { readFixtureJSON, validatePlanningRecord } from './response.js';
 
@@ -18,7 +20,8 @@ function route(focus = false) {
   $('proof-view').hidden = !proof;
   $('live-view').hidden = !live;
   $('trade-view').hidden = !trade;
-  $('fixture-banner').hidden = live || trade;
+  $('fixture-banner').hidden = !(dashboard || proof);
+  $('network-mode').textContent = dashboard || proof ? 'BSC · Rehearsal' : live ? 'BSC · Wallet reads' : trade ? 'BSC · Sale review' : 'BSC · Wallet';
   document.title = trade ? 'Sale review | Remain' : live ? 'Integration setup | Remain' : proof ? 'Receipt inspection | Remain' : dashboard ? 'Cash planner | Remain' : 'Remain | Raise cash. Stay invested.';
   for (const link of document.querySelectorAll('nav a')) {
     if (link.getAttribute('href') === (trade ? '#trade' : live ? '#live' : proof ? '#proof' : dashboard ? '#dashboard' : hash)) link.setAttribute('aria-current', 'page');

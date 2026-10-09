@@ -21,6 +21,8 @@ const assets = new Map([
   ['/preview.js', ['preview.js', 'text/javascript; charset=utf-8']],
   ['/order-review.js', ['order-review.js', 'text/javascript; charset=utf-8']],
   ['/trade.js', ['trade.js', 'text/javascript; charset=utf-8']],
+  ['/onchain.js', ['onchain.js', 'text/javascript; charset=utf-8']],
+  ['/catalog.js', ['catalog.js', 'text/javascript; charset=utf-8']],
   ['/demo-receipt.json', ['demo-receipt.json', 'application/json; charset=utf-8']]
 ]);
 

@@ -1,9 +1,14 @@
 import { rehearsePlan, parsePlanningRequest } from './plan.ts';
 import { inspectFixtureReceipt } from '../receipts/inspection.ts';
 import { RECEIPT_MAX_BYTES } from '../receipts/canonical.ts';
-import { readinessStatus } from '../integration/readiness.ts';
+import { readinessStatus, inspectionInput, projectInspection } from '../integration/readiness.ts';
+import { positionInput, projectPosition } from '../integration/position.ts';
+import { cashPreviewInput, projectCashPreview, cashOrderInput, projectCashOrder } from '../integration/preview.ts';
+import { RemainError } from '../errors.ts';
+import type { HostedLiveReaders } from '../integration/hosted.ts';
+import { proxyExecution, type ExecutionProxy } from './execution-proxy.ts';
 
-export type NetlifyFixtureOptions = Readonly<{ origins: readonly string[]; buildSha?: string }>;
+export type NetlifyFixtureOptions = Readonly<{ origins: readonly string[]; buildSha?: string; live?: HostedLiveReaders; executionProxy?: ExecutionProxy }>;
 
 function response(status: number, value: unknown, head = false): Response {
   return new Response(head ? null : JSON.stringify(value), { status, headers: {
@@ -48,14 +53,28 @@ export async function handleNetlifyFixture(request: Request, options: NetlifyFix
   const origin = request.headers.get('origin');
   if (request.headers.get('sec-fetch-site') === 'cross-site' || origin && origin !== url.origin) return response(403, { code: 'ORIGIN_REJECTED' });
   const execution = /^\/api\/execution\/(status|challenge|login|preview|prepare|approve|signing|sign|submit|poll|get|cancel|recover|invalidate|receipt)$/.test(url.pathname);
-  if (url.search || !execution && !['/healthz', '/api/rehearse', '/api/receipt/verify', '/api/live/status', '/api/live/inspect', '/api/live/position', '/api/live/preview', '/api/live/review'].includes(url.pathname)) return response(404, { code: 'NOT_FOUND' });
+  if (url.search || !execution && !['/healthz', '/api/rehearse', '/api/receipt/verify', '/api/live/status', '/api/live/inspect', '/api/live/position', '/api/live/preview', '/api/live/review', '/api/live/catalog'].includes(url.pathname)) return response(404, { code: 'NOT_FOUND' });
+  if (execution && options.executionProxy) return proxyExecution(request,url.pathname.split('/').at(-1)!,options.executionProxy);
   if (url.pathname === '/api/execution/status') return response(['GET', 'HEAD'].includes(request.method) ? 200 : 405, ['GET', 'HEAD'].includes(request.method) ? { kind: 'REMAIN_EXECUTION_STATUS', available: false, profile: 'COW_BSC_SELL_V1', userConfirmationRequired: true } : { code: 'METHOD_REJECTED' }, request.method === 'HEAD');
   if (execution) return response(request.method === 'POST' ? 503 : 405, { code: request.method === 'POST' ? 'EXECUTION_SETUP_REQUIRED' : 'METHOD_REJECTED' });
   if (url.pathname === '/api/live/status') {
     if (!['GET', 'HEAD'].includes(request.method)) return response(405, { code: 'METHOD_REJECTED' });
-    return response(200, readinessStatus(false), request.method === 'HEAD');
+    return response(200, readinessStatus(Boolean(options.live), options.live ? 'HOSTED_READ_ONLY' : 'LOCAL_ONLY'), request.method === 'HEAD');
   }
-  if (['/api/live/inspect', '/api/live/position', '/api/live/preview', '/api/live/review'].includes(url.pathname)) return response(request.method === 'POST' ? 503 : 405, { code: request.method === 'POST' ? 'LOCAL_SETUP_REQUIRED' : 'METHOD_REJECTED' });
+  if (url.pathname === '/api/live/catalog') {
+    if (!['GET','HEAD'].includes(request.method)) return response(405,{code:'METHOD_REJECTED'});
+    if (!options.live) return response(503,{code:'LOCAL_SETUP_REQUIRED'});
+    if (request.headers.has('authorization')) return response(400,{code:'INVALID_REQUEST'});
+    try {
+      const data = await options.live.catalogReader(AbortSignal.any([request.signal,AbortSignal.timeout(12000)]));
+      return response(200,data,request.method==='HEAD');
+    } catch (error) { return response(error instanceof RemainError && error.code === 'RATE_LIMITED' ? 429 : 502,
+      {code:error instanceof RemainError ? error.code : 'UPSTREAM_UNAVAILABLE'}); }
+  }
+  const liveAction = ['/api/live/inspect', '/api/live/position', '/api/live/preview', '/api/live/review'].includes(url.pathname);
+  if (liveAction && !options.live) return response(request.method === 'POST' ? 503 : 405, { code: request.method === 'POST' ? 'LOCAL_SETUP_REQUIRED' : 'METHOD_REJECTED' });
+  if (liveAction && request.method !== 'POST') return response(405, { code: 'METHOD_REJECTED' });
+  if (liveAction && origin !== url.origin) return response(403, { code: 'ORIGIN_REJECTED' });
   if (url.pathname === '/healthz') {
     if (!['GET', 'HEAD'].includes(request.method)) return response(405, { code: 'METHOD_REJECTED' });
     return response(200, { status: 'ok', service: 'remain-rehearsal', mode: 'TEST_FIXTURE', executionEnabled: false,
@@ -69,13 +88,33 @@ export async function handleNetlifyFixture(request: Request, options: NetlifyFix
   const length = request.headers.get('content-length');
   if (length && (!/^[0-9]+$/.test(length) || Number(length) > limit)) return response(413, { code: 'BODY_TOO_LARGE' });
   try {
-    const signal = AbortSignal.any([request.signal, AbortSignal.timeout(2000)]);
+    const signal = AbortSignal.any([request.signal, AbortSignal.timeout(liveAction ? 14500 : 2000)]);
     const body = await boundedBody(request, signal, limit);
     if (receipt) return response(200, inspectFixtureReceipt(body));
+    if (liveAction) {
+      const data: unknown = JSON.parse(body);
+      const live = options.live!;
+      if (url.pathname === '/api/live/position') {
+        const input = positionInput(data);
+        return response(200,projectPosition(await live.positionReader(input,signal),input));
+      }
+      if (url.pathname === '/api/live/preview') {
+        const input = cashPreviewInput(data);
+        return response(200,projectCashPreview(await live.cashPreviewer(input,signal),input));
+      }
+      if (url.pathname === '/api/live/review') {
+        const input = cashOrderInput(data);
+        return response(200,projectCashOrder(await live.cashReviewer(input,signal),input));
+      }
+      const input = inspectionInput(data);
+      return response(200,projectInspection(await live.inspector(input,signal)));
+    }
     const input = parsePlanningRequest(body);
     return response(200, await rehearsePlan(input, signal));
   } catch (error) {
     const tooLarge = error instanceof Error && error.message === 'BODY_TOO_LARGE';
+    if (liveAction && error instanceof RemainError)
+      return response(error.code === 'INVALID_INPUT' ? 400 : error.code === 'RATE_LIMITED' ? 429 : error.code === 'UPSTREAM_TIMEOUT' || error.code === 'REQUEST_CANCELLED' ? 408 : 502, {code:error.code});
     return response(tooLarge ? 413 : 400, { code: tooLarge ? 'BODY_TOO_LARGE' : 'INVALID_REQUEST' });
   }
 }
