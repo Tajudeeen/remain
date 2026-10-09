@@ -110,6 +110,7 @@ if (typeof document !== 'undefined' && $('live-view')) {
       if (current !== statusVersion) return;
       available = result.inspectionAvailable;
       $('live-mode-tag').textContent = result.deployment === 'HOSTED_READ_ONLY' ? 'LIVE_READ_ONLY' : 'READ_ONLY_SETUP';
+      if (location.hash === '#live') $('network-mode').textContent = result.deployment === 'HOSTED_READ_ONLY' ? 'BSC · Live reads' : 'BSC · Wallet reads';
       $('live-mode-copy').textContent = result.deployment === 'HOSTED_READ_ONLY' ? 'Live supported-stock data, positions and quotes are available on request. Market and order eligibility are checked independently.' : 'Wallet-native token reads are available. Binance market integration needs an authorized, configured server.';
       $('live-mode-status').textContent = 'Trading separately gated';
       $('live-server').textContent = available ? (result.deployment === 'HOSTED_READ_ONLY' ? 'Live market service connected' : 'Local read-only inspector ready') : 'Local setup required';
