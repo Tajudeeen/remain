@@ -6,8 +6,9 @@ import { positionInput, projectPosition } from '../integration/position.ts';
 import { cashPreviewInput, projectCashPreview, cashOrderInput, projectCashOrder } from '../integration/preview.ts';
 import { RemainError } from '../errors.ts';
 import type { HostedLiveReaders } from '../integration/hosted.ts';
+import { proxyExecution, type ExecutionProxy } from './execution-proxy.ts';
 
-export type NetlifyFixtureOptions = Readonly<{ origins: readonly string[]; buildSha?: string; live?: HostedLiveReaders }>;
+export type NetlifyFixtureOptions = Readonly<{ origins: readonly string[]; buildSha?: string; live?: HostedLiveReaders; executionProxy?: ExecutionProxy }>;
 
 function response(status: number, value: unknown, head = false): Response {
   return new Response(head ? null : JSON.stringify(value), { status, headers: {
@@ -53,6 +54,7 @@ export async function handleNetlifyFixture(request: Request, options: NetlifyFix
   if (request.headers.get('sec-fetch-site') === 'cross-site' || origin && origin !== url.origin) return response(403, { code: 'ORIGIN_REJECTED' });
   const execution = /^\/api\/execution\/(status|challenge|login|preview|prepare|approve|signing|sign|submit|poll|get|cancel|recover|invalidate|receipt)$/.test(url.pathname);
   if (url.search || !execution && !['/healthz', '/api/rehearse', '/api/receipt/verify', '/api/live/status', '/api/live/inspect', '/api/live/position', '/api/live/preview', '/api/live/review', '/api/live/catalog'].includes(url.pathname)) return response(404, { code: 'NOT_FOUND' });
+  if (execution && options.executionProxy) return proxyExecution(request,url.pathname.split('/').at(-1)!,options.executionProxy);
   if (url.pathname === '/api/execution/status') return response(['GET', 'HEAD'].includes(request.method) ? 200 : 405, ['GET', 'HEAD'].includes(request.method) ? { kind: 'REMAIN_EXECUTION_STATUS', available: false, profile: 'COW_BSC_SELL_V1', userConfirmationRequired: true } : { code: 'METHOD_REJECTED' }, request.method === 'HEAD');
   if (execution) return response(request.method === 'POST' ? 503 : 405, { code: request.method === 'POST' ? 'EXECUTION_SETUP_REQUIRED' : 'METHOD_REJECTED' });
   if (url.pathname === '/api/live/status') {
