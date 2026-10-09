@@ -6,6 +6,11 @@ Raise cash. Stay invested.
 
 Remain works backward from a USDT cash target to a bounded partial sale of a tokenized-stock position on BNB Smart Chain. BellGuard checks market state, quote freshness and user limits. The intended result is a reconciled settlement receipt showing cash received and exposure retained.
 
+
+### Wallets on mobile and desktop
+
+Remain now discovers EIP-6963 wallets (with a legacy injected fallback), lets you choose the provider, and can hand off a phone browser to MetaMask or Trust Wallet's in-app browser. An explicit BSC network-switch prompt is available when the chosen wallet is on the wrong chain. [Mobile wallet setup and remaining WalletConnect limitation](docs/mobile-wallet.md). All connection requests require user action; app handoff is not a WalletConnect QR pairing session.
+
 ## Current architecture, October 2026
 
 This branch's [product-realism audit](docs/product-realism-audit.md) explains which screens read actual chain or market data and which optional routes remain test fixtures. The homepage reports actual service configuration, the wallet can verify ERC-20 balances and scan supported RWA identities in bounded batches, and real cash targets are entered by the user rather than defaulted to the fictional demo numbers. No deployed backend availability, price, or settlement is invented.
