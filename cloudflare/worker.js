@@ -7,6 +7,7 @@ import { ExecutionEngine } from '../src/execution/engine-core.ts';
 import { ExecutionHttp, executionError } from '../src/execution/http.ts';
 import { BinanceExecutionVendor } from '../src/execution/vendor.ts';
 import { HttpRpc } from '../src/execution/rpc.ts';
+import { makeRpcEgressFetcher } from './egress.js';
 import { contractPins, rpcPair } from '../src/execution/configuration.ts';
 import { parseRfqJSON } from '../src/rfq/json.ts';
 import { DurableSqlExecutionJournal } from './journal.ts';
@@ -44,7 +45,8 @@ function eligibleForEngine(env) {
       env.REMAIN_CLOUDFLARE_LIVE_APPROVED !== 'true' ||
       env.REMAIN_BACKUP_APPROVED !== 'true' || !env.REMAIN_BACKUP_BUCKET ||
       !/^[a-f0-9]{64}$/.test(env.REMAIN_STORAGE_KEY ?? '') ||
-      !/^https:\/\/[^/]+$/.test(env.REMAIN_EXECUTION_ORIGIN ?? '')) return false;
+      !/^https:\/\/[^/]+$/.test(env.REMAIN_EXECUTION_ORIGIN ?? '') ||
+      (env.REMAIN_RPC_EGRESS_ENABLED === 'true' && !env.REMAIN_RPC_EGRESS?.fetch)) return false;
   try {
     if (['BINANCE_WEB3_API_KEY','BINANCE_WEB3_SECRET_KEY','REMAIN_MAXIMUM_STOCK_FEE_RAW'].some(k=>!env[k]?.trim())) return false;
     if (!/^(0|[1-9][0-9]*)$/.test(env.REMAIN_MAXIMUM_STOCK_FEE_RAW)) return false;
@@ -78,10 +80,11 @@ function makeHttp(env, journal) {
   if (required.some(key=>!env[key]?.trim())) throw Error('EXECUTION_CONFIG_MISSING');
   const [primary,secondary]=rpcPair(env), pins=contractPins(env.REMAIN_CONTRACT_PINS);
   const credentials={apiKey:env.BINANCE_WEB3_API_KEY,secretKey:env.BINANCE_WEB3_SECRET_KEY};
+  const rpcFetcher = makeRpcEgressFetcher(env);
   const engine=new ExecutionEngine({
     reader:new ReadOnlyBinanceClient(credentials),
     vendor:new BinanceExecutionVendor(credentials),
-    rpcs:[new HttpRpc(primary.href),new HttpRpc(secondary.href)],
+    rpcs:[new HttpRpc(primary.href,rpcFetcher),new HttpRpc(secondary.href,rpcFetcher)],
     store:journal, pins, maximumStockFeeRaw:env.REMAIN_MAXIMUM_STOCK_FEE_RAW, mode:'LIVE_EXECUTION'
   });
   return new ExecutionHttp(engine, env.REMAIN_EXECUTION_ORIGIN);

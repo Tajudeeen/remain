@@ -1,0 +1,22 @@
+name = "remain-rpc-egress"
+main = "worker.js"
+compatibility_date = "2026-10-09"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+
+[[containers]]
+class_name = "ReadOnlyRpcContainer"
+image = "./Dockerfile"
+max_instances = 1
+instance_type = "lite"
+
+[[durable_objects.bindings]]
+name = "RPC_CONTAINER"
+class_name = "ReadOnlyRpcContainer"
+
+[[migrations]]
+tag = "v1-readonly-rpc-container"
+new_sqlite_classes = ["ReadOnlyRpcContainer"]
+
+# REMAIN_RPC_ALLOWED_ENDPOINTS must be set as a secret, not committed.
+# This service has no public route and can only be called via Worker service binding.
