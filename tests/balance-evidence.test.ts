@@ -4,7 +4,7 @@ import {captureTokenBalanceEvidence,recheckTokenBalanceEvidence,validateTokenBal
 const owner='0x'+'1'.repeat(40), token='0x'+'2'.repeat(40), hash='0x'+'a'.repeat(64);
 const block={number:'0x12ab',hash};const word=(n:number)=>'0x'+BigInt(n).toString(16).padStart(64,'0');
 function provider(opts:{mismatch?:boolean;amount?:number;wrongChain?:boolean;disconnected?:boolean;latestOnly?:boolean}={}){
-  const seen:{method:string;params?:any[]}[]=[];
+  const seen:{method:string;params:any[]|undefined}[]=[];
   return {seen,request:async({method,params}:{method:string;params?:any[]})=>{
     seen.push({method,params});
     if(method==='eth_chainId')return opts.wrongChain?'0x1':'0x38';
