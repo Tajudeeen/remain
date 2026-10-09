@@ -24,6 +24,7 @@ const assets = new Map([
   ['/onchain.js', ['onchain.js', 'text/javascript; charset=utf-8']],
   ['/catalog.js', ['catalog.js', 'text/javascript; charset=utf-8']],
   ['/service-status.js', ['service-status.js', 'text/javascript; charset=utf-8']],
+  ['/portfolio.js', ['portfolio.js', 'text/javascript; charset=utf-8']],
   ['/demo-receipt.json', ['demo-receipt.json', 'application/json; charset=utf-8']]
 ]);
 
