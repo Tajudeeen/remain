@@ -1,5 +1,7 @@
 import { readFixtureJSON, readReadOnlyJSON } from './response.js';
 import { walletSession } from './wallet.js';
+import { availableWallets,chooseWalletProvider,activeWalletProvider,clearWalletProvider } from './wallet-providers.js';
+import { showWalletChoice } from './wallet-ui.js';
 import { validatePosition, formatPositionUnits, preparePositionAmount } from './position.js';
 import { previewInput, validatePreview } from './preview.js';
 import { candidateForReview, validateOrderReview } from './order-review.js';
@@ -87,19 +89,43 @@ if (typeof document !== 'undefined' && $('live-view')) {
     $('wallet-state').textContent = { IDLE: 'Not connected', CONNECTING: 'Waiting for wallet', CONNECTED: 'BSC account selected', WRONG_CHAIN: 'Choose BNB Smart Chain in your wallet', CHANGED: 'Wallet changed. Connect again.', ERROR: 'Account unavailable' }[state.status];
     $('wallet-connect').disabled = state.status === 'CONNECTING';
     $('wallet-forget').disabled = state.status === 'IDLE';
+    $('wallet-switch').hidden = state.status !== 'WRONG_CHAIN';
     const help = { WALLET_UNAVAILABLE: 'No browser wallet found. Open Remain in a wallet-enabled browser.', WALLET_REJECTED: 'You declined account access. You can try again.', WALLET_TIMEOUT: 'Account discovery timed out. Close the old wallet prompt before retrying.', WALLET_INVALID: 'The wallet returned an invalid account response.', WALLET_CHANGED: 'The selected account changed during discovery. Connect again.' };
     message(state.error ? help[state.error] : state.status === 'CONNECTED' ? 'Wallet connected on BSC. Your next step is an on-chain balance read.' : 'No funds move while browsing.', Boolean(state.error));
     if (typeof CustomEvent === 'function') window.dispatchEvent(new CustomEvent('remain-wallet-state', { detail: { status: state.status, address: state.address } }));
   }
   let provider, session = walletSession(undefined, walletChanged);
+  function connectWithProvider(chosen) {
+    if (provider !== chosen) {
+      session.destroy();provider = chosen;session = walletSession(provider, walletChanged);
+    }
+    void session.connect();
+  }
   $('wallet-connect').addEventListener('click', () => {
-    if (window.ethereum !== provider) { session.destroy(); provider = window.ethereum; session = walletSession(provider, walletChanged); }
-    session.connect();
+    const wallets=availableWallets();
+    if(wallets.length===1) connectWithProvider(chooseWalletProvider(wallets[0].provider));
+    else showWalletChoice(connectWithProvider);
+  });
+  $('wallet-choose').addEventListener('click', () => showWalletChoice(connectWithProvider));
+  $('wallet-switch').addEventListener('click', async () => {
+    if(!provider || session.state.status!=='WRONG_CHAIN')return;
+    $('wallet-switch').disabled=true;
+    message('Requesting a switch to BNB Smart Chain (chain 56). Only your wallet can approve the network change.');
+    try{
+      await provider.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x38'}]});
+      // A chainChanged event invalidates the old session. Recheck the account.
+      if(activeWalletProvider()===provider) await session.connect();
+    }catch(error){
+      const code=error?.code;
+      message(code===4902?'BSC is not configured in this wallet. Add BNB Smart Chain in your wallet settings, then reconnect.'
+        :code===4001?'Network switch declined. Choose BNB Smart Chain in your wallet to continue.'
+        :'This wallet could not switch automatically. Select BNB Smart Chain manually, then reconnect.',true);
+    }finally{$('wallet-switch').disabled=false;}
   });
   $('wallet-forget').addEventListener('click', () => {
     $('live-token').value = ''; $('live-amount').value = ''; $('cash-preview-target').value = '';
     $('cash-preview-retain').value = '70'; $('cash-preview-impact').value = '50'; $('cash-preview-closed').checked = false;
-    session.forget(); message('Account and inputs cleared from this page. Wallet permissions are managed in your wallet.');
+    session.forget();clearWalletProvider();message('Account and inputs cleared from this page. Wallet permissions are managed in your wallet.');
   });
   async function refresh() {
     statusController?.abort(); const active = new AbortController(); statusController = active; const current = ++statusVersion;

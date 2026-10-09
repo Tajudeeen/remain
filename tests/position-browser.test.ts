@@ -33,6 +33,8 @@ function harness(positionFetch: (signal: AbortSignal) => Promise<Response> = asy
   };
   const source = readFileSync('web/live.js', 'utf8').replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
   runInNewContext(source, { readFixtureJSON, readReadOnlyJSON, walletSession: sessionFactory,
+    availableWallets: () => [{provider: {request: async () => []}}], chooseWalletProvider: (p: unknown) => p,
+    showWalletChoice: (pick: (value: unknown) => void) => pick({}), activeWalletProvider: () => undefined, clearWalletProvider: () => {},
     validatePosition: (v: unknown, input: boundary.PositionInput) => boundary.validatePosition(v, plain(input), wall), formatPositionUnits: boundary.formatPositionUnits,
     preparePositionAmount: (a: string, v: unknown, input: boundary.PositionInput, now: number, age: number) => boundary.preparePositionAmount(a, v, plain(input), now, age),
     previewInput: (v: unknown) => previewBoundary.previewInput(plain(v)), validatePreview: (v: unknown, submitted: previewBoundary.PreviewInput, now: number) => previewBoundary.validatePreview(v, plain(submitted), now),

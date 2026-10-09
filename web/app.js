@@ -5,6 +5,7 @@ import './catalog.js';
 import './service-status.js';
 import './portfolio.js';
 import './trade.js';
+import './wallet-ui.js';
 import { readFixtureJSON, validatePlanningRecord } from './response.js';
 
 const $ = (id) => document.getElementById(id);

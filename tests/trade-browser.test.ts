@@ -42,6 +42,7 @@ function harness(t: import('node:test').TestContext, enabled = true) {
   const code = readFileSync('web/trade.js', 'utf8').replace(/^import .*;\n/gm, '').replace(/export function /g, 'function ');
   class FixtureDate extends Date { static override now() { return time; } }
   runInNewContext(code, { readReadOnlyJSON, validatePreview, previewInput, cashTargetRaw, qualifiesPreview, orderReviewInput, formatPositionUnits,
+    activeWalletProvider: () => provider,
     document: { getElementById: domGet, querySelector: domGet }, window: { ethereum: provider, addEventListener() {} },
     fetch: fetcher, Date: FixtureDate, location: { origin: http.origin, hash: '#trade' }, AbortSignal, structuredClone, setTimeout, clearTimeout, console });
   return { f, engine, get, methods, actions, listeners, click: async (id: string) => { await get(id).listeners.get('click')!(); } };
