@@ -54,7 +54,15 @@ export function chooseWalletProvider(provider){
   return provider;
 }
 export function activeWalletProvider(target=typeof window!=='undefined'?window:undefined){
-  return selected ?? (validProvider(target?.ethereum)?target.ethereum:undefined);
+  if(selected)return selected;
+  const legacy=target?.ethereum;
+  if(Array.isArray(legacy?.providers) && legacy.providers.length>0){
+    const wallets=legacy.providers.filter(validProvider);
+    // Never choose a default signing provider from a multi-wallet browser.
+    if(wallets.length!==1)return undefined;
+    return wallets[0];
+  }
+  return validProvider(legacy)?legacy:undefined;
 }
 export function clearWalletProvider(){selected=undefined;}
 export function mobileWalletLinks(href){
