@@ -35,7 +35,7 @@
     "verify:receipt": "node scripts/verify-receipt.ts",
     "verify:chain-receipt": "node --env-file-if-exists=.env.local scripts/verify-chain-receipt.ts",
     "dev": "node --env-file-if-exists=.env.local scripts/serve-rehearsal.ts",
-    "check:web": "node --check web/app.js && node --check web/proof.js && node --check web/response.js && node --check web/live.js && node --check web/wallet.js && node --check web/position.js && node --check web/preview.js && node --check web/order-review.js && node --check web/trade.js && node --check web/onchain.js && node --check web/catalog.js",
+    "check:web": "node --check web/app.js && node --check web/proof.js && node --check web/response.js && node --check web/live.js && node --check web/wallet.js && node --check web/position.js && node --check web/preview.js && node --check web/order-review.js && node --check web/trade.js && node --check web/onchain.js && node --check web/catalog.js && node --check web/service-status.js && node --check web/portfolio.js",
     "test:web": "npm exec --yes --package=agent-browser@0.38.2 -- node scripts/verify-browser.ts",
     "test:execution-web": "npm exec --yes --package=agent-browser@0.38.2 -- node tests/helpers/verify-execution-browser.ts",
     "serve": "node scripts/serve-rehearsal.ts",
