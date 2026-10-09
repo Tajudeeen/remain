@@ -34,7 +34,7 @@ test('hosted readiness is truthful and fixture read remains separately available
 });
 test('hosted handler validates financial input and maps blocked reads without exposing upstream internals',async()=>{
   const valid = {wallet:'0x'+'1'.repeat(40),token:'0x'+'2'.repeat(40)};
-  const make = (body:unknown) => new Request(origin+'/api/live/position',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+  const make = (body:unknown) => new Request(origin+'/api/live/position',{method:'POST',headers:{'content-type':'application/json',origin},body:JSON.stringify(body)});
   assert.equal((await handleNetlifyFixture(make({...valid,secret:'bad'}),{...options,live})).status,400);
   const blocked = await handleNetlifyFixture(make(valid),{...options,live});
   assert.equal(blocked.status,502);
