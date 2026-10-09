@@ -34,13 +34,20 @@ function allowedOrigin(request, env) {
   return true;
 }
 function eligibleForEngine(env) {
-  // This operator-controlled OFF switch is separate from Binance and wallet
-  // authorization. Never derive it from hostname or presence of credentials.
-  return env.REMAIN_EXECUTION_ENABLED === 'true' &&
-    env.REMAIN_COW_PROFILE_REVIEWED === 'true' &&
-    env.REMAIN_CLOUDFLARE_LIVE_APPROVED === 'true' &&
-    typeof env.REMAIN_EXECUTION_ORIGIN === 'string' &&
-    env.REMAIN_EXECUTION_ORIGIN.startsWith('https://');
+  // Configuration readiness is necessary but never proves Binance access,
+  // venue compatibility, contract source review or a funded settlement.
+  if (env.REMAIN_EXECUTION_ENABLED !== 'true' ||
+      env.REMAIN_COW_PROFILE_REVIEWED !== 'true' ||
+      env.REMAIN_CLOUDFLARE_LIVE_APPROVED !== 'true' ||
+      !/^[a-f0-9]{64}$/.test(env.REMAIN_STORAGE_KEY ?? '') ||
+      !/^https:\/\/[^/]+$/.test(env.REMAIN_EXECUTION_ORIGIN ?? '')) return false;
+  try {
+    if (['BINANCE_WEB3_API_KEY','BINANCE_WEB3_SECRET_KEY','REMAIN_MAXIMUM_STOCK_FEE_RAW'].some(k=>!env[k]?.trim())) return false;
+    if (!/^(0|[1-9][0-9]*)$/.test(env.REMAIN_MAXIMUM_STOCK_FEE_RAW)) return false;
+    rpcPair(env);
+    contractPins(env.REMAIN_CONTRACT_PINS ?? '');
+    return true;
+  } catch { return false; }
 }
 async function boundedBody(request) {
   const length = request.headers.get('content-length');
@@ -129,7 +136,7 @@ export default {
       }
       return reply(200,{status:'ok',service:'remain-cloudflare-execution',
         buildSha:env.REMAIN_BUILD_SHA??'unverified', journal,
-        executionEnabled:false,liveGate:'BLOCKED'}, request.method==='HEAD');
+        executionEnabled:eligibleForEngine(env),liveGate:'UNVERIFIED'}, request.method==='HEAD');
     }
     if (url.pathname==='/api/execution/status') {
       if (!['GET','HEAD'].includes(request.method)) return reply(405,{code:'METHOD_REJECTED'});
