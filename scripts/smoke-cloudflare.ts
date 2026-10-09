@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 const origin=process.argv[2];
 if (!origin || !/^https?:\/\//.test(origin) || process.argv.length!==3) throw Error('Provide exact local dev URL');
@@ -10,6 +11,9 @@ assert.equal(health.status,200);
 assert.equal(health.body.service,'remain-cloudflare-execution');
 assert.equal(health.body.executionEnabled,false);
 assert.equal(health.body.journal,'READY');
+const expectedCommit=execFileSync('git',['rev-parse','--verify','HEAD'],{encoding:'utf8'}).trim();
+assert.match(expectedCommit,/^[a-f0-9]{40}$/);
+assert.equal(health.body.buildSha,expectedCommit);
 const status=await check('/api/execution/status');
 assert.equal(status.status,200);
 assert.deepEqual(status.body,{kind:'REMAIN_EXECUTION_STATUS',available:false,profile:'COW_BSC_SELL_V1',userConfirmationRequired:true});

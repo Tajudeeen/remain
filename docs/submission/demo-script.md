@@ -1,18 +1,19 @@
 # Demo recording plan
 
-## Current fixture rehearsal, about three minutes
+## Judge-ready truthful demonstration, 3:15 maximum
 
 This is an operator storyboard, not a recorded video or a live-trade demonstration. Keep the TEST_FIXTURE banner visible throughout. Narrate in your own words and show the actual result.
 
-| Time | Action | Point to establish |
+| Time | Screen and cursor action | Say/show (do not overclaim) |
 | --- | --- | --- |
-| 0:00-0:20 | Open the landing page | A holder needs a cash amount while preserving a stock position. State that this is a fictional rehearsal and live integration is blocked. |
-| 0:20-0:40 | Enter the planner | Show 100 fictional demo units and the zero-fee 1:1 assumption. |
-| 0:40-1:10 | Ask for 25 USDT, retain at least 70% | Calculate. Inspect 25 units debit, minimum 25.00 cash and 75 retained. Explain the bounded search claim. |
-| 1:10-1:35 | Choose the 40 USDT / keep 70% scenario | Show the unreachable-target block and absence of a chosen sell amount. |
-| 1:35-2:05 | Select paused market, check the closed-market permission | Calculate. Show that permission cannot override a paused market. |
-| 2:05-2:30 | Return to the safe scenario and download the record | Open the JSON. State that the checksum detects edits and does not prove a trade. |
-| 2:30-3:00 | Open project status and footer | Explain exactly what works, what remains blocked, and where the evidence is documented. |
+| 0:00–0:20 | Open `https://remain-cash.netlify.app/`. Pause on the headline, then the primary cash-planning action. | “Remain turns the amount you need into a bounded tokenized-stock sale proposal while protecting the exposure you choose to keep.” |
+| 0:20–0:55 | Click the demo planner and focus the target input and retained-percentage field. Enter 25 USDT and 70% retained in the **labelled test fixture**. | Explain these are fictional balances and prices, not your personal holdings or market quotes. |
+| 0:55–1:25 | Click calculate, trace the recommended debit/retained holding. Change target to an unreachable amount. | Show the safe plan and the blocked state; the engine is not allowed to violate retained exposure to satisfy a cash target. |
+| 1:25–1:50 | Change market to paused, toggle the closed-market permission if offered, click again. | BellGuard checks freshness, market state, slippage and constraints; paused still fails. These are deterministic fixture scenarios. |
+| 1:50–2:15 | Navigate to the live workspace, show wallet-connect and current Binance integration status **without connecting someone else's wallet**. | Wallet/RWA discovery code exists; current authorized Binance hosting is returning access errors. Do not fabricate a quote or imply a position. |
+| 2:15–2:40 | Open `https://remain.tajudeenowoeteniyan.workers.dev/healthz` and `/api/execution/status` in another tab. Hover over `journal: READY` and `available: false`. | Show deployed Worker + encrypted Durable Object, then explicitly state that live execution is intentionally locked pending vendor approval and mainnet proof. |
+| 2:40–3:05 | Open public `github.com/Tajudeeen/remain`, go to tests and `docs/cloudflare-execution.md`; briefly show CI green. | The genuine implementation includes wallet-signing checks, encrypted durable recovery, two-RPC settlement checks and adversarial tests. CI proves fixture behavior only. |
+| 3:05–3:15 | Return to the landing page and leave status unobstructed. | Close with the cash-first/retain-exposure use case. State exactly what remains pending. |
 
 Record a backup take. Remove secret values, private account pages and browser notifications from the recording. Do not record a signature or a financial transaction until that separate action is authorized.
 
