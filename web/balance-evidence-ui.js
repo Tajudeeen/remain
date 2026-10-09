@@ -20,7 +20,7 @@ if(typeof document!=='undefined'&&document.querySelector('#live-view .wallet-car
   panel.append(heading,description,actions,label,upload,replay,detail,message,privacy);host.append(panel);
   let current,selected,session=0,busy=false,connected=false;
   const tokenField=document.getElementById('live-token');
-  const reset=text=>{session++;current=undefined;selected=undefined;download.disabled=true;replay.disabled=true;detail.textContent='';message.textContent=text;};
+  const reset=text=>{session++;busy=false;capture.disabled=false;current=undefined;selected=undefined;download.disabled=true;replay.disabled=true;detail.textContent='';message.textContent=text;};
   window.addEventListener('remain-wallet-state',event=>{
     connected=event.detail?.status==='CONNECTED';
     reset(connected?'Connected on BSC. Select a token and capture a fresh block.':'Connect a BSC wallet to capture balance evidence.');
@@ -51,14 +51,15 @@ if(typeof document!=='undefined'&&document.querySelector('#live-view .wallet-car
     message.textContent='Private wallet balance evidence downloaded locally. Do not publish it without the holder’s consent.';
   });
   upload.addEventListener('change',async()=>{
-    const file=upload.files?.[0];selected=undefined;replay.disabled=true;
+    const file=upload.files?.[0];const version=++session;selected=undefined;replay.disabled=true;
     if(!file)return;
     if(file.size>4096||file.size===0){message.textContent='Invalid JSON file size. Maximum 4 KiB.';upload.value='';return;}
     try{
       const value=validateTokenBalanceEvidence(JSON.parse(await file.text()));
+      if(version!==session)return;
       selected=value;replay.disabled=false;
       message.textContent='Valid evidence schema loaded. Recheck it against an independent BSC RPC; file validity alone proves nothing.';
-    }catch{message.textContent='Invalid balance evidence JSON. No claim was accepted.';}
+    }catch{if(version===session)message.textContent='Invalid balance evidence JSON. No claim was accepted.';}
     finally{upload.value='';}
   });
   replay.addEventListener('click',async()=>{
