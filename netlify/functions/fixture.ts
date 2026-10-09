@@ -10,6 +10,17 @@ export default async (request: Request, context: Context) => {
     if (!value) continue;
     try { origins.push(new URL(value).origin); } catch { /* Invalid configuration fails closed. */ }
   }
+  // DEPLOY_PRIME_URL is not guaranteed to be available at function runtime.
+  // Trust only the deployment context and this site's exact Netlify preview hostname.
+  // Never accept an arbitrary caller-supplied Host as an allowed origin.
+  try {
+    const target = new URL(request.url);
+    const site = context.site.name;
+    const suffix = '--' + site + '.netlify.app';
+    const prefix = target.hostname.endsWith(suffix) ? target.hostname.slice(0,-suffix.length) : '';
+    if (context.deploy.context === 'deploy-preview' && /^[a-z0-9-]+$/.test(site) &&
+      target.protocol === 'https:' && target.port === '' && /^deploy-preview-[1-9][0-9]*$/.test(prefix)) origins.push(target.origin);
+  } catch { /* A malformed request URL cannot authorize any origin. */ }
   const buildSha = /^[a-f0-9]{40}$/.test(bundledBuildSha) ? bundledBuildSha : Netlify.env.get('REMAIN_BUILD_SHA');
   const live = configuredHostedReaders({
     REMAIN_HOSTED_READ_ONLY: Netlify.env.get('REMAIN_HOSTED_READ_ONLY'),
