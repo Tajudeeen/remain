@@ -95,3 +95,22 @@
 .service-action span{font-size:17px}
 @media(max-width:768px){.service-console{padding:24px}.service-foot{align-items:stretch}.service-foot button{width:100%}}
 @media(max-width:375px){.service-console{padding:18px}.service-console h2{font-size:32px}}
+
+/* Actual on-chain wallet and verified stock-catalog holdings. */
+.wallet-onchain-read{margin-top:24px;border:1px solid #c9cabb;border-radius:12px;padding:18px;background:#f5f2e7;color:#22291f}
+.wallet-onchain-read h4,.holdings-scanner h4{font-size:15px;font-weight:600;margin:0 0 8px}
+.wallet-onchain-read .verified-amount{display:block;font-size:clamp(20px,3vw,29px);line-height:1.25;overflow-wrap:anywhere;margin:12px 0;color:#273d20;font-weight:600}
+.wallet-onchain-read .verified-source{font-family:ui-monospace,monospace;font-size:10px;line-height:1.6;overflow-wrap:anywhere}
+.wallet-onchain-read .secondary{width:100%;margin-top:14px}
+.stock-catalog-picker{padding:22px 0;border-bottom:1px solid #c9cabb;margin:14px 0 25px}
+.stock-catalog-picker>button{width:100%;margin-bottom:15px}
+.stock-catalog-picker>select{width:100%;padding:12px 14px;border:1px solid #bcc0ad;border-radius:8px;background:#faf8f0;color:#253021}
+.stock-catalog-picker>p,.holdings-scanner>p{font-size:11px;line-height:1.7;color:#58604f;overflow-wrap:anywhere}
+.holdings-scanner{margin-top:25px;padding:20px;background:#eae8dc;border:1px solid #c6c8b6;border-radius:12px}
+.holdings-scanner>button{margin:14px 0 7px;width:100%}
+.holdings-list{display:grid;gap:8px;margin-top:14px}
+.holding-row{width:100%;padding:14px;text-align:left;display:grid;grid-template-columns:1fr auto;gap:4px 10px;border:1px solid #bfc3ad;background:#fbfaf4;border-radius:8px;color:#20261e}
+.holding-row strong{font-size:12px}.holding-row span{font-size:13px;font-weight:600;overflow-wrap:anywhere}
+.holding-row small{grid-column:1/-1;font-size:10px;color:#56624d}
+.holding-row:hover{border-color:#b18424}
+@media(max-width:480px){.holdings-scanner{padding:15px}.holding-row{grid-template-columns:1fr}.holding-row small{grid-column:1}}
