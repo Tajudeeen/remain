@@ -227,7 +227,7 @@ try {
   await browser('wait', '--fn', "document.querySelector('#live-server').textContent === 'Market data unavailable' && !document.querySelector('#live-refresh').disabled");
   await check("!document.querySelector('#live-view').hidden && document.querySelector('#fixture-banner').hidden && document.querySelector('#live-inspect').disabled && document.querySelector('#position-read').disabled && document.querySelector('#cash-preview').disabled");
   await browser('click', '#wallet-connect');
-  await check("document.querySelector('#live-message').textContent.includes('No browser wallet') && !document.querySelector('#wallet-connect').disabled");
+  await check("!document.querySelector('#wallet-chooser').hidden && document.querySelector('#wallet-chooser').textContent.includes('No compatible wallet') && document.querySelector('#wallet-state').textContent === 'Not connected' && document.querySelector('#live-inspect').disabled && !document.querySelector('#wallet-connect').disabled");
   for (const width of [320, 375, 768, 1024, 1440]) {
     await browser('set', 'viewport', String(width), '1000'); await check('document.documentElement.scrollWidth <= window.innerWidth');
     await browser('screenshot', `evidence/integration-${width}.png`, '--full');
