@@ -2,6 +2,7 @@ import type { Config, Context } from '@netlify/functions';
 import { handleNetlifyFixture } from '../../src/rehearsal/netlify-handler.ts';
 import { buildSha as bundledBuildSha } from '../build-id.ts';
 import { configuredHostedReaders } from '../../src/integration/hosted.ts';
+import { configuredExecutionProxy } from '../../src/rehearsal/execution-proxy.ts';
 
 export default async (request: Request, context: Context) => {
   const origins: string[] = [];
@@ -15,7 +16,11 @@ export default async (request: Request, context: Context) => {
     BINANCE_WEB3_API_KEY: Netlify.env.get('BINANCE_WEB3_API_KEY'),
     BINANCE_WEB3_SECRET_KEY: Netlify.env.get('BINANCE_WEB3_SECRET_KEY')
   });
-  return handleNetlifyFixture(request, { origins, ...(buildSha ? { buildSha } : {}), ...(live ? { live } : {}) });
+  const executionProxy = configuredExecutionProxy({
+    REMAIN_EXECUTION_PROXY_ENABLED: Netlify.env.get('REMAIN_EXECUTION_PROXY_ENABLED'),
+    REMAIN_EXECUTION_UPSTREAM_ORIGIN: Netlify.env.get('REMAIN_EXECUTION_UPSTREAM_ORIGIN')
+  });
+  return handleNetlifyFixture(request, { origins, ...(buildSha ? { buildSha } : {}), ...(live ? { live } : {}), ...(executionProxy ? { executionProxy } : {}) });
 };
 
 export const config: Config = {
