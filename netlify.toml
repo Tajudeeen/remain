@@ -1,5 +1,7 @@
 [build]
   command = "npm run build"
+  # Only skip docs-only commits; any uncertain Git diff builds safely.
+  ignore = "node scripts/netlify-ignore-build.cjs"
   publish = "dist/web"
 
 [build.environment]
