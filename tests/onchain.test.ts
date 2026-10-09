@@ -9,11 +9,11 @@ test('formats exact fractional units without float rounding', () => {
 });
 test('reads live ERC20 wallet balance without signing', async () => {
   const methods = [];
-  const provider = { request: async ({method,params}) => {
+  const provider = { request: async ({method,params}: {method:string;params?: {data:string}[]}) => {
     methods.push(method);
     if (method==='eth_chainId') return '0x38';
     if (method==='eth_accounts') return [owner];
-    if (method==='eth_call') return params[0].data.startsWith('0x70a08231') ? word(1234500) : word(6);
+    if (method==='eth_call') return params![0]!.data.startsWith('0x70a08231') ? word(1234500) : word(6);
     throw Error('unexpected method');
   }};
   const result=await readWalletToken(provider,token);
@@ -23,7 +23,7 @@ test('reads live ERC20 wallet balance without signing', async () => {
 });
 test('rejects wrong chain before requesting balances',async()=>{
   const methods=[];
-  const provider={request:async ({method})=>{methods.push(method);return '0x1';}};
+  const provider={request:async ({method}: {method:string})=>{methods.push(method);return '0x1';}};
   await assert.rejects(readWalletToken(provider,token),/BSC_REQUIRED/);
   assert.deepEqual(methods,['eth_chainId']);
 });
