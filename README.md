@@ -4,6 +4,21 @@ Public web app: [remain-cash.netlify.app](https://remain-cash.netlify.app/). The
 
 Raise cash. Stay invested.
 
+## Verified deployment and trust boundaries (October 9, 2026)
+
+| Service | Public URL | Verified behavior |
+| --- | --- | --- |
+| Usable planning frontend | [Remain on Netlify](https://remain-cash.netlify.app/) | Live pages, a clearly labelled `TEST_FIXTURE` planner, optional wallet discovery and status reporting |
+| Durable execution infrastructure | [Cloudflare health](https://remain.tajudeenowoeteniyan.workers.dev/healthz) | `journal: READY`, exact Git `buildSha`, private AES-GCM SQLite-backed Durable Object |
+| Execution readiness | [Cloudflare execution status](https://remain.tajudeenowoeteniyan.workers.dev/api/execution/status) | `available: false`; no real-world sale or wallet signature can be initiated |
+| External backup | [Cloudflare operations](docs/cloudflare-execution.md) | Format and isolated restore tested; external R2 bucket still `NOT_CONFIGURED` |
+
+**This is a real deployed application with a clearly bounded rehearsal**, not a demonstration of a funded BSC stock sale. Binance's hosted RWA catalog has recently returned `ACCESS_COMPLIANCE_RESTRICTED`; moving to Cloudflare does not grant access. No sample RFQ, simulated receipt or green CI result should be represented as a completed live order.
+
+The non-vendor release checklist is [here](docs/submission/non-vendor-evidence.md); the recommended truthful [3-minute demo walkthrough](docs/submission/demo-script.md) includes specific screens and cursor actions. The final developer-experience report must be written by the builder from their actual observations.
+
+
+
 Remain works backward from a USDT cash target to a bounded partial sale of a tokenized-stock position on BNB Smart Chain. BellGuard checks market state, quote freshness and user limits. The intended result is a reconciled settlement receipt showing cash received and exposure retained.
 
 
@@ -23,9 +38,9 @@ Gate 17 adds [live preflight and operations tools](docs/live-operations.md): an 
 
 The [prepared execution service](docs/execution.md) adds a strict CoW BSC sell profile, authenticated wallet review, exact approvals, owner-recovered EIP-712 signatures, a one-attempt encrypted journal, cancellation checks and two-RPC settlement accounting. The [sale-review page](https://remain-cash.netlify.app/#trade) is included in this release, with execution unavailable on Netlify. Persistent HTTPS Node hosting is packaged separately. Actual vendor compatibility, funded settlement and operator activation remain unverified. Read its contract before configuration. The prepared release passed 835 tests, full real-browser/container verification and exact-build HTTPS smoke. See [the pinned release evidence](docs/netlify-deployment.md#prepared-execution-release-2026-10-08-2344-utc). Retained-floor and market checks are preflight conditions rather than atomic on-chain guarantees.
 
-The cash solver, BellGuard, fixture order journal, settlement accounting and receipt verifier are implemented and deployed as a fictional rehearsal. The integration workspace adds opt-in browser account discovery and a loopback-only held-stock inspection using the existing read-only Binance harness. The public deployment has no Binance credentials and cannot run that inspection. Execution is disabled. After historical compliance/schema rejections, the owner reported a successful AALon stock-identity and fresh-market read on 2026-10-07. A real held-position RFQ/build, vendor signing semantics and independently reconciled settlement remain unverified. See [milestone status](docs/milestone-status.md), [integration setup](docs/integration-workspace.md) and [access troubleshooting](docs/access-troubleshooting.md).
+The cash solver, BellGuard, fixture order journal, settlement accounting and receipt verifier are implemented and deployed as a fictional rehearsal. The integration workspace adds opt-in browser account discovery and a loopback-only held-stock inspection using the existing read-only Binance harness. The public UI cannot be treated as proof of a successful Binance inspection or quote; read-only hosting is configured but live catalog access is currently restricted. Execution is disabled. After historical compliance/schema rejections, the owner reported a successful AALon stock-identity and fresh-market read on 2026-10-07. A real held-position RFQ/build, vendor signing semantics and independently reconciled settlement remain unverified. See [milestone status](docs/milestone-status.md), [integration setup](docs/integration-workspace.md) and [access troubleshooting](docs/access-troubleshooting.md).
 
-This repo stays private until the owner approves public release. Nothing here is financial advice or a claim of Binance endorsement.
+This repository is public; confidential API keys and wallet signatures must stay outside the source. Nothing here is financial advice or a claim of Binance endorsement.
 
 The local integration workspace also has a [selected-position preflight](docs/position-preparation.md). It distinguishes reported raw holdings from unknown data and prepares exact inspection units using actual token decimals. It performs no quote/build request, preserves every unverified live gate and is unavailable on the hosted demo.
 
