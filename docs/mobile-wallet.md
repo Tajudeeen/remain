@@ -7,8 +7,11 @@ Remain uses a **real EIP-1193 wallet provider**, not a demo account. It never as
 1. **Wallet-enabled desktop browser**: Select an injected wallet from EIP-6963 announcements. If the browser only exposes legacy `window.ethereum`, the existing Connect button still works. Announced names are self-asserted; confirm the wallet and browser extension yourself.
 2. **Wallet-app mobile browser**: Open Remain from the wallet's in-app DApp browser. Tap **Connect BSC wallet**, choose the available provider, and approve the account access prompt inside the wallet. This applies to compatible mobile wallets that expose an EIP-1193 provider on the DApp page.
 3. **Standard mobile Chrome / Safari**: Tap Connect and, when no injected wallet is available, tap **Open in MetaMask** or **Open in Trust Wallet**. These HTTPS links reopen the **public Remain origin** in the wallet's own browser. Return to the wallet app browser and connect there. A wallet app handoff is *not* the same as a cross-app WalletConnect session.
-4. **Multiple installed wallets**: Tap **Choose another wallet** and select one of the compatible providers announced to the page. The selected provider is used by the portfolio balance scanner and the separate, gated sale-review route.
+4. **Multiple installed wallets**: Tap **Choose another wallet** and select a wallet. Remain detects both EIP-6963 announcements and legacy `window.ethereum.providers` arrays. It does not silently pick a signing provider when more than one is present. The selected provider is shared by portfolio scans, individual ERC-20 balance reads and the separately gated sale-review route.
 5. **Wrong network**: Tap **Switch to BNB Smart Chain**. The wallet displays an explicit network-switch prompt for chain ID `0x38` (56). If that network is not configured or the wallet refuses the switch, configure BSC manually in your wallet. Switching networks does not sign a message or execute a trade.
+
+6. **An extension appears late**: Open the wallet chooser and unlock the extension. Newly announced wallets appear automatically; choose **Refresh wallets** if needed. No provider methods are called merely by opening the chooser.
+7. **Binance access unavailable**: Connect your wallet on BSC, select a known token contract and use **Read balance on BSC**. This is a wallet-native, read-only `eth_call` that does not require Binance market access. It proves only an ERC-20 balance, not tokenized-stock eligibility or an executable cash quote.
 
 ## Security & limits
 

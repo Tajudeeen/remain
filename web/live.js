@@ -90,6 +90,14 @@ if (typeof document !== 'undefined' && $('live-view')) {
     $('wallet-connect').disabled = state.status === 'CONNECTING';
     $('wallet-forget').disabled = state.status === 'IDLE';
     $('wallet-switch').hidden = state.status !== 'WRONG_CHAIN';
+    const navWallet=$('nav-wallet-connect');
+    if(navWallet){
+      const shortAddress=state.address?state.address.slice(0,6)+'…'+state.address.slice(-4):null;
+      navWallet.textContent=state.status==='CONNECTED' ? shortAddress+' · BSC ↗' :
+        state.status==='WRONG_CHAIN' ? 'Switch to BSC ↗' :
+        state.status==='CONNECTING' ? 'Connecting wallet…' : 'Connect wallet ↗';
+      navWallet.setAttribute('aria-label',state.status==='CONNECTED'?'View connected BSC wallet':'Open wallet connection');
+    }
     const help = { WALLET_UNAVAILABLE: 'No browser wallet found. Open Remain in a wallet-enabled browser.', WALLET_REJECTED: 'You declined account access. You can try again.', WALLET_TIMEOUT: 'Account discovery timed out. Close the old wallet prompt before retrying.', WALLET_INVALID: 'The wallet returned an invalid account response.', WALLET_CHANGED: 'The selected account changed during discovery. Connect again.' };
     message(state.error ? help[state.error] : state.status === 'CONNECTED' ? 'Wallet connected on BSC. Your next step is an on-chain balance read.' : 'No funds move while browsing.', Boolean(state.error));
     if (typeof CustomEvent === 'function') window.dispatchEvent(new CustomEvent('remain-wallet-state', { detail: { status: state.status, address: state.address } }));

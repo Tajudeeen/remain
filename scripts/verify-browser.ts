@@ -227,7 +227,43 @@ try {
   await browser('wait', '--fn', "document.querySelector('#live-server').textContent === 'Market data unavailable' && !document.querySelector('#live-refresh').disabled");
   await check("!document.querySelector('#live-view').hidden && document.querySelector('#fixture-banner').hidden && document.querySelector('#live-inspect').disabled && document.querySelector('#position-read').disabled && document.querySelector('#cash-preview').disabled");
   await browser('click', '#wallet-connect');
-  await check("!document.querySelector('#wallet-chooser').hidden && document.querySelector('#wallet-chooser').textContent.includes('No compatible wallet') && document.querySelector('#wallet-state').textContent === 'Not connected' && document.querySelector('#live-inspect').disabled && !document.querySelector('#wallet-connect').disabled");
+  await check("!document.querySelector('#wallet-chooser').hidden && document.querySelector('#wallet-chooser').textContent.includes('No compatible browser wallet') && document.querySelector('#wallet-state').textContent === 'Not connected' && document.querySelector('#live-inspect').disabled && !document.querySelector('#wallet-connect').disabled");
+
+  stage = 'real-browser late wallet discovery and selected-provider BSC balance read';
+  // An EIP-6963 provider arriving AFTER the chooser opens must appear
+  // immediately and be the same provider used for balanceOf + decimals.
+  // This fixture cannot sign or send a transaction and is unrelated to Binance.
+  await browser('eval', `window.fixtureWalletReads=[];
+    window.fixtureLateProvider={
+      request:async ({method,params})=>{
+        window.fixtureWalletReads.push(method);
+        if(method==='eth_chainId')return '0x38';
+        if(method==='eth_requestAccounts'||method==='eth_accounts')
+          return ['0x1111111111111111111111111111111111111111'];
+        if(method==='eth_call'){
+          const selector=params[0].data.slice(0,10);
+          if(selector==='0x70a08231')return '0x'+(42n*10n**18n).toString(16).padStart(64,'0');
+          if(selector==='0x313ce567')return '0x'+(18n).toString(16).padStart(64,'0');
+        }
+        throw Error('FIXTURE_FORBIDDEN_WALLET_METHOD');
+      },on:()=>{},removeListener:()=>{}
+    };
+    window.dispatchEvent(new CustomEvent('eip6963:announceProvider',{
+      detail:{info:{uuid:'f8334c94-6775-4e6f-8ac2-c79a7695e500',
+        rdns:'com.example.fixturewallet',name:'Fixture wallet injected late'},
+        provider:window.fixtureLateProvider}
+    }));`);
+  await check("document.querySelector('#wallet-chooser .wallet-options').textContent.includes('Fixture wallet injected late')");
+  await browser('click','#wallet-chooser .wallet-options button');
+  await browser('wait','--fn',"document.querySelector('#wallet-state').textContent === 'BSC account selected'");
+  await check("document.querySelector('#nav-wallet-connect').textContent.includes('BSC') && document.querySelector('#live-inspect').disabled");
+  await browser('fill','#live-token','0x2222222222222222222222222222222222222222');
+  await browser('click','.wallet-onchain-read button');
+  await browser('wait','--fn',"document.querySelector('.verified-amount').textContent.includes('42 token units')");
+  await check("document.querySelector('.verified-source').textContent.includes('BSC chain 56') && window.fixtureWalletReads.includes('eth_call') && window.fixtureWalletReads.every(x=>['eth_requestAccounts','eth_accounts','eth_chainId','eth_call'].includes(x))");
+  await browser('click','#wallet-forget');
+  await check("document.querySelector('.verified-amount').hidden && document.querySelector('#nav-wallet-connect').textContent.includes('Connect wallet')");
+
   for (const width of [320, 375, 768, 1024, 1440]) {
     await browser('set', 'viewport', String(width), '1000'); await check('document.documentElement.scrollWidth <= window.innerWidth');
     await browser('screenshot', `evidence/integration-${width}.png`, '--full');

@@ -68,7 +68,7 @@ if (typeof document !== 'undefined') {
       if(!wallet||busy)return;
       const token=tokenField.value.trim();
       if(!ADDRESS.test(token)){body.textContent='Select or enter a valid ERC-20 contract address.';return;}
-      const current=++version, owner=wallet.toLowerCase(), walletProvider=window.ethereum;
+      const current=++version, owner=wallet.toLowerCase(), walletProvider=activeWalletProvider();
       busy=true;button.disabled=true;amount.hidden=true;meta.hidden=true;body.textContent='Reading actual BSC chain state from your wallet provider…';
       try {
         const result=await readWalletToken(walletProvider,token);
