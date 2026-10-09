@@ -1,4 +1,4 @@
-name = "remain-execution"
+name = "remain"
 main = "cloudflare/worker.js"
 compatibility_date = "2026-10-01"
 compatibility_flags = ["nodejs_compat"]
@@ -16,4 +16,8 @@ new_sqlite_classes = ["RemainLedger"]
 REMAIN_EXECUTION_ENABLED = "false"
 REMAIN_COW_PROFILE_REVIEWED = "false"
 REMAIN_CLOUDFLARE_LIVE_APPROVED = "false"
-REMAIN_BUILD_SHA = "unverified"
+
+# Stamp Git's exact deployed source commit during Wrangler build, not a mutable
+# dashboard flag. Cloudflare Builds runs this command after checkout.
+[build]
+command = "node scripts/stamp-cloudflare-build.js"
