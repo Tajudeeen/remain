@@ -41,7 +41,7 @@ if (typeof document !== 'undefined' && document.getElementById('status-market'))
     market.dataset.state=value.market;
     execution.dataset.state=value.execution;
     footer.textContent = 'Market: ' + (value.market === 'CONFIGURED'?'configured':'unavailable') +
-      ' · Trades: ' + (value.execution === 'CONFIGURED'?'backend configured':'unavailable');
+      ' · ' + (value.execution === 'CONFIGURED'?'Execution backend configured; transaction eligibility unverified':'Live execution disabled');
     detail.textContent = 'Service configuration verified at ' + new Date().toLocaleTimeString() +
       '. Supported holdings, fresh quotes and settlement still need their own checks.';
   };
