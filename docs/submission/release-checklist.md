@@ -11,6 +11,21 @@ Use the prepared [live-operations tools](../live-operations.md): `doctor:executi
 3. Review actual signing fields, minimum-output/fee enforcement, allowance/spender and settlement attribution. The strict CoW adapter is prepared, but its actual vendor compatibility must pass before activation. Review and pin the settlement, relayer and proxy implementation code through the two-RPC inspection tool. Configure the persistent HTTPS Node service described in `docs/execution.md`. Netlify financial routes remain disabled.
 4. Obtain specific approval for any tiny live sale and reconcile its actual outcome. Fixture receipts cannot close this step.
 
+## Vendor-independent milestones (2026-10-09)
+
+The Cloudflare Worker now runs as `remain` on the existing account;
+`wrangler.toml` and `cloudflare/build-identity.js` stamp the exact
+Git SHA for each new deployment. Independently encrypted SQLite
+snapshot/restore functions and tests exist. **Cloudflare R2 is not yet
+enabled** (account error 10042), so no external backup should be claimed,
+and the additional backup gate remains off. See
+[Cloudflare recovery runbook](../cloudflare-execution.md) and
+[honest non-vendor submission evidence](non-vendor-evidence.md).
+
+Recording the short demo, completing the personal DevEx report and
+confirming public repository/video URLs are independent of Binance access.
+Do these now; don't mark mainnet sale complete because CI is green.
+
 ## Prepare the owner decisions
 
 - Confirm hackathon registration and applicable eligibility/terms.
