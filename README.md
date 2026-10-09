@@ -4,6 +4,8 @@ Public web app: [remain-cash.netlify.app](https://remain-cash.netlify.app/). The
 
 Raise cash. Stay invested.
 
+**Live-release status:** [Dated, evidence-linked readiness snapshot (October 9)](docs/submission/current-readiness-20261009.md). The newest GitHub code is not yet published by the Netlify production site because multiple builds were marked Skipped; consult the live `/healthz` commit before claiming the latest wallet and evidence features work publicly. The historical `docs/submission/packet.json` is not a current deployment certificate.
+
 ## Verified deployment and trust boundaries (October 9, 2026)
 
 | Service | Public URL | Verified behavior |
