@@ -51,6 +51,8 @@ jobs:
         run: npx --yes agent-browser@0.38.2 install --with-deps
       - name: Verify synthetic interface in a real browser
         run: npm run test:web
+      - name: Verify synthetic authenticated execution in a real browser
+        run: npm run test:execution-web
       - name: Save synthetic browser evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

@@ -11,7 +11,8 @@ export const stock = '0x2222222222222222222222222222222222222222';
 export const txHash = ('0x' + '3'.repeat(64)) as Hex, blockHash = ('0x' + '4'.repeat(64)) as Hex, parentHash = ('0x' + '5'.repeat(64)) as Hex;
 export const zero = '0x' + '0'.repeat(64), cash = 25n * 10n ** 18n;
 export const word = (n: bigint) => '0x' + n.toString(16).padStart(64, '0');
-export function executionFixture() {
+export function executionFixture(observedAtMs = time) {
+  const time = observedAtMs;
   // Generated only in process. No funded account or private key is persisted.
   const account = privateKeyToAccount(generatePrivateKey()), wallet = account.address.toLowerCase();
   const input: OrderReviewInput = { intent: { wallet, token: stock, cashTarget: '25', retainBps: 7000, maxImpactBps: 50, allowClosedMarket: false }, amountRaw: '25', vendor: 'CowSwap', expectedOutputRaw: cash.toString(), cashDecimals: 18 };

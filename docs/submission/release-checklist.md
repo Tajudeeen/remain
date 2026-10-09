@@ -4,6 +4,8 @@ Preparation is authorized. Public source release, form submission and live finan
 
 ## Close the real integration gap first
 
+Use the prepared [live-operations tools](../live-operations.md): `doctor:execution`, `preflight:execution`, WAL-safe `backup:execution`/`drill:execution`, exact-build `smoke:execution` and fresh `check:live-evidence`. A technical settlement recheck is distinct from submission readiness. The private fixture packet still fails `submission:status` by design.
+
 1. Confirm operator, project and host access with Binance. Follow `docs/access-troubleshooting.md`; do not bypass a restriction.
 2. Run discovery and the read-only held-stock RFQ feasibility harness from the authorized environment. Preserve sanitized evidence.
 3. Review actual signing fields, minimum-output/fee enforcement, allowance/spender and settlement attribution. The strict CoW adapter is prepared, but its actual vendor compatibility must pass before activation. Review and pin the settlement, relayer and proxy implementation code through the two-RPC inspection tool. Configure the persistent HTTPS Node service described in `docs/execution.md`. Netlify financial routes remain disabled.

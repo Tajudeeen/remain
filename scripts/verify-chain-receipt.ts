@@ -1,14 +1,13 @@
-import { readFile, stat } from 'node:fs/promises';
-import { parseReceiptJSON } from '../src/receipts/canonical.ts';
+import { privateJSON } from '../src/release/private-file.ts';
+import { rpcPair } from '../src/execution/configuration.ts';
 import { verifyChainReceipt } from '../src/execution/receipt.ts';
 import { HttpRpc } from '../src/execution/rpc.ts';
 
 try {
   const path = process.argv[2];
-  if (!path || !process.env.REMAIN_RPC_PRIMARY || !process.env.REMAIN_RPC_SECONDARY) throw new Error();
-  const a = new URL(process.env.REMAIN_RPC_PRIMARY), b = new URL(process.env.REMAIN_RPC_SECONDARY);
-  if (a.hostname === b.hostname || (await stat(path)).size > 262144) throw new Error();
-  const value = parseReceiptJSON(await readFile(path, 'utf8'));
+  if (!path || process.argv.length !== 3) throw new Error();
+  const [a, b] = rpcPair(process.env);
+  const value = await privateJSON(path);
   const result = await verifyChainReceipt(value, [new HttpRpc(a.href), new HttpRpc(b.href)]);
   // Only fixed status and counts. Keep wallet, amounts and full receipt private.
   console.log(JSON.stringify({ status: result.status, mode: result.mode, confirmations: result.confirmations, reasons: result.reasons, trust: result.trust }, null, 2));
