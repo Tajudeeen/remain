@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 const origin=process.argv[2];
 if (!origin || !/^https?:\/\//.test(origin) || process.argv.length!==3) throw Error('Provide exact local dev URL');
-async function check(path,method='GET',opts={}) {
+async function check(path:string,method='GET',opts:RequestInit={}) {
   const response=await fetch(origin+path,{method,redirect:'error',cache:'no-store',...opts});
   return {status:response.status,body:await response.json()};
 }
