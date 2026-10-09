@@ -33,6 +33,8 @@ jobs:
       - run: npm run rehearse:rfq
       - name: Build fixture deployment image
         run: docker build -t remain-rehearsal:${{ github.sha }} .
+      - name: Build optional read-only RPC egress container (no deployment)
+        run: docker build -t remain-rpc-egress:${{ github.sha }} cloudflare/rpc-egress
       - name: Smoke fixture deployment image
         env:
           REMAIN_BUILD_SHA: ${{ github.sha }}
