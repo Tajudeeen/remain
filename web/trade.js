@@ -223,13 +223,14 @@ if (typeof document !== 'undefined' && document.getElementById('trade-view')) {
     link.href = url; link.download = 'remain-chain-receipt.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); message('Private receipt downloaded. It contains your wallet and order amounts. Recheck its chain observations before relying on it.');
   }));
   fetch('/api/execution/status', { cache: 'no-store', credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(5000) }).then(async response => {
-    const s = await readReadOnlyJSON(response, AbortSignal.timeout(5000)); exact(s, ['kind', 'available', 'profile', 'userConfirmationRequired']);
-    if (!response.ok || s.kind !== 'REMAIN_EXECUTION_STATUS' || typeof s.available !== 'boolean' || s.profile !== 'COW_BSC_SELL_V1' || s.userConfirmationRequired !== true) fail();
-    available = s.available; $('trade-server').textContent = available ? 'Wallet confirmation required' : 'Trading service not configured';
-    if (available) {
-      document.querySelector('.footer-column:nth-child(3) p').textContent = 'Fixture planner. Separate wallet-confirmed sale review.';
-      document.querySelector('.footer-bottom p:last-child').textContent = 'Fixture views are fictional. Sale review requires a configured service and explicit wallet confirmation.';
-    } update();
-  }).catch(() => { $('trade-server').textContent = 'Trading service unavailable'; update(); });
+    const s = await readReadOnlyJSON(response, AbortSignal.timeout(5000));
+    if (!response.ok || !exact(s, ['kind', 'available', 'profile', 'userConfirmationRequired']) || s.kind !== 'REMAIN_EXECUTION_STATUS' ||
+      typeof s.available !== 'boolean' || s.profile !== 'COW_BSC_SELL_V1' || s.userConfirmationRequired !== true) fail();
+    available = s.available; $('trade-server').textContent = available ? 'Execution backend configured' : 'Trading service not configured';
+    $('trade-server-copy').textContent = available
+      ? 'Wallet authentication, current supported holdings, price bounds, approvals and chain reconciliation are still required for every sale.'
+      : 'The execution backend is not active on this deployment. No signed orders can be submitted here.';
+    update();
+  }).catch(() => { $('trade-server').textContent = 'Trading service unavailable'; $('trade-server-copy').textContent = 'Cannot verify the execution backend. No trade availability is assumed.'; update(); });
   update();
 }
