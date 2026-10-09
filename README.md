@@ -8,6 +8,8 @@ Remain works backward from a USDT cash target to a bounded partial sale of a tok
 
 ## Current architecture, October 2026
 
+This branch's [product-realism audit](docs/product-realism-audit.md) explains which screens read actual chain or market data and which optional routes remain test fixtures. The homepage reports actual service configuration, the wallet can verify ERC-20 balances and scan supported RWA identities in bounded batches, and real cash targets are entered by the user rather than defaulted to the fictional demo numbers. No deployed backend availability, price, or settlement is invented.
+
 Users do not need the builder to hold stocks. BSC wallets can verify a held ERC-20 token balance through their injected wallet RPC, and the supported-stock picker can retrieve identities from a configured Binance RWA catalog. Hosted position reads, cash previews, and unsigned order checks are available when Netlify Functions receives authorized Binance credentials and `REMAIN_HOSTED_READ_ONLY=true`. The separate CoW execution path can be connected through `REMAIN_EXECUTION_PROXY_ENABLED=true` only after its persistent HTTPS execution service has independently passed the release gates. The demo remains available and labelled as fiction. No funded mainnet sale is asserted. Details: [Hosted live product](docs/hosted-live-readonly.md).
 
 ## Earlier milestones and release evidence
