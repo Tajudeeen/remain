@@ -1,12 +1,16 @@
 # Remain
 
-Hosted rehearsal: [remain-cash.netlify.app](https://remain-cash.netlify.app/). Netlify deployment uses the existing synthetic planner through a bounded serverless function. See [deployment evidence](docs/netlify-deployment.md). The source remains private and the hosted demo keeps live execution disabled.
+Public web app: [remain-cash.netlify.app](https://remain-cash.netlify.app/). The main deployment serves the explicitly labelled synthetic planning tools by default. This public repository now also contains an opt-in real-user wallet and hosted Binance read path, and a fail-closed gateway to the separately hosted durable execution service. Enabling either live backend requires real server-side deployment credentials and verified eligibility. Do not interpret the fixture planner or a configured gateway as proof of a funded trade. See [hosted-live product operations](docs/hosted-live-readonly.md) and [existing deployment evidence](docs/netlify-deployment.md).
 
 Raise cash. Stay invested.
 
 Remain works backward from a USDT cash target to a bounded partial sale of a tokenized-stock position on BNB Smart Chain. BellGuard checks market state, quote freshness and user limits. The intended result is a reconciled settlement receipt showing cash received and exposure retained.
 
-## Current state
+## Current architecture, October 2026
+
+Users do not need the builder to hold stocks. BSC wallets can verify a held ERC-20 token balance through their injected wallet RPC, and the supported-stock picker can retrieve identities from a configured Binance RWA catalog. Hosted position reads, cash previews, and unsigned order checks are available when Netlify Functions receives authorized Binance credentials and `REMAIN_HOSTED_READ_ONLY=true`. The separate CoW execution path can be connected through `REMAIN_EXECUTION_PROXY_ENABLED=true` only after its persistent HTTPS execution service has independently passed the release gates. The demo remains available and labelled as fiction. No funded mainnet sale is asserted. Details: [Hosted live product](docs/hosted-live-readonly.md).
+
+## Earlier milestones and release evidence
 
 Gate 17 adds [live preflight and operations tools](docs/live-operations.md): an offline configuration doctor, read-only CoW payload check, encrypted SQLite backup/drill, exact-build execution-host smoke, independent live-evidence recheck and `submission:status -- --live` for genuine-evidence owner review. The configured execution browser path also has a separate synthetic end-to-end harness. None of these tools requests a financial action or changes activation flags. Actual held-stock compatibility, persistent hosting and funded settlement still require real evidence.
 
