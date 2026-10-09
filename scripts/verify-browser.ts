@@ -256,6 +256,7 @@ try {
       request:async ({method,params})=>{
         window.fixtureWalletReads.push(method);
         if(method==='eth_chainId')return '0x38';
+        if(method==='eth_getBlockByNumber')return {number:'0x12ab',hash:'0x'+'a'.repeat(64)};
         if(method==='eth_requestAccounts'||method==='eth_accounts')
           return ['0x1111111111111111111111111111111111111111'];
         if(method==='eth_call'){
@@ -278,9 +279,24 @@ try {
   await browser('fill','#live-token','0x2222222222222222222222222222222222222222');
   await browser('click','.wallet-onchain-read button');
   await browser('wait','--fn',"document.querySelector('.verified-amount').textContent.includes('42 token units')");
-  await check("document.querySelector('.verified-source').textContent.includes('BSC chain 56') && window.fixtureWalletReads.includes('eth_call') && window.fixtureWalletReads.every(x=>['eth_requestAccounts','eth_accounts','eth_chainId','eth_call'].includes(x))");
+  await check("document.querySelector('.verified-source').textContent.includes('BSC chain 56') && window.fixtureWalletReads.includes('eth_call') && window.fixtureWalletReads.every(x=>['eth_requestAccounts','eth_accounts','eth_chainId','eth_call','eth_getBlockByNumber'].includes(x))");
+  stage = 'browser real-block evidence capture and cancellation';
+  await browser('click','.balance-evidence-panel .wallet-actions button');
+  await browser('wait','--fn',"document.querySelector('.balance-evidence-panel [role=status]').textContent.includes('Block-pinned observation captured')");
+  await check("!document.querySelector('.balance-evidence-panel .wallet-actions button:nth-child(2)').disabled && document.querySelector('.balance-evidence-detail').textContent.includes('0x'+'a'.repeat(64)) && document.querySelector('.balance-evidence-detail').textContent.includes('42000000000000000000')");
+  await browser('eval', `window.delayedEvidenceRPC=window.fixtureLateProvider.request;
+    window.fixtureLateProvider.request=async args=>{
+      if(args.method==='eth_getBlockByNumber')await new Promise(resolve=>setTimeout(resolve,450));
+      return window.delayedEvidenceRPC(args);
+    };`);
+  await browser('click','.balance-evidence-panel .wallet-actions button');
+  await browser('fill','#live-token','0x3333333333333333333333333333333333333333');
+  await check("!document.querySelector('.balance-evidence-panel .wallet-actions button').disabled && document.querySelector('.balance-evidence-panel .wallet-actions button:nth-child(2)').disabled && document.querySelector('.balance-evidence-panel [role=status]').textContent.includes('Token changed')");
+  await browser('wait','600');
+  await check("!document.querySelector('.balance-evidence-panel .wallet-actions button').disabled && document.querySelector('.balance-evidence-panel .wallet-actions button:nth-child(2)').disabled && document.querySelector('.balance-evidence-detail').textContent==='' ");
+  await browser('eval', 'window.fixtureLateProvider.request=window.delayedEvidenceRPC');
   await browser('click','#wallet-forget');
-  await check("document.querySelector('.verified-amount').hidden && document.querySelector('#nav-wallet-connect').textContent.includes('Connect wallet')");
+  await check("document.querySelector('.verified-amount').hidden && document.querySelector('#nav-wallet-connect').textContent.includes('Connect wallet') && document.querySelector('.balance-evidence-panel .wallet-actions button:nth-child(2)').disabled");
 
   for (const width of [320, 375, 768, 1024, 1440]) {
     await browser('set', 'viewport', String(width), '1000'); await check('document.documentElement.scrollWidth <= window.innerWidth');
