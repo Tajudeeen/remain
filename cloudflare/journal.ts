@@ -17,6 +17,24 @@ export type DurableJournalStorage = {
 const active = (r: ExecutionRecord) => Number(!['CANCELLED', 'RECONCILED'].includes(r.state) && r.lockReleased !== true);
 const LIMIT = 256 * 1024;
 
+// A backup may be restored ONLY into a new empty journal, never over live
+// mutable orders. No wallet/order identifiers or plaintext enter the export.
+export type EncryptedJournalRow = {
+  id:string; uid:string; wallet:string; active:number; revision:number; payload:string
+};
+const maxRows = 512;
+function checkedRow(source: Record<string,unknown>): EncryptedJournalRow {
+  const {id,uid,wallet,active,revision,payload}=source;
+  if (typeof id!=='string'||typeof uid!=='string'||typeof wallet!=='string'||
+      typeof payload!=='string'||!Number.isSafeInteger(active)||!Number.isSafeInteger(revision)||
+      !/^[a-f0-9]{64}$/.test(uid)||!/^[a-f0-9]{64}$/.test(wallet)||
+      (active!==0&&active!==1)||revision<0||revision>100000000||
+      payload.length>LIMIT*2) fail('STORAGE_CORRUPT');
+  uuid(id);
+  return {id,uid,wallet,active,revision,payload};
+}
+
+
 export class DurableSqlExecutionJournal implements ExecutionJournal {
   private readonly key: Buffer;
   private readonly storage: DurableJournalStorage;
@@ -94,6 +112,42 @@ export class DurableSqlExecutionJournal implements ExecutionJournal {
       ).toArray();
       if (rows.length !== 1) fail('STATE_CONFLICT');
       return this.load(id);
+    });
+  }
+  // Consistent snapshot of committed SQLite rows; authenticate/decrypt each
+  // record before allowing it into an operator-owned offsite backup.
+  exportRows(): EncryptedJournalRow[] {
+    return this.storage.transactionSync(()=>{
+      const records=this.storage.sql.exec(
+        'SELECT id,uid,wallet,active,revision,payload FROM execution_orders ORDER BY id LIMIT 513'
+      ).toArray();
+      if(records.length>maxRows) fail('STORAGE_FAILURE');
+      return records.map(value=>{
+        const row=checkedRow(value);
+        this.load(row.id); // verifies GCM, authenticated UID and wallet locks
+        return row;
+      });
+    });
+  }
+  restoreRows(rows: EncryptedJournalRow[]): number {
+    if (!Array.isArray(rows)||rows.length>maxRows) fail('STORAGE_CORRUPT');
+    return this.storage.transactionSync(()=>{
+      const existing=this.storage.sql.exec('SELECT COUNT(*) AS n FROM execution_orders').toArray();
+      if(existing.length!==1 || existing[0]?.n!==0) fail('RESTORE_REQUIRES_EMPTY_JOURNAL');
+      for(const source of rows){
+        if(!source || typeof source!=='object'||Object.keys(source).sort().join()!=='active,id,payload,revision,uid,wallet')
+          fail('STORAGE_CORRUPT');
+        const row=checkedRow(source as unknown as Record<string,unknown>);
+        // SQL constraints block duplicate UIDs and simultaneous wallet locks.
+        this.storage.sql.exec(
+          'INSERT INTO execution_orders(id,uid,wallet,active,revision,payload) VALUES(?,?,?,?,?,?)',
+          row.id,row.uid,row.wallet,row.active,row.revision,row.payload
+        );
+        this.load(row.id); // incorrect encryption key, tamper or index = rollback
+      }
+      const count=this.storage.sql.exec('SELECT COUNT(*) AS n FROM execution_orders').toArray();
+      if(count.length!==1||count[0]?.n!==rows.length) fail('STORAGE_CORRUPT');
+      return rows.length;
     });
   }
   probe() {
