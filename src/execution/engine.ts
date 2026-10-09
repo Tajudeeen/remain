@@ -6,6 +6,7 @@ import { contractPins, rpcPair } from './configuration.ts';
 import { uint } from '../validation.ts';
 import { fail } from './cow.ts';
 import { ExecutionEngine } from './engine-core.ts';
+export type { ContractPin } from './engine-core.ts';
 export { ExecutionEngine, projectOrder } from './engine-core.ts';
 export function configuredEngine(env: Record<string, string | undefined>) {
   if (env.REMAIN_EXECUTION_ENABLED !== 'true') return undefined;
