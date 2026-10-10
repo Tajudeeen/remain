@@ -14,14 +14,14 @@
 <body>
 <a class="skip" href="#demo-title">Skip to paper studio</a>
 <header class="topbar wrap">
-  <a class="brand" href="/" aria-label="Remain home"><img src="/logo.png" width="38" height="38" alt=""><span>remain<span class="brand-dot">.</span></span></a>
-  <nav aria-label="Studio navigation"><a href="/">Overview</a><a href="/#dashboard">Original planner</a><a href="/#live">Live wallet reads</a></nav>
+  <a class="brand" href="#demo-overview" aria-label="Paper Studio overview"><img src="/logo.png" width="38" height="38" alt=""><span>remain<span class="brand-dot">.</span></span></a>
+  <nav aria-label="Paper Studio sections"><a href="#demo-overview">Overview</a><a href="#demo-portfolio">Portfolio</a><a href="#demo-trade">Simulate</a><a href="#demo-history">History &amp; proof</a></nav>
   <span class="network"><span class="dot"></span>PAPER · SIMULATED</span>
 </header>
 <main class="wrap" id="demo-view">
   <div class="mode-banner"><span class="mode-tag">SIMULATION ONLY</span><p>Everything here uses fictional assets, prices, quotes, cash and fills. No Binance access, wallet, signature or on-chain transaction.</p><span class="access-status">Zero financial execution</span></div>
-  <div class="dashboard-nav"><a href="/">← Back to Remain</a><span>PAPER STUDIO / NO FUNDS AT RISK</span></div>
-  <section class="paper-hero" aria-labelledby="demo-title">
+  <div class="dashboard-nav"><span>STANDALONE DEMO WORKSPACE</span><span>STAY IN DEMO MODE · NO LIVE WALLET ROUTES</span></div>
+  <section class="paper-hero" id="demo-overview" aria-labelledby="demo-title">
     <div>
       <span class="paper-stamp">INTERACTIVE SIMULATION</span>
       <h1 id="demo-title" tabindex="-1">Cash today.<br><em>Exposure tomorrow.</em></h1>
@@ -32,10 +32,10 @@
   <div class="paper-steps" aria-label="Demo progress">
     <span id="demo-step-0">01 · TARGET</span><span id="demo-step-1">02 · GUARD</span><span id="demo-step-2">03 · REVIEW</span><span id="demo-step-3">04 · SIMULATED</span>
   </div>
-  <div class="paper-section-head"><div><span class="paper-overline">YOUR FICTIONAL ASSETS</span><h2>Paper portfolio.</h2><p>Select a stock to work with. All balances and prices are invented.</p></div><button id="demo-reset" class="paper-reset" type="button">↻ Reset demo</button></div>
+  <div class="paper-section-head" id="demo-portfolio"><div><span class="paper-overline">YOUR FICTIONAL ASSETS</span><h2>Paper portfolio.</h2><p>Select a stock to work with. All balances and prices are invented.</p></div><button id="demo-reset" class="paper-reset" type="button">↻ Reset demo</button></div>
   <div id="demo-assets" class="paper-portfolio" aria-label="Choose your fictional stock"></div>
   <div class="paper-balances"><span>DEMO CASH <strong id="demo-cash">—</strong></span><span>FICTIONAL TOTAL <strong id="demo-worth">—</strong></span><span>SIMULATED ORDERS <strong id="demo-order-count">0</strong></span></div>
-  <section class="paper-grid" aria-label="Cash-target simulation">
+  <section class="paper-grid" id="demo-trade" aria-label="Cash-target simulation">
     <div class="paper-composer">
       <span class="paper-overline">01 / YOUR INTENT</span><h2>How much do<br>you need?</h2>
       <p>The engine works backward from the USDT you need, instead of selling a preset percentage of your stock.</p>
@@ -79,14 +79,14 @@
     </div>
   </section>
   <section class="paper-bottom" aria-label="Simulation activity and receipt">
-    <div class="paper-ledger"><span class="paper-overline">04 / YOUR JOURNAL</span><h2>See the consequences.</h2><div id="demo-activity"><p class="paper-muted">No simulated trades yet.</p></div><p class="paper-muted">Each accepted simulated order changes only this tab's fictional portfolio. Reset any time.</p></div>
-    <div class="paper-proof"><span class="paper-overline">05 / THE PROOF BOUNDARY</span><h2>A receipt, not a claim.</h2><p id="demo-proof" role="status">No receipt yet. Confirm a demo order to generate one.</p><span class="paper-overline">SIMULATION CHECKSUM / SHA-256</span><code id="demo-digest">—</code>
+    <div class="paper-ledger" id="demo-history"><span class="paper-overline">04 / YOUR JOURNAL</span><h2>See the consequences.</h2><div id="demo-activity"><p class="paper-muted">No simulated trades yet.</p></div><p class="paper-muted">Each accepted simulated order changes only this tab's fictional portfolio. Reset any time.</p></div>
+    <div class="paper-proof" id="demo-receipts"><span class="paper-overline">05 / THE PROOF BOUNDARY</span><h2>A receipt, not a claim.</h2><p id="demo-proof" role="status">No receipt yet. Confirm a demo order to generate one.</p><span class="paper-overline">SIMULATION CHECKSUM / SHA-256</span><code id="demo-digest">—</code>
       <div id="demo-proof-controls" class="paper-proof-actions" hidden><button id="demo-download" type="button">Download demo receipt ↓</button><button id="demo-verify" type="button">Recheck latest receipt ↻</button><label>Verify another receipt <input id="demo-upload" type="file" accept=".json,application/json"></label></div>
       <p class="paper-muted">Checks confirm supplied simulation arithmetic and file integrity. Anyone can generate a new checksum. This is not an authenticated BSC trade receipt.</p>
     </div>
   </section>
-  <p class="paper-footnote">SIMULATION ONLY · Independent, fictional data and a browser-only journal. Real wallet reads remain available separately in <a class="text-link" href="/#live">Live Mode</a>. Binance market access, actual RFQs, signatures, funds and chain settlement are not part of this demo. For the original isolated cash-planning fixture, use the <a class="text-link" href="/#dashboard">test planner</a>.</p>
+  <p class="paper-footnote">SIMULATION ONLY · This recording-safe workspace stays separate from the live product. Every stock, price, cash amount and fill is fictional. No wallet connection, Binance API, signing or on-chain settlement is available here. Navigate between <a class="text-link" href="#demo-portfolio">portfolio</a>, <a class="text-link" href="#demo-trade">simulation</a> and <a class="text-link" href="#demo-receipts">receipts</a> without leaving Paper Studio.</p>
 </main>
-<footer class="wrap footer"><div class="footer-bottom"><p>Remain Paper Studio · All names, balances and prices are fictional · Not investment advice.</p><p><a href="/">Back to Remain ↗</a> · <a href="https://github.com/Tajudeeen/remain" rel="noopener noreferrer" target="_blank">Source code ↗</a></p></div></footer>
+<footer class="wrap footer"><div class="footer-bottom"><p>Remain Paper Studio · Simulation-only · No real wallet or live trading · Not investment advice.</p><p><a href="#demo-overview">↑ Demo overview</a> · <a href="#demo-receipts">View receipts ↗</a></p></div></footer>
 </body>
 </html>
