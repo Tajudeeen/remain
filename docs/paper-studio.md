@@ -32,7 +32,7 @@ The standalone *frontend* does not authenticate real data. Every balance and fil
 - web/demo.js is a browser-only controller with a fictional in-tab portfolio and activity list. Storage is best-effort sessionStorage (not secured, authenticated, durable, multi-user or encrypted).
 - web/studio.html and web/demo.css form a dedicated same-domain demo surface. Production live activation flags and wallet routes are unchanged.
 - Arithmetic uses integer cents and thousandths of shares. Synthetic prices, impact, fees, slippage and fills are fixed assumptions, not market prices or executable quotes. Binary search minimizes sale input within this *one fictional* price function, not all real venues.
-- Quote lifetime is 45 seconds. Quote is bound to one balance epoch, stock, scenario and intent; stale, changed and duplicate settlement cannot be processed.
+- Quote lifetime is 120 seconds. Quote is bound to one balance epoch, stock, scenario and intent; stale, changed and duplicate settlement cannot be processed.
 - The simulator rederives the quote before accepting a simulated sale, then checks its synthetic floor and minimum payout.
 - Simulation receipts explicitly set kind REMAIN_DEMO_RECEIPT_V1, mode SIMULATION, authenticity NONE; transaction hashes, block numbers and signatures are null. Verification checks event order, accounting, amount bounds and recomputed SHA-256.
 - No private keys, seed phrases, Binance credentials or wallet approvals are used. Every displayed position and quantity is fictional.
