@@ -78,7 +78,7 @@ export function assertFreshDemoQuote(state,quote,now=Date.now()){
   const rebuilt=simulatePlan(state,quote.input,quote.issuedAtMs);
   if(rebuilt.status!=='READY'||!rebuilt.quote||
     !['id','assetId','balanceMilli','floorMilli','soldMilli','remainingMilli','grossCents','feeCents',
-      'impactCents','slippageCents','expectedCents','minimumCents','targetCents'].every(k=>quote[k]===rebuilt.quote[k]))
+      'impactCents','slippageCents','expectedCents','minimumCents','targetCents','issuedAtMs','expiresAtMs','mode','feeBps','slippageBps'].every(k=>quote[k]===rebuilt.quote[k]))
     throw Error('DEMO_QUOTE_CHANGED');
   if(state.orders.some(o=>o.id===quote.id))throw Error('DEMO_ORDER_ALREADY_PROCESSED');
   return true;
