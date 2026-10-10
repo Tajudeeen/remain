@@ -1,4 +1,4 @@
-name: Deployed fixture smoke
+name: Deployed Cloudflare Pages smoke
 on:
   push:
     branches: [main]
@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: Public HTTPS origin for the TEST_FIXTURE deployment
+        description: Public HTTPS origin for the Cloudflare Pages TEST_FIXTURE deployment
         required: true
         type: string
 permissions:
@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      REMAIN_BASE_URL: ${{ inputs.base_url || 'https://remain-cash.netlify.app/' }}
+      REMAIN_BASE_URL: ${{ inputs.base_url || 'https://remain-paper.pages.dev/' }}
       REMAIN_EXPECTED_BUILD_SHA: ${{ github.event_name == 'push' && github.sha || '' }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2

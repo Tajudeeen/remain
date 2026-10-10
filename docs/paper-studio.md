@@ -1,6 +1,6 @@
 # Remain Paper Studio
 
-**URL once published:** https://remain-cash.netlify.app/studio.html
+**Verified free-host URL:** https://remain-paper.pages.dev/studio.html
 
 Paper Studio is a self-contained, fully fictional product walkthrough. It is **not** a BSC testnet deployment, a Binance Web3 integration, an executable RFQ, or a mainnet sale. The read-only real-wallet and vendor integrations remain separate.
 
