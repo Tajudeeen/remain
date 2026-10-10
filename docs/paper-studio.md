@@ -8,6 +8,10 @@ Paper Studio is a self-contained, fully fictional product walkthrough. It is **n
 
 Open the canonical Cloudflare Pages URL **https://remain-paper.pages.dev/studio**. Once inside Paper Studio, every clickable link (the Remain logo, top navigation, footer, and contextual links) scrolls **within the Paper Studio document**. None opens the original homepage, live wallet, unsigned-review workspace, GitHub, or an external site. The demo loads only `demo.js` and `demo-engine.js`; it makes no live wallet or Binance request.
 
+Click **Prepare my recording** for a one-click deliberate reset of all fictional orders and quote inputs (NOVA-SIM, 250 synthetic USDT, 70% retention, 0.50% impact cap, regular scenario). This control does **not** request a wallet or open a reset confirmation popup. The separate Reset demo control still confirms. The dynamic **Before → After** panel projects shares and USDT directly from the quoted arithmetic, then changes to simulated settled balances after order confirmation; it does not show a real transaction.
+
+BellGuard's explainable checks show the observed simulated market state, price impact, retained floor, net cash ceiling, corresponding limit, and safe response. A halt and stale market observations stay blocked; a permitted closed market is a caution, not a normal pass.
+
 Use the four top navigation links to record a coherent journey: **Overview → Portfolio → Simulate → History & proof**. The logo brings you back to the demo overview. You may demonstrate risk blocks, one simulated fill and a verified simulation receipt without route changes or a wallet popup. The Reset button resets only fictional demo state (after its explicit confirmation).
 
 The standalone *frontend* does not authenticate real data. Every balance and fill remains synthetic, including when recording a competition video. Users can independently access Remain's live app elsewhere, but there are deliberately no outward links from Paper Studio.
