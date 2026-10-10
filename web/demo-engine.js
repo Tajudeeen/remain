@@ -98,6 +98,47 @@ export function simulatePlan(state,intent,now=Date.now()){
   };
   return {status:'READY',reasons:[],quote};
 }
+// All diagnostics are derived from the same synthetic price/impact/floor model
+// as simulatePlan. No diagnosis can authorize execution or waive a failed guard.
+export function demoGuardReport(state,intent,result){
+ const row=(code,status,label,observed,limit,action)=>({code,status,label,observed,limit,action});
+ if(!validDemoState(state)||!intent||!result||!['READY','BLOCKED'].includes(result.status))
+  return [row('INVALID','blocked','Simulation inputs','Invalid demo request','Valid fictional portfolio and limits','Reset and re-enter values.')];
+ const asset=asAsset(intent.assetId),scenario=scenarios[intent.scenario];
+ if(!asset||!scenario||!isInt(intent.retainPercent,0,100)||!isInt(intent.maxImpactBps,0,500)||typeof intent.allowClosed!=='boolean')
+  return [row('INVALID','blocked','Simulation inputs','Invalid stock, scenario or limits','A fictional stock and valid risk limits','Choose a stock and restore valid limits.')];
+ let target;try{target=money(intent.cashTarget);}catch{
+  return [row('TARGET_FORMAT','blocked','Cash target','Invalid amount','0.01–50,000.00 demo USDT','Enter a positive amount with at most two decimals.')];
+ }
+ const balance=state.positions[asset.id],floor=Math.ceil(balance*intent.retainPercent/100);
+ const sellable=balance-floor,limit=Math.max(0,Math.min(sellable,scenario.liquidityMilli));
+ const feeBps=15,slippageBps=35,netMax=m=>{
+  const gross=Math.floor(m*asset.priceCents/1000);
+  return Math.max(0,gross-ceilBps(gross,feeBps)-ceilBps(gross,scenario.impactBps)-ceilBps(gross,slippageBps));
+ };
+ const pct=bps=>(bps/100).toFixed(2)+'%';
+ let marketStatus='pass',marketAction='This fictional market state permits planning.';
+ if(intent.scenario==='paused'){
+  marketStatus='blocked';marketAction='A halt cannot be overridden. Try the regular-market scenario to compare behavior.';
+ }else if(intent.scenario==='stale'){
+  marketStatus='blocked';marketAction='Stale observations must block planning. Select the fresh regular-market test scenario.';
+ }else if(intent.scenario==='closed'){
+  marketStatus=intent.allowClosed?'caution':'blocked';
+  marketAction=intent.allowClosed?'Closed-market planning is explicitly permitted; the reference price remains fictional.':'Tick Allow closed-market planning to explore this case. Never override a halt.';
+ }
+ const impactBlocked=scenario.impactBps>intent.maxImpactBps;
+ const floorBlocked=sellable<=0,coverageBlocked=netMax(limit)<target;
+ const checks=[
+  row('MARKET',marketStatus,'Market state',scenario.label,intent.scenario==='closed'?'Explicit closed-market permission':'No halt, stale data or unapproved closure',marketAction),
+  row('IMPACT',impactBlocked?'blocked':'pass','Price impact',pct(scenario.impactBps),'Your cap: '+pct(intent.maxImpactBps),impactBlocked?'Synthetic impact exceeds the selected cap. Try regular market, or deliberately choose a different risk limit.':'Synthetic impact is within the selected cap.'),
+  row('FLOOR',floorBlocked?'blocked':'pass','Retained exposure',demoUnits(balance)+' '+asset.ticker+' held',demoUnits(floor)+' must remain · '+demoUnits(Math.max(0,sellable))+' sellable',floorBlocked?'Lower the retained percentage only if you want to release more fictional shares.':'Any proposed debit must leave the retained floor intact.'),
+  row('COVERAGE',coverageBlocked?'blocked':'pass','Net cash coverage',demoMoney(netMax(limit))+' demo USDT maximum',demoMoney(target)+' demo USDT requested',coverageBlocked?(scenario.liquidityMilli<sellable?'Fictional liquidity is too thin. Reduce the target or use a different scenario.':'The retained floor limits your sale. Reduce the target or deliberately change the floor.'):'Maximum synthetic net proceeds cover the target.')
+ ];
+ if(result.status==='READY'&&result.quote){
+  checks.push(row('QUOTE','pass','Guarded output',demoMoney(result.quote.minimumCents)+' USDT minimum','At least '+demoMoney(target)+' demo USDT','This synthetic quote expires in 45 seconds. It is not a live trading price.'));
+ }
+ return checks;
+}
 export function assertFreshDemoQuote(state,quote,now=Date.now()){
   if(!quote||quote.mode!=='SIMULATION'||!isInt(now,0,9999999999999)||
      now<quote.issuedAtMs||now>=quote.expiresAtMs||quote.epoch!==state.epoch)throw Error('DEMO_QUOTE_EXPIRED');
