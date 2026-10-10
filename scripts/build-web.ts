@@ -2,6 +2,8 @@ import { cp, mkdir, writeFile } from 'node:fs/promises';
 
 await mkdir('dist/web', { recursive: true });
 for (const file of ['index.html', 'app.js', 'proof.js', 'response.js', 'live.js', 'wallet.js', 'wallet-providers.js', 'wallet-ui.js', 'position.js', 'preview.js', 'order-review.js', 'trade.js', 'onchain.js', 'balance-evidence.js', 'balance-evidence-ui.js', 'catalog.js', 'service-status.js', 'portfolio.js', 'demo-engine.js', 'demo.js', 'demo.css', 'studio.html', 'demo-receipt.json', 'styles.css', 'logo.png']) await cp(`web/${file}`, `dist/web/${file}`);
+// Pages Functions must invoke only the bounded fixture API, not static assets.
+await writeFile('dist/web/_routes.json', JSON.stringify({version:1,include:['/healthz','/api/*'],exclude:[]},null,2)+'\n');
 const commit = process.env.COMMIT_REF;
 // Bundle the immutable build identity rather than retaining an old runtime env value.
 await mkdir('netlify', { recursive: true });
