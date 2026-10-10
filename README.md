@@ -1,29 +1,61 @@
 # Remain
 
-Public web app: [remain-paper.pages.dev](https://remain-paper.pages.dev/). The main deployment serves the explicitly labelled synthetic planning tools by default. This public repository now also contains an opt-in real-user wallet and hosted Binance read path, and a fail-closed gateway to the separately hosted durable execution service. Enabling either live backend requires real server-side deployment credentials and verified eligibility. Do not interpret the fixture planner or a configured gateway as proof of a funded trade. See [hosted-live product operations](docs/hosted-live-readonly.md) and [existing deployment evidence](docs/netlify-deployment.md).
+**Raise cash. Stay invested.**
 
-Raise cash. Stay invested.
+Remain is a cash-first product for people who hold tokenized stocks on **BNB Smart Chain (BSC)** and want to explore raising a specific amount of USDT while keeping a chosen portion of their stock exposure. Its cash solver searches bounded partial-sale candidates; **BellGuard** checks the market state, quote freshness, price impact, cash coverage and retained-position floor before an order can be considered.
 
+There are **two separate public experiences**. Start with the **original Remain application** below. The standalone **Paper Studio demo** comes second and is deliberately isolated for safe testing and video recording.
 
-### Current public deployment (10 October 2026)
+## 1. Original Remain application — primary build
 
-- **[Cloudflare Pages](https://remain-paper.pages.dev/)** is the current GitHub-connected free public host. **[Paper Studio](https://remain-paper.pages.dev/studio)** and same-origin TEST_FIXTURE planning/receipt APIs passed an independent, signed-out browser walkthrough at build `04a62622768d3c7407cbd51cc48402e76d58a025`.
-- [Deployment runbook](docs/cloudflare-pages-hosting.md) explains how Pages keeps the hosted demo separate from the existing, execution-disabled Cloudflare Durable Object service.
-- Legacy [Netlify deployment](https://remain-cash.netlify.app/) is outdated due to an exhausted or unavailable deployment allowance and **must not** be used for current judging. The code's live-RFQ and mainnet gates remain blocked.
+### [Open the original Remain app → https://remain-paper.pages.dev/](https://remain-paper.pages.dev/)
 
-## Paper Studio: complete risk-checked simulation
+This is the **main product**, not the standalone demo. It contains the Remain landing page, cash-target planning workspace, read-only BSC wallet/portfolio inspection, service-readiness reporting, sale-review interface, and synthetic receipt-inspection workspace.
 
-**[Launch the full interactive Paper Studio](https://remain-paper.pages.dev/studio)** or open `/studio.html` on a local build. Three fictional stock positions, a demo USDT ledger, **one-click recording reset**, cash-target search, compact expandable market/impact/floor/cash coverage checks, dynamic **Before → After** positions and USDT, a 120-second synthetic quote, explicit simulated order confirmation, and inspectable SHA-256 receipts. No wallet or Binance API required; no on-chain trade is performed. Receipts verify supplied simulated accounting but have no blockchain authenticity. Full walkthrough and constraints: [Paper Studio specification](docs/paper-studio.md).
+**What you can explore:**
 
+- **Cash-first planning:** choose the USDT you need and how much of a position you want to keep. The public planner's sample holding and quote assumptions are explicitly marked `TEST_FIXTURE`.
+- **BellGuard risk checks:** inspect the market-state, stale-data, price-impact, cash-target and retained-floor rules. A blocked plan is not converted into an executable order.
+- **Real-wallet read path:** on a compatible BSC wallet, optionally connect by user action to inspect actual ERC-20 balances and replayable block-level balance observations. This is a read, not a sale or permission to move funds.
+- **Live-integration readiness and unsigned-order review:** see which Binance market/RFQ and settlement prerequisites remain missing; the application does not invent unavailable quotes or a successfully funded trade.
+- **Evidence and receipts:** review synthetic planning and receipt records separately from authentic on-chain evidence.
 
+**Suggested path through the original app:** open the link above → explore the landing page → try the cash planner → open the wallet/portfolio workspace if you have a compatible wallet → inspect service status, sale review and receipts. Wallet connection is optional; never share a seed phrase.
 
-**Current production:** Cloudflare Pages hosts the current reviewed build. See the latest successful [exact-SHA deployment smoke](https://github.com/Tajudeeen/remain/actions/workflows/deployment-smoke.yml) and `/healthz` before submission. The [October 10 audit](docs/submission/audit-20261010.md) and [October 9 readiness snapshot](docs/submission/current-readiness-20261009.md) include **historical Netlify deployment blockers**, not the current public release target. The historical `docs/submission/packet.json` is not a current deployment certificate.
+**Important:** the primary app is publicly accessible, but **real-money execution is disabled**. Binance-authenticated market data, live RFQs, signed submission and reconciled mainnet settlement are **not verified as available** on the Pages deployment. A sample plan or receipt is not an executed stock sale. See [hosted live-product limits](docs/hosted-live-readonly.md), [balance observations](docs/onchain-balance-evidence.md), and [mobile wallet support](docs/mobile-wallet.md).
 
-## Verified deployment and trust boundaries (October 9, 2026)
+## 2. Paper Studio — standalone interactive demo
+
+### [Launch the Remain demo → https://remain-paper.pages.dev/studio](https://remain-paper.pages.dev/studio)
+
+**Paper Studio is a complete, recording-safe simulation**, not the live product. It uses three fictional tokenized-stock positions, synthetic quotes and USDT balances, so it works without a wallet, Binance credentials, funds, or blockchain transactions.
+
+Inside the demo you can select a fictional stock, set a USDT cash target, choose a retention floor, run BellGuard checks, inspect a **Before → After** breakdown, review and confirm a simulated order, and download/recheck a SHA-256 simulation receipt. Quotes expire after 120 seconds; simulated accounting is inspectable but **not blockchain-authenticated**.
+
+For a clean demo-video take, click **Prepare my recording**. It resets the fictional portfolio and scenario without leaving Paper Studio. Its navigation remains within the standalone demo instead of opening real-wallet or original-app screens. See the [Paper Studio walkthrough and limitations](docs/paper-studio.md) and [demo recording script](docs/submission/demo-script.md).
+
+| | Original Remain app | Paper Studio demo |
+| --- | --- | --- |
+| **Open** | [remain-paper.pages.dev](https://remain-paper.pages.dev/) | [remain-paper.pages.dev/studio](https://remain-paper.pages.dev/studio) |
+| **Purpose** | Primary product UI, wallet reads, status and cash planning | End-to-end interactive fictional sale walkthrough |
+| **Data** | Optional real wallet balance reads; fixture planning where labelled | Entirely fictional positions, prices, cash, orders and receipts |
+| **Wallet needed?** | Optional for personal read-only portfolio inspection | No |
+| **Real-money execution** | **Disabled** | **Never supported** |
+
+## Current public hosting and release status (10 October 2026)
+
+- **Current public host:** [Cloudflare Pages](https://remain-paper.pages.dev/) is GitHub-connected to `main`. The [deployment runbook](docs/cloudflare-pages-hosting.md) documents the static site, same-origin fixture APIs and separation from the execution service.
+- **Published demo:** [Paper Studio](https://remain-paper.pages.dev/studio) was independently walked through in a signed-out browser together with the fixture planning/receipt APIs. See the [exact-SHA deployment smoke workflow](https://github.com/Tajudeeen/remain/actions/workflows/deployment-smoke.yml) and [recent audit](docs/submission/audit-20261010.md).
+- **Previous host:** [Netlify](https://remain-cash.netlify.app/) may serve an older build after its deployment allowance was exhausted. Use Cloudflare Pages links **above** to review the current original build and demo.
+- **Execution service:** the separately hosted [Cloudflare Worker health](https://remain.tajudeenowoeteniyan.workers.dev/healthz) and [execution status](https://remain.tajudeenowoeteniyan.workers.dev/api/execution/status) are operational evidence only. They do **not** establish that a funded BSC sale is enabled or completed.
+
+The archived [October 9 readiness snapshot](docs/submission/current-readiness-20261009.md) and `docs/submission/packet.json` refer to earlier conditions and should not be treated as current deployment or trading certificates. Binance's hosted RWA catalog has returned `ACCESS_COMPLIANCE_RESTRICTED`; changing hosting cannot override vendor eligibility or compliance. **No real-money trading is enabled by this README or the demo.**
+
+## Historical deployment and trust-boundary evidence (9 October 2026)
 
 | Service | Public URL | Verified behavior |
 | --- | --- | --- |
-| Usable planning frontend | [Remain on Netlify](https://remain-cash.netlify.app/) | Live pages, a clearly labelled `TEST_FIXTURE` planner, optional wallet discovery and status reporting |
+| Earlier planning frontend | [Remain on Netlify — previous host](https://remain-cash.netlify.app/) | Historical deployment evidence for a clearly labelled `TEST_FIXTURE` planner, optional wallet discovery and status reporting |
 | Durable execution infrastructure | [Cloudflare health](https://remain.tajudeenowoeteniyan.workers.dev/healthz) | `journal: READY`, exact Git `buildSha`, private AES-GCM SQLite-backed Durable Object |
 | Execution readiness | [Cloudflare execution status](https://remain.tajudeenowoeteniyan.workers.dev/api/execution/status) | `available: false`; no real-world sale or wallet signature can be initiated |
 | External backup | [Cloudflare operations](docs/cloudflare-execution.md) | Format and isolated restore tested; external R2 bucket still `NOT_CONFIGURED` |
