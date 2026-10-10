@@ -132,3 +132,12 @@ body:has(#demo-view) .topbar{position:sticky;top:0;z-index:30;background:var(--b
 @media(max-width:680px){.paper-outcome{padding:19px}.paper-outcome-heading{flex-wrap:wrap}.paper-outcome-grid{grid-template-columns:1fr;gap:8px}.paper-outcome-arrow{transform:rotate(90deg);font-size:21px}.paper-outcome-column{padding:18px}.paper-outcome-sub{margin-top:12px}.paper-outcome-summary{gap:12px}}
 
 #demo-guard-checks[hidden],#demo-outcome[hidden]{display:none}
+
+.paper-guard-details{margin:-10px 0 18px;border:1px solid #4a5645;background:#252c24}
+.paper-guard-details summary{list-style:none;cursor:pointer;padding:12px 14px;color:#d9e1ce;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.paper-guard-details summary::-webkit-details-marker{display:none}
+.paper-guard-details summary:hover{color:var(--yellow)}
+.paper-guard-details summary:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.paper-guard-details[open] summary span{transform:rotate(180deg)}
+.paper-guard-details .paper-guard-checks{margin:0;padding:0 8px 8px}
+#demo-guard-details[hidden]{display:none}
