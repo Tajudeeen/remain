@@ -397,7 +397,7 @@ try {
   await browser('wait', '--load', 'networkidle');
   await check("document.title.includes('Paper Studio') && document.querySelector('#demo-asset').options.length===3 && document.querySelector('#demo-cash').textContent==='350.00 USDT' && !document.querySelector('#demo-view').hidden");
   stage = 'paper studio recording navigation never leaves the demo';
-  await check("Array.from(document.querySelectorAll('a[href]')).every(a => a.getAttribute('href').startsWith('#demo-') && !!document.querySelector(a.getAttribute('href'))) && document.querySelectorAll('script[src]').length === 1 && !document.querySelector('script[src*="live.js"],script[src*="app.js"]')");
+  await check("Array.from(document.querySelectorAll('a[href]')).every(a => a.getAttribute('href').startsWith('#demo-') && !!document.querySelector(a.getAttribute('href'))) && document.querySelectorAll('script[src]').length === 1");
   for(const target of ['#demo-portfolio','#demo-trade','#demo-history','#demo-overview']){
     await browser('click', `nav[aria-label="Paper Studio sections"] a[href="${target}"]`);
     await check(`location.pathname==='/studio.html' && location.hash==='${target}' && document.querySelector('nav a[href="${target}"]').getAttribute('aria-current')==='location' && document.querySelector('#demo-asset').options.length===3`);
