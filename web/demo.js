@@ -111,7 +111,7 @@ function showQuote(q){
   :'PASS · Regular simulated market · Fresh synthetic RFQ · Position floor protected · Minimum cash covers target';
  $('demo-quote-math').textContent='Illustrative price '+demoMoney(asset.priceCents)+' USDT · fee '+demoMoney(q.feeCents)+
   ' · impact '+(q.impactBps/100).toFixed(2)+'% · slippage buffer '+demoMoney(q.slippageCents)+
-  ' · quote expires in 45 seconds.';
+  ' · quote expires in 120 seconds.';
  const released=Math.min(100,100*q.soldMilli/q.balanceMilli);
  $('demo-exposure').style.setProperty('--paper-sold',released.toFixed(2)+'%');
  $('demo-kept-pct').textContent=(100-released).toFixed(1)+'%';
