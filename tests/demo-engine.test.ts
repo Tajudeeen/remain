@@ -4,7 +4,7 @@ import {DEMO_ASSETS,newDemoState,simulatePlan,assertFreshDemoQuote,executeDemoOr
 const intent={assetId:'nova',cashTarget:'250',retainPercent:70,maxImpactBps:50,scenario:'regular',allowClosed:false};
 test('a minimum-input quote preserves the floor and the cash target',()=>{
  const s=newDemoState(),p=simulatePlan(s,intent,10000);assert.equal(p.status,'READY');if(!p.quote)throw Error('quote missing');
- const q=p.quote;assert.ok(q.minimumCents>=25000);assert.ok(q.remainingMilli>=q.floorMilli);assert.equal(q.balanceMilli,s.positions.nova);
+ const q=p.quote;assert.ok(q.minimumCents>=25000);assert.ok(q.remainingMilli>=q.floorMilli);assert.equal(q.balanceMilli,s.positions.nova!);
  assert.equal(q.chainTransaction,null);assert.equal(q.mode,'SIMULATION');
  assert.ok(simulatePlan(s,{...intent,cashTarget:'250',retainPercent:100},10000).status==='BLOCKED');
 });
@@ -40,7 +40,7 @@ test('simulated settlement updates one asset, USDT accounting and receipt',async
  const s=newDemoState(),p=simulatePlan(s,intent,10000);if(!p.quote)throw Error('no quote');
  const {state,order}=executeDemoOrder(s,p.quote,11000);
  assert.ok(validDemoState(state));assert.equal(state.epoch,1);
- assert.equal(state.positions.nova,s.positions.nova-p.quote.soldMilli);
+ assert.equal(state.positions.nova,s.positions.nova!-p.quote.soldMilli);
  assert.equal(state.positions.orbit,s.positions.orbit);
  assert.equal(state.cashCents-s.cashCents,order.cashReceivedCents);
  assert.ok(order.cashReceivedCents>=p.quote.minimumCents);
@@ -50,7 +50,7 @@ test('simulated settlement updates one asset, USDT accounting and receipt',async
  assert.equal(await verifyDemoReceipt({...receipt,sha256:'0'.repeat(64)}),false);
  const altered=structuredClone(receipt);altered.payload.order.cashAfterCents+=1;
  assert.equal(await verifyDemoReceipt(altered),false);
- const forged=structuredClone(receipt);forged.payload.order.transactionHash='0x'+'a'.repeat(64);
+ const forged=structuredClone(receipt);Object.assign(forged.payload.order,{transactionHash:'0x'+'a'.repeat(64)});
  assert.equal(await verifyDemoReceipt(forged),false);
 });
 test('repeated orders cannot release stock below floor',()=>{
@@ -59,7 +59,7 @@ test('repeated orders cannot release stock below floor',()=>{
   const p=simulatePlan(s,{...intent,cashTarget:'50'},10000+i*100);
   if(!p.quote)break;
   s=executeDemoOrder(s,p.quote,10100+i*100).state;
-  assert.ok(s.positions.nova>=0);
+  assert.ok(s.positions.nova!>=0);
  }
- assert.ok(s.positions.nova<=DEMO_ASSETS[0]!.startingMilli);
+ assert.ok(s.positions.nova!<=DEMO_ASSETS[0]!.startingMilli);
 });
