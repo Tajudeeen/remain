@@ -18,6 +18,17 @@ REMAIN_COW_PROFILE_REVIEWED = "false"
 REMAIN_CLOUDFLARE_LIVE_APPROVED = "false"
 REMAIN_BACKUP_APPROVED = "false"
 
+# Isolated PR previews: separate Durable Object namespace, all financial actions OFF.
+[[previews.durable_objects.bindings]]
+name = "REMAIN_LEDGER"
+class_name = "RemainLedger"
+
+[previews.vars]
+REMAIN_EXECUTION_ENABLED = "false"
+REMAIN_COW_PROFILE_REVIEWED = "false"
+REMAIN_CLOUDFLARE_LIVE_APPROVED = "false"
+REMAIN_BACKUP_APPROVED = "false"
+
 # Stamp Git's exact deployed source commit during Wrangler build, not a mutable
 # dashboard flag. Cloudflare Builds runs this command after checkout.
 [build]
