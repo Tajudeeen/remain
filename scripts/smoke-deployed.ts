@@ -35,7 +35,10 @@ assert.equal(page.status, 200);
 const html = await page.text();
 assert.match(html, /Remain/);
 assert.match(html, /TEST_FIXTURE|synthetic/i);
-const studio = await fetch(new URL('/studio.html', base), { redirect:'error', signal:AbortSignal.timeout(5000) });
+// Cloudflare Pages automatically redirects /studio.html to its canonical /studio.
+// API redirects remain forbidden, and the local fixture server still serves /studio.html.
+const studioPath=base.hostname==='remain-paper.pages.dev'?'/studio':'/studio.html';
+const studio = await fetch(new URL(studioPath, base), { redirect:'error', signal:AbortSignal.timeout(5000) });
 assert.equal(studio.status,200,'Paper Studio must be present in exact deployment');
 const studioHtml=await studio.text();
 assert.match(studioHtml,/SIMULATION ONLY/);
