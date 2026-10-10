@@ -40,7 +40,7 @@ function updatePortfolio(){
 }
 function progress(){
  const labels=['01 · TARGET','02 · GUARD','03 · REVIEW','04 · SIMULATED'];
- const position=stage==='IDLE'?0:stage==='READY'?2:stage==='REVIEW'?3:4;
+ const position=stage==='IDLE'?0:stage==='READY'?1:stage==='REVIEW'?2:3;
  for(let i=0;i<labels.length;i++){
   const el=$('demo-step-'+i);el.classList.toggle('active',i<=position);
   el.classList.toggle('current',i===position);
@@ -99,6 +99,16 @@ function renderOrders(){
    row.append(info,amt,time);list.append(row);
   }
  }
+ if(state.orders.length){
+   const detail=document.createElement('ol');detail.className='paper-event-trail';
+   const titles={'INTENT_ACCEPTED':'Cash target accepted','BELLGUARD_PASSED':'BellGuard checked limits',
+     'USER_CONFIRMED':'Simulation confirmed','SIMULATED_FILL':'Fictional fill recorded','ACCOUNTING_RECONCILED':'Portfolio arithmetic reconciled'};
+   for(const event of state.orders[0].events){
+    const li=document.createElement('li'),number=document.createElement('span'),label=document.createElement('span');
+    number.textContent=String(event.sequence).padStart(2,'0');
+    label.textContent=titles[event.type]||'Simulation event';li.append(number,label);detail.append(li);
+   }list.append(detail);
+  }
  $('demo-proof-controls').hidden=!state.orders.length;
 }
 async function renderReceipt(order){
