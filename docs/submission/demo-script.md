@@ -1,32 +1,42 @@
-# Demo recording plan
+# Recording-ready Remain Paper Studio walkthrough
 
-## Judge-ready truthful demonstration, 3:15 maximum
+**Canonical demo:** https://remain-paper.pages.dev/studio
 
-This is an operator storyboard, not a recorded video or a live-trade demonstration. Keep the TEST_FIXTURE banner visible throughout. Narrate in your own words and show the actual result.
+**Target:** A coherent ~2:30–3:00 demonstration filmed on one page, with no wallet handoff, no live-market route and no tab switching. A real stock sale is **not** demonstrated. Every balance, price, quote, order and receipt is SIMULATED.
 
-| Time | Screen and cursor action | Say/show (do not overclaim) |
+## Before recording (30 seconds, off-camera)
+
+1. Open the canonical Cloudflare Pages link in a browser with notifications hidden.
+2. Click **Prepare my recording**. This resets all fictional orders, restores NOVA-SIM and 350.00 fictional USDT cash, sets 250.00 USDT target and 70% retained floor, and jumps back to Overview without a popup.
+3. Check the SIMULATION ONLY banner and scroll so the headline is visible. Use the full browser width, hide bookmark/personal tabs, and move the cursor away from sensitive browser controls.
+4. A fresh signed-out browser can verify `/healthz` build SHA separately before filming. Don't display a wallet, private keys, a funded account, signed payloads or a live-trading claim.
+
+## Demo timeline and cursor cues
+
+| Video time | Mouse/cursor action inside Paper Studio | What the judge should see and what to explain |
 | --- | --- | --- |
-| 0:00–0:20 | Open `https://remain-cash.netlify.app/`. Pause on the headline, then the primary cash-planning action. | “Remain turns the amount you need into a bounded tokenized-stock sale proposal while protecting the exposure you choose to keep.” |
-| 0:20–0:55 | Click the demo planner and focus the target input and retained-percentage field. Enter 25 USDT and 70% retained in the **labelled test fixture**. | Explain these are fictional balances and prices, not your personal holdings or market quotes. |
-| 0:55–1:25 | Click calculate, trace the recommended debit/retained holding. Change target to an unreachable amount. | Show the safe plan and the blocked state; the engine is not allowed to violate retained exposure to satisfy a cash target. |
-| 1:25–1:50 | Change market to paused, toggle the closed-market permission if offered, click again. | BellGuard checks freshness, market state, slippage and constraints; paused still fails. These are deterministic fixture scenarios. |
-| 1:50–2:15 | Navigate to the live workspace, show wallet-connect and current Binance integration status **without connecting someone else's wallet**. | Wallet/RWA discovery code exists; current authorized Binance hosting is returning access errors. Do not fabricate a quote or imply a position. |
-| 2:15–2:40 | Open `https://remain.tajudeenowoeteniyan.workers.dev/healthz` and `/api/execution/status` in another tab. Hover over `journal: READY` and `available: false`. | Show deployed Worker + encrypted Durable Object, then explicitly state that live execution is intentionally locked pending vendor approval and mainnet proof. |
-| 2:40–3:05 | Open public `github.com/Tajudeeen/remain`, go to tests and `docs/cloudflare-execution.md`; briefly show CI green. | The genuine implementation includes wallet-signing checks, encrypted durable recovery, two-RPC settlement checks and adversarial tests. CI proves fixture behavior only. |
-| 3:05–3:15 | Return to the landing page and leave status unobstructed. | Close with the cash-first/retain-exposure use case. State exactly what remains pending. |
+| 0:00–0:18 | Pause at **Overview**, point at **Cash today. Exposure tomorrow.** | Remain starts with a cash need and preserves a chosen stock exposure floor instead of selling the whole position. All current values are fictional. |
+| 0:18–0:40 | Click **Portfolio**, select NOVA-SIM, then **Simulate** | Three fictional stock holdings and a synthetic USDT ledger. No browser extension or wallet signature is involved. |
+| 0:40–1:10 | Point at target **250.00 USDT**, retain **70%**, cap **0.50%**, press **Find guarded cash quote** | The engine finds the smallest synthetic stock debit meeting a fee/slippage-adjusted minimum, within the retained stock floor. |
+| 1:10–1:36 | Point at the BellGuard decision cards and **Before → After** outcome | Show observed impact vs cap, current stock units vs retained floor, and achievable cash vs requested cash. The before/after figures come from the current simulated quote. |
+| 1:36–2:01 | Click **Review simulated order**, then **Confirm simulated sale** | Watch the before/after panel change from PROJECTED to SIMULATED FILL COMPLETE. USDT cash and stock holdings reconcile in the fictional journal. No real funds move. |
+| 2:01–2:22 | Click **History & proof**, scroll to **A receipt, not a claim**, choose **Recheck latest receipt** | The event sequence and checksum verify supplied simulation arithmetic. Do NOT say it proves a blockchain settlement; a checksummed fiction is unauthenticated. |
+| 2:22–2:45 | Click **Simulate**, select the **Trading halt** preset, point to BellGuard's MARKET/BLOCKED rule | The halt remains blocked even if closed-market permission is enabled. Explain why refusing unsafe requests is central to the product. |
+| 2:45–3:00 | Click **Overview** and close on the brand message | The current demo proves product behavior. The real Binance integration and BSC settlement remain gated by authorized access and independent verification. |
 
-Record a backup take. Remove secret values, private account pages and browser notifications from the recording. Do not record a signature or a financial transaction until that separate action is authorized.
+## Screen-recording resilience
 
-## Final contest video upgrade, only after the live gates pass
+- All links, logo, navigation and footer **stay inside Paper Studio**; no live wallet or landing-page route.
+- If the quote expires after 45 seconds, generate a new one; never force a stale quote.
+- **Prepare my recording** deliberately replaces the fictional session state in one click. Use it before each take. The separate **Reset demo** control still asks for confirmation.
+- The **Before/After** result shows *projected* values prior to confirmation and *settled simulation* values after confirmation. Do not describe them as exchange fills.
+- If demo browsing accidentally affects the tab session, click **Prepare my recording** and restart the take rather than cutting between mismatched balances.
+- After recording, play the public video signed-out and ensure all source/deployment links reflect the newest Cloudflare Pages commit.
 
-The current organizer page recommends a video of four minutes or less but does not require it. The prepared route is `/#trade`. Show approvals, order signing and submission as separate owner-confirmed actions. For a real receipt include exact UID, settlement hash and a fresh independent verifier result. Explain that exposure is checked against a snapshot and reconciled afterward. Concurrent wallet activity can invalidate the floor.
+## Technical evidence outside the recording
 
-Replace the fictional position with a real supported BSC stock wrapper and authenticated data. Include the reviewed tiny sale and reconcile actual USDT, remaining stock, vendor order identity and BSC transaction. Show independent settlement verification. The final cut must remain under four minutes. Never splice fixture accounting into a real settlement claim.
+You may link reviewers to the public source, GitHub Actions and deployment evidence separately without making the demo UI navigate there. The Pages deployment is a self-contained fictional simulation; it is **not** a BSC testnet or Binance Web3 API trade. Compliance business code 40304 remains a real integration blocker. Keep the required developer-experience report in your own words, following [the owner worksheet](devex-worksheet.md).
 
-## Rehearsal checklist
+## Eligible live-trade footage (separate future scope)
 
-- Check the deployed build SHA before recording.
-- Run `npm run check:submission`. Its packet integrity can pass while submission readiness stays BLOCKED.
-- Run `npm run submission:status`, which currently exits 1 by design.
-- Test the chosen scenarios once before the take. Avoid rapid repeated requests that exhaust the deployed rate budget.
-- Save the final video URL only after recording and signed-out playback verification. No video URL exists yet.
+Do not splice a synthetic receipt into a signed BSC trade. A real demonstration would require the organizer-approved API route, an eligible held stock, a real RFQ/build, user-approved signing, successful mainnet settlement and independent USDT/stock reconciliation. Real-money execution remains OFF.
