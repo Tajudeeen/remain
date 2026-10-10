@@ -86,3 +86,9 @@ html{scroll-behavior:smooth}
 .topbar nav[aria-label="Paper Studio sections"] a{transition:color .18s ease}
 .topbar nav[aria-label="Paper Studio sections"] a[aria-current="location"]{color:var(--yellow);text-decoration:underline;text-underline-offset:6px}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.topbar nav[aria-label="Paper Studio sections"] a{transition:none}}
+
+/* Keep studio section tabs on screen while filming; avoid auto-scroll clicks
+   racing another smooth scroll back to the non-sticky header. */
+body:has(#demo-view) .topbar{position:sticky;top:0;z-index:30;background:var(--bg);border-bottom:1px solid var(--line)}
+#demo-overview,#demo-portfolio,#demo-trade,#demo-history,#demo-receipts{scroll-margin-top:132px}
+@media(max-width:768px){#demo-overview,#demo-portfolio,#demo-trade,#demo-history,#demo-receipts{scroll-margin-top:170px}}
