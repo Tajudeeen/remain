@@ -114,6 +114,14 @@ if (typeof document !== 'undefined' && $('live-view')) {
     if(wallets.length===1) connectWithProvider(chooseWalletProvider(wallets[0].provider));
     else showWalletChoice(connectWithProvider);
   });
+  // The header action must actually start provider selection, not only scroll to the wallet page.
+  // Connecting still requires a direct user gesture, and never signs or submits an order.
+  $('nav-wallet-connect')?.addEventListener('click', () => {
+    if(session.state.status==='CONNECTING'||session.state.status==='CONNECTED')return;
+    const wallets=availableWallets();
+    if(wallets.length===1)connectWithProvider(chooseWalletProvider(wallets[0].provider));
+    else showWalletChoice(connectWithProvider);
+  });
   $('wallet-choose').addEventListener('click', () => showWalletChoice(connectWithProvider));
   $('wallet-switch').addEventListener('click', async () => {
     if(!provider || session.state.status!=='WRONG_CHAIN')return;
