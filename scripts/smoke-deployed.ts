@@ -35,6 +35,16 @@ assert.equal(page.status, 200);
 const html = await page.text();
 assert.match(html, /Remain/);
 assert.match(html, /TEST_FIXTURE|synthetic/i);
+const studio = await fetch(new URL('/studio.html', base), { redirect:'error', signal:AbortSignal.timeout(5000) });
+assert.equal(studio.status,200,'Paper Studio must be present in exact deployment');
+const studioHtml=await studio.text();
+assert.match(studioHtml,/SIMULATION ONLY/);
+assert.match(studioHtml,/Confirm simulated sale/);
+for(const [path,type] of [['demo-engine.js',/(?:java|ecma)script/],['demo.js',/(?:java|ecma)script/],['demo.css',/text\/css/]] as const){
+ const response=await fetch(new URL('/'+path,base),{redirect:'error',signal:AbortSignal.timeout(5000)});
+ assert.equal(response.status,200,path);
+ assert.match(response.headers.get('content-type')??'',type);
+}
 const browserResponse = await fetch(new URL('/response.js', base), { redirect: 'error', signal: AbortSignal.timeout(5000) });
 assert.equal(browserResponse.status, 200);
 assert.match(browserResponse.headers.get('content-type') ?? '', /(?:java|ecma)script/);
