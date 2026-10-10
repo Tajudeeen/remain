@@ -244,8 +244,11 @@ try {
   await browser('click','#live-refresh');
   await browser('wait','--fn',"document.querySelector('#live-server').textContent==='Market data unavailable'");
 
-  await browser('click', '#wallet-connect');
+  // Header 'Connect wallet' must open the provider chooser on an explicit click,
+  // not merely navigate to a section while leaving the user disconnected.
+  await browser('click', '#nav-wallet-connect');
   await check("!document.querySelector('#wallet-chooser').hidden && document.querySelector('#wallet-chooser').textContent.includes('No compatible browser wallet') && document.querySelector('#wallet-state').textContent === 'Not connected' && document.querySelector('#live-inspect').disabled && !document.querySelector('#wallet-connect').disabled");
+  await browser('click', '#wallet-connect');
 
   stage = 'real-browser late wallet discovery and selected-provider BSC balance read';
   // An EIP-6963 provider arriving AFTER the chooser opens must appear
