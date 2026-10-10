@@ -38,6 +38,7 @@ export async function statusJSON(endpoint, signal, fetcher=fetch) {
       chunks.push(value);
     }
     signal?.throwIfAborted();
+    if(length!==null&&size!==length)throw Error('STATUS_UNAVAILABLE');
   } finally {signal?.removeEventListener('abort',abort);reader.releaseLock();}
   const raw=new Uint8Array(size);let offset=0;
   for(const chunk of chunks){raw.set(chunk,offset);offset+=chunk.byteLength;}
