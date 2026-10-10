@@ -20,7 +20,7 @@ The standalone *frontend* does not authenticate real data. Every balance and fil
 
 1. Open Paper Studio and select a stock (three fictional positions; 350.00 fictional USDT starting cash).
 2. Ask for 250 synthetic USDT, retain 70% and cap impact at 0.50%. The integer-cent and thousandth-share search finds the smallest synthetic debit meeting its minimum output, fee and slippage buffer.
-3. Review BellGuard's simulated verdict, exact debit, minimum payout and remaining shares. The quote expires after 45 seconds; changing any input discards it.
+3. Review BellGuard's simulated verdict, exact debit, minimum payout and remaining shares. The quote expires after 120 seconds; changing any input discards it.
 4. Review the simulated order, then confirm. No real provider call, signer, RPC or transaction is used. The fictional portfolio is debited/credited and the journal records five deterministic stages.
 5. Download the receipt and use Recheck latest receipt or upload it for verification. A SHA-256 hash and recomputed accounting detect accidental or unrehashable changes. A forged simulation file can be rehashed, so this is not an authenticated, tamper-proof blockchain receipt.
 6. Test Trading halt, High impact, Thin liquidity and Stale data. Paused/stale never pass; a closed session needs explicit permission. Retained stock stays above the chosen floor.
