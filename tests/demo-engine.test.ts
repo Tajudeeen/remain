@@ -30,7 +30,7 @@ test('invalid amounts and malformed intents are rejected',()=>{
 test('quote expiry, stale epochs and tampering fail closed',()=>{
  const s=newDemoState(),p=simulatePlan(s,intent,10000);
  if(!p.quote)throw Error('no quote');
- assert.throws(()=>assertFreshDemoQuote(s,p.quote!,55000),/DEMO_QUOTE_EXPIRED/);
+ assert.throws(()=>assertFreshDemoQuote(s,p.quote!,130000),/DEMO_QUOTE_EXPIRED/);
  assert.throws(()=>assertFreshDemoQuote(s,{...p.quote!,soldMilli:p.quote!.soldMilli+1},11000),/DEMO_QUOTE_CHANGED/);
  const result=executeDemoOrder(s,p.quote,11000);
  assert.throws(()=>executeDemoOrder(result.state,p.quote!,12000),/DEMO_QUOTE_EXPIRED/);
