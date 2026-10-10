@@ -26,6 +26,8 @@
       <span class="paper-stamp">INTERACTIVE SIMULATION</span>
       <h1 id="demo-title" tabindex="-1">Cash today.<br><em>Exposure tomorrow.</em></h1>
       <p>Experience the entire Remain workflow with fictional tokenized equities. Set a target, protect the shares you want to keep, review the guarded quote and settle a simulated order. No wallet. No Binance. No real trade.</p>
+      <button id="demo-record-ready" class="paper-record-button" type="button" aria-describedby="demo-record-note">↻ Prepare my recording <span aria-hidden="true">↗</span></button>
+      <p id="demo-record-note" class="paper-record-hint">One click restores the original demo portfolio, default 250 USDT goal and 70% retention. It clears only fictional trades in this tab.</p>
     </div>
     <aside class="paper-hero-aside" aria-label="Simulation boundary"><span>THE REMAIN METHOD / DEMO</span><strong>Keep<br>more.</strong><small>Simulated RFQs, exact integer accounting and receipts you can recheck.</small></aside>
   </section>
@@ -56,6 +58,7 @@
     <div class="paper-results">
       <span class="paper-overline">02 / WHAT REMAINS</span><h2>BellGuard.<br>Not just a green light.</h2>
       <p id="demo-guard" role="status" aria-live="polite" data-state="idle">Configure your cash target and ask BellGuard for a quote.</p>
+      <details id="demo-guard-details" class="paper-guard-details" hidden><summary>Inspect each BellGuard rule <span aria-hidden="true">⌄</span></summary><div id="demo-guard-checks" class="paper-guard-checks" aria-label="BellGuard decision details" aria-live="polite" hidden></div></details>
       <div id="demo-result" hidden>
         <div class="paper-result-metrics">
           <div class="metric"><small>Protected demo minimum</small><strong id="demo-minimum">—</strong></div>
@@ -77,6 +80,16 @@
       </div>
       <p id="demo-message" role="status" aria-live="polite">Your first quote starts here. No real funds can move.</p>
     </div>
+  </section>
+  <section id="demo-outcome" class="paper-outcome" aria-labelledby="demo-outcome-title" hidden>
+    <div class="paper-outcome-heading"><div><span class="paper-overline">THE MOMENT THAT MATTERS</span><h2 id="demo-outcome-title">Cash received. Shares retained.</h2><p id="demo-outcome-status" class="paper-muted">A fictional outcome, never a wallet fill.</p></div><span id="demo-outcome-tag" class="paper-outcome-tag">PROJECTED SIMULATION</span></div>
+    <div class="paper-outcome-grid">
+      <div class="paper-outcome-column"><span class="paper-overline">BEFORE</span><strong id="demo-before-stock">—</strong><span id="demo-before-ticker" class="paper-muted">fictional shares</span><div class="paper-outcome-sub"><span>Demo USDT balance</span><strong id="demo-before-cash">—</strong></div></div>
+      <div class="paper-outcome-arrow" aria-hidden="true">→</div>
+      <div class="paper-outcome-column after"><span class="paper-overline">AFTER</span><strong id="demo-after-stock">—</strong><span id="demo-after-ticker" class="paper-muted">fictional shares retained</span><div class="paper-outcome-sub"><span>Demo USDT balance</span><strong id="demo-after-cash">—</strong></div></div>
+    </div>
+    <div class="paper-outcome-summary"><span>STOCK UNITS RELEASED <strong id="demo-outcome-sold">—</strong></span><span>USDT FROM THIS SIMULATION <strong id="demo-outcome-received">—</strong></span></div>
+    <p class="paper-muted">Figures reflect the selected fictional stock only. No Binance quote, BSC transaction, wallet signature or settlement proof.</p>
   </section>
   <section class="paper-bottom" aria-label="Simulation activity and receipt">
     <div class="paper-ledger" id="demo-history"><span class="paper-overline">04 / YOUR JOURNAL</span><h2>See the consequences.</h2><div id="demo-activity"><p class="paper-muted">No simulated trades yet.</p></div><p class="paper-muted">Each accepted simulated order changes only this tab's fictional portfolio. Reset any time.</p></div>

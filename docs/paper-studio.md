@@ -8,6 +8,10 @@ Paper Studio is a self-contained, fully fictional product walkthrough. It is **n
 
 Open the canonical Cloudflare Pages URL **https://remain-paper.pages.dev/studio**. Once inside Paper Studio, every clickable link (the Remain logo, top navigation, footer, and contextual links) scrolls **within the Paper Studio document**. None opens the original homepage, live wallet, unsigned-review workspace, GitHub, or an external site. The demo loads only `demo.js` and `demo-engine.js`; it makes no live wallet or Binance request.
 
+Click **Prepare my recording** for a one-click deliberate reset of all fictional orders and quote inputs (NOVA-SIM, 250 synthetic USDT, 70% retention, 0.50% impact cap, regular scenario). This control does **not** request a wallet or open a reset confirmation popup. The separate Reset demo control still confirms. The dynamic **Before → After** panel projects shares and USDT directly from the quoted arithmetic, then changes to simulated settled balances after order confirmation; it does not show a real transaction.
+
+The **Inspect each BellGuard rule** panel stays collapsed after a clean simulated quote, keeping review controls visible. Open it to inspect exact observed values, limits and safe next actions; it expands automatically for blocked/caution scenarios. BellGuard's explainable checks show the observed simulated market state, price impact, retained floor, net cash ceiling, corresponding limit, and safe response. A halt and stale market observations stay blocked; a permitted closed market is a caution, not a normal pass.
+
 Use the four top navigation links to record a coherent journey: **Overview → Portfolio → Simulate → History & proof**. The logo brings you back to the demo overview. You may demonstrate risk blocks, one simulated fill and a verified simulation receipt without route changes or a wallet popup. The Reset button resets only fictional demo state (after its explicit confirmation).
 
 The standalone *frontend* does not authenticate real data. Every balance and fill remains synthetic, including when recording a competition video. Users can independently access Remain's live app elsewhere, but there are deliberately no outward links from Paper Studio.
@@ -16,7 +20,7 @@ The standalone *frontend* does not authenticate real data. Every balance and fil
 
 1. Open Paper Studio and select a stock (three fictional positions; 350.00 fictional USDT starting cash).
 2. Ask for 250 synthetic USDT, retain 70% and cap impact at 0.50%. The integer-cent and thousandth-share search finds the smallest synthetic debit meeting its minimum output, fee and slippage buffer.
-3. Review BellGuard's simulated verdict, exact debit, minimum payout and remaining shares. The quote expires after 45 seconds; changing any input discards it.
+3. Review BellGuard's simulated verdict, exact debit, minimum payout and remaining shares. The quote expires after 120 seconds; changing any input discards it.
 4. Review the simulated order, then confirm. No real provider call, signer, RPC or transaction is used. The fictional portfolio is debited/credited and the journal records five deterministic stages.
 5. Download the receipt and use Recheck latest receipt or upload it for verification. A SHA-256 hash and recomputed accounting detect accidental or unrehashable changes. A forged simulation file can be rehashed, so this is not an authenticated, tamper-proof blockchain receipt.
 6. Test Trading halt, High impact, Thin liquidity and Stale data. Paused/stale never pass; a closed session needs explicit permission. Retained stock stays above the chosen floor.
@@ -28,7 +32,7 @@ The standalone *frontend* does not authenticate real data. Every balance and fil
 - web/demo.js is a browser-only controller with a fictional in-tab portfolio and activity list. Storage is best-effort sessionStorage (not secured, authenticated, durable, multi-user or encrypted).
 - web/studio.html and web/demo.css form a dedicated same-domain demo surface. Production live activation flags and wallet routes are unchanged.
 - Arithmetic uses integer cents and thousandths of shares. Synthetic prices, impact, fees, slippage and fills are fixed assumptions, not market prices or executable quotes. Binary search minimizes sale input within this *one fictional* price function, not all real venues.
-- Quote lifetime is 45 seconds. Quote is bound to one balance epoch, stock, scenario and intent; stale, changed and duplicate settlement cannot be processed.
+- Quote lifetime is 120 seconds. Quote is bound to one balance epoch, stock, scenario and intent; stale, changed and duplicate settlement cannot be processed.
 - The simulator rederives the quote before accepting a simulated sale, then checks its synthetic floor and minimum payout.
 - Simulation receipts explicitly set kind REMAIN_DEMO_RECEIPT_V1, mode SIMULATION, authenticity NONE; transaction hashes, block numbers and signatures are null. Verification checks event order, accounting, amount bounds and recomputed SHA-256.
 - No private keys, seed phrases, Binance credentials or wallet approvals are used. Every displayed position and quantity is fictional.

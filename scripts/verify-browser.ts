@@ -411,19 +411,27 @@ try {
   await browser('wait','--fn',"window.location.hash==='#demo-overview'");
   await check("location.pathname==='/studio.html'");
   stage = 'paper studio complete cash-to-simulated-settlement journey';
+  await browser('click','#demo-record-ready');
+  await check("document.querySelector('#demo-cash').textContent==='350.00 USDT' && document.querySelector('#demo-order-count').textContent==='0' && document.querySelector('#demo-target').value==='250.00' && document.querySelector('#demo-retain').value==='70' && document.querySelector('#demo-market').value==='regular' && document.querySelector('#demo-outcome').hidden && location.pathname==='/studio.html'");
   await browser('click', '#demo-calculate');
   await browser('wait','--fn',"document.querySelector('#demo-guard').dataset.state==='ready' && !document.querySelector('#demo-review').disabled");
-  await check("document.querySelector('#demo-minimum').textContent.endsWith('USDT') && document.querySelector('#demo-remain').textContent.includes('NOVA-SIM')");
+  await check("document.querySelector('#demo-minimum').textContent.endsWith('USDT') && document.querySelector('#demo-remain').textContent.includes('NOVA-SIM') && document.querySelector('#demo-outcome').dataset.phase==='projected' && !document.querySelector('#demo-outcome').hidden && document.querySelector('#demo-before-stock').textContent==='14' && document.querySelector('#demo-before-cash').textContent==='350.00 demo USDT' && document.querySelector('#demo-outcome-received').textContent.includes('USDT') && document.querySelectorAll('#demo-guard-checks .paper-guard-row').length===5 && document.querySelector('[data-rule=IMPACT] p').textContent.includes('0.20%')");
+  await check("document.querySelector('#demo-guard-details').hidden===false && document.querySelector('#demo-guard-details').open===false");
+  await browser('click','#demo-guard-details summary');
+  await check("document.querySelector('#demo-guard-details').open===true");
+  await browser('click','#demo-guard-details summary');
+  await check("document.querySelector('#demo-guard-details').open===false");
   await browser('click','#demo-review');
+  console.log('Paper Studio review diagnostic:',JSON.stringify(await browser('eval',"({message:document.querySelector('#demo-message')?.textContent,expiry:document.querySelector('#demo-expiry')?.textContent,guard:document.querySelector('#demo-guard')?.textContent,reviewDisabled:document.querySelector('#demo-review')?.disabled,reviewBoxHidden:document.querySelector('#demo-review-box')?.hidden,confirmBoxHidden:document.querySelector('#demo-confirm-box')?.hidden,confirmDisabled:document.querySelector('#demo-confirm')?.disabled})")));
   await check("!document.querySelector('#demo-confirm-box').hidden && !document.querySelector('#demo-confirm').disabled");
   await browser('click','#demo-confirm');
   await browser('wait','--fn',"document.querySelector('#demo-order-count').textContent==='1'");
   await browser('wait','--fn',"document.querySelector('#demo-proof').textContent.includes('SIMULATED SETTLEMENT')");
-  await check("document.querySelector('#demo-message').textContent.includes('SIMULATED FILL COMPLETE') && document.querySelector('#demo-cash').textContent!=='350.00 USDT' && document.querySelector('#demo-proof').textContent.includes('SIMULATED SETTLEMENT')");
+  await check("document.querySelector('#demo-message').textContent.includes('SIMULATED FILL COMPLETE') && document.querySelector('#demo-cash').textContent!=='350.00 USDT' && document.querySelector('#demo-proof').textContent.includes('SIMULATED SETTLEMENT') && document.querySelector('#demo-outcome').dataset.phase==='settled' && document.querySelector('#demo-after-cash').textContent===document.querySelector('#demo-cash').textContent.replace(' USDT',' demo USDT') && document.querySelector('#demo-outcome-tag').textContent==='SIMULATED FILL COMPLETE'");
   await browser('click','#demo-verify');
   await check("document.querySelector('#demo-proof').textContent.includes('PASS') && document.querySelector('#demo-digest').textContent.length>20");
   await browser('click','[data-demo-scenario="paused"]');
-  await check("document.querySelector('#demo-guard').dataset.state==='blocked' && document.querySelector('#demo-guard').textContent.includes('halted') && document.querySelector('#demo-order-count').textContent==='1'");
+  await check("document.querySelector('#demo-guard').dataset.state==='blocked' && document.querySelector('#demo-guard').textContent.includes('halted') && document.querySelector('#demo-order-count').textContent==='1' && document.querySelector('[data-rule=MARKET]').dataset.status==='blocked' && document.querySelector('#demo-guard-details').open===true && document.querySelector('#demo-outcome').hidden");
   await browser('click','[data-demo-scenario="regular"]');
   await check("document.querySelector('#demo-guard').dataset.state==='ready' && !document.querySelector('#demo-review').disabled");
   // Market closure requires explicit permission and must be styled as caution, not a normal pass.
@@ -437,6 +445,9 @@ try {
   await browser('fill','#demo-target','50000');
   await browser('click','#demo-calculate');
   await check("document.querySelector('#demo-guard').dataset.state==='blocked' && document.querySelector('#demo-order-count').textContent==='1'");
+  stage = 'one-click recording reset after a completed demo';
+  await browser('click','#demo-record-ready');
+  await check("document.querySelector('#demo-cash').textContent==='350.00 USDT' && document.querySelector('#demo-order-count').textContent==='0' && document.querySelector('#demo-market').value==='regular' && document.querySelector('#demo-impact').value==='50' && document.querySelector('#demo-target').value==='250.00' && document.querySelector('#demo-retain').value==='70' && document.querySelector('#demo-outcome').hidden && document.querySelector('#demo-proof').textContent.includes('No receipt') && location.pathname==='/studio.html'");
   stage = 'paper studio responsive views';
   for(const width of [320,375,768,1024,1440]){
     await browser('set','viewport',String(width),'1000');

@@ -87,8 +87,56 @@ html{scroll-behavior:auto}
 .topbar nav[aria-label="Paper Studio sections"] a[aria-current="location"]{color:var(--yellow);text-decoration:underline;text-underline-offset:6px}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.topbar nav[aria-label="Paper Studio sections"] a{transition:none}}
 
-/* Keep studio section tabs on screen while filming; avoid auto-scroll clicks
-   racing another smooth scroll back to the non-sticky header. */
-body:has(#demo-view) .topbar{position:sticky;top:0;z-index:30;background:var(--bg);border-bottom:1px solid var(--line)}
-#demo-overview,#demo-portfolio,#demo-trade,#demo-history,#demo-receipts{scroll-margin-top:132px}
-@media(max-width:768px){#demo-overview,#demo-portfolio,#demo-trade,#demo-history,#demo-receipts{scroll-margin-top:170px}}
+/* The Studio header must never cover quote or risk controls after an
+   automatic scroll. A sticky header intercepted actual browser clicks. */
+body:has(#demo-view) .topbar{position:relative;top:auto;z-index:auto;background:var(--bg);border-bottom:1px solid var(--line)}
+#demo-overview,#demo-portfolio,#demo-trade,#demo-history,#demo-receipts{scroll-margin-top:24px}
+
+/* Judge-ready end-to-end simulation outcome and explainable guard decisions. */
+.paper-record-button{display:inline-flex;align-items:center;justify-content:space-between;gap:22px;margin-top:11px;padding:15px 19px;background:#eac66e;border:1px solid #f4d689;color:#20251c;font-size:12px;font-weight:700;letter-spacing:.2px;min-height:50px}
+.paper-record-button:hover{background:#f5d583}.paper-record-button:focus-visible{outline:3px solid #eac66e;outline-offset:4px}
+.paper-hero .paper-record-hint{color:#b9bfae;font-size:10px;max-width:385px;margin:9px 0 0;line-height:1.65}
+.paper-guard-checks{display:grid;gap:8px;margin:-10px 0 22px}
+.paper-guard-row{padding:12px 14px;background:#282f27;border:1px solid #465344;border-left:3px solid #a3c49c}
+.paper-guard-row[data-status=blocked]{border-left-color:#e79d86;background:#312723}
+.paper-guard-row[data-status=caution]{border-left-color:#e4bd69;background:#302d22}
+.paper-guard-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.paper-guard-head strong{font-size:11px;color:#f0f3e5;font-weight:600}
+.paper-guard-head span{font-size:9px;letter-spacing:1px;color:#b9d5a9;font-weight:700}
+.paper-guard-row[data-status=blocked] .paper-guard-head span{color:#efac95}
+.paper-guard-row[data-status=caution] .paper-guard-head span{color:#e4bd69}
+.paper-guard-row p{margin:6px 0 0;font-size:10px;line-height:1.55;color:#c1c8b7}
+.paper-guard-row .paper-guard-action{color:#e2e5d7}
+.paper-outcome{margin:30px 0;padding:34px;background:linear-gradient(125deg,#242a22,#293125 65%,#313628);border:1px solid #5c6952}
+.paper-outcome[data-phase=settled]{border-color:#89aa6f}
+.paper-outcome-heading{display:flex;align-items:start;justify-content:space-between;gap:20px;margin-bottom:25px}
+.paper-outcome-heading h2{font-size:clamp(25px,2.8vw,35px);font-weight:500;letter-spacing:-1.4px;line-height:1.1;margin:6px 0 9px}
+.paper-outcome-heading p{margin:0}
+.paper-outcome-tag{border:1px solid #7b7e59;color:#f3d786;padding:7px 10px;font-size:9px;font-weight:700;letter-spacing:1px;white-space:nowrap}
+.paper-outcome[data-phase=settled] .paper-outcome-tag{border-color:#82a879;color:#cee7ad}
+.paper-outcome-grid{display:grid;grid-template-columns:minmax(0,1fr) 38px minmax(0,1fr);gap:13px;align-items:center}
+.paper-outcome-column{padding:22px;background:#1d241d;border:1px solid #3a4938;min-width:0}
+.paper-outcome-column.after{background:#2c3829;border-color:#779468}
+.paper-outcome-column>strong{display:block;font-size:clamp(30px,4vw,54px);font-weight:500;line-height:1.08;letter-spacing:-1.8px;margin-top:13px;color:#fff4d5}
+.paper-outcome-column.after>strong{color:#d7efbe}
+.paper-outcome-column>.paper-muted{display:block;font-size:10px}
+.paper-outcome-arrow{font-size:25px;color:#d3be81;text-align:center}
+.paper-outcome-sub{border-top:1px solid #4e5c4b;margin-top:18px;padding-top:13px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;justify-content:space-between}
+.paper-outcome-sub span{color:#bdc9b7;font-size:10px}
+.paper-outcome-sub strong{font-weight:500;font-size:15px;color:#ede8d9}
+.paper-outcome-summary{display:flex;gap:14px;flex-wrap:wrap;padding:18px 0;margin:7px 0 0;border-bottom:1px solid #596451}
+.paper-outcome-summary>span{font-size:10px;letter-spacing:.3px;color:#c1c9b7;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.paper-outcome-summary strong{color:#eecb79;font-size:14px;letter-spacing:-.3px}
+.paper-outcome .paper-muted{line-height:1.6}
+@media(max-width:680px){.paper-outcome{padding:19px}.paper-outcome-heading{flex-wrap:wrap}.paper-outcome-grid{grid-template-columns:1fr;gap:8px}.paper-outcome-arrow{transform:rotate(90deg);font-size:21px}.paper-outcome-column{padding:18px}.paper-outcome-sub{margin-top:12px}.paper-outcome-summary{gap:12px}}
+
+#demo-guard-checks[hidden],#demo-outcome[hidden]{display:none}
+
+.paper-guard-details{margin:-10px 0 18px;border:1px solid #4a5645;background:#252c24}
+.paper-guard-details summary{list-style:none;cursor:pointer;padding:12px 14px;color:#d9e1ce;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.paper-guard-details summary::-webkit-details-marker{display:none}
+.paper-guard-details summary:hover{color:var(--yellow)}
+.paper-guard-details summary:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.paper-guard-details[open] summary span{transform:rotate(180deg)}
+.paper-guard-details .paper-guard-checks{margin:0;padding:0 8px 8px}
+#demo-guard-details[hidden]{display:none}
