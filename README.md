@@ -4,6 +4,12 @@ Public web app: [remain-cash.netlify.app](https://remain-cash.netlify.app/). The
 
 Raise cash. Stay invested.
 
+## Paper Studio: complete risk-checked simulation
+
+**[Launch the full interactive Paper Studio](https://remain-cash.netlify.app/studio.html)** (after the newest site build is published) or open `/studio.html` on a local build. Three fictional stock positions, a demo USDT ledger, cash-target search, user-controlled retained floor, six market conditions, a 45-second synthetic quote, explicit simulation-only order confirmation, a fictional fill and an inspectable SHA-256 receipt. No wallet or Binance API required; no on-chain trade is performed. Receipts verify supplied simulated accounting but have no blockchain authenticity. Full walkthrough and constraints: [Paper Studio specification](docs/paper-studio.md).
+
+
+
 **Live-release status:** [Dated, evidence-linked readiness snapshot (October 9)](docs/submission/current-readiness-20261009.md). The newest GitHub code is not yet published by the Netlify production site because multiple builds were marked Skipped; consult the live `/healthz` commit before claiming the latest wallet and evidence features work publicly. The historical `docs/submission/packet.json` is not a current deployment certificate.
 
 ## Verified deployment and trust boundaries (October 9, 2026)
