@@ -2,6 +2,15 @@
 
 This is not the final report and must not be submitted as one. The organizer rejects AI-generated DevEx reports. Write the final account in your own voice, based on actions and outcomes you personally experienced. Use the evidence below as supporting material, and distinguish assistant-observed CI from your own local work.
 
+## October 10, 2026 final source/deployment evidence (do not turn into personal observations)
+
+- Canonical [Paper Studio](https://remain-paper.pages.dev/studio) is the safe, completely fictional presentation path. The GitHub-connected Cloudflare Pages deployment supports a self-contained recording that never links into the live product.
+- The current code explicitly labels the before-and-after values **projected simulation** until a fictitious order is confirmed. The displayed checksums are **not** BSC receipts or authenticated market evidence.
+- GitHub [recording isolation PR #61](https://github.com/Tajudeeen/remain/pull/61), [CI](https://github.com/Tajudeeen/remain/actions/runs/38036657863), and [public exact-build smoke](https://github.com/Tajudeeen/remain/actions/runs/38036657927) are engineering evidence, **not evidence of successful Binance API execution**.
+- After the usability enhancements, check the new GitHub commit and new Cloudflare deployment independently. Do not copy earlier build hashes into the final report as if they were newest.
+- **Your task:** In the final report, personally describe the real Binance endpoint attempted, your authorization and setup steps, time-to-first authorized successful *read*, the exact HTTP/business status and error you actually saw, reproduction steps, latency values with run IDs, and concrete changes you'd request from Binance. Distinguish access restriction from an integration-code failure. Record any communication with organizer support only if you personally received it.
+- The report must include what you genuinely tested using the contest APIs and what remained unavailable. Leave unknown fields blank, not filled with synthetic numbers. Avoid using the word 'testnet' for Paper Studio: it is browser-only simulation.
+
 ## Confirmed observations to investigate and describe
 
 | Observation | Source | Your own account to add |
