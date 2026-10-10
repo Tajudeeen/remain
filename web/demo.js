@@ -47,7 +47,9 @@ function progress(){
  }
 }
 function renderGuardChecks(checks){
- const root=$('demo-guard-checks');root.replaceChildren();root.hidden=!checks.length;
+ const root=$('demo-guard-checks'),details=$('demo-guard-details');
+ root.replaceChildren();root.hidden=!checks.length;details.hidden=!checks.length;
+ details.open=checks.some(c=>c.status==='blocked'||c.status==='caution');
  for(const check of checks){
   const line=document.createElement('div');line.className='paper-guard-row';
   line.dataset.status=check.status;line.dataset.rule=check.code;
