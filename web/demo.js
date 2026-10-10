@@ -148,6 +148,13 @@ if(typeof document!=='undefined'&&$('demo-view')){
   }
  };
  window.addEventListener('hashchange',updateStudioLocation);
+ for(const selected of studioLinks)selected.addEventListener('click',()=>{
+  // Keep the visible section selected synchronously while the browser scrolls.
+  for(const link of studioLinks){
+   if(link===selected)link.setAttribute('aria-current','location');
+   else link.removeAttribute('aria-current');
+  }
+ });
  updateStudioLocation();
  $('demo-asset').replaceChildren();
  for(const a of DEMO_ASSETS){const option=document.createElement('option');option.value=a.id;option.textContent=a.name+' · '+a.ticker;$('demo-asset').append(option);}
