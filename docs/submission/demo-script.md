@@ -27,7 +27,7 @@
 ## Screen-recording resilience
 
 - All links, logo, navigation and footer **stay inside Paper Studio**; no live wallet or landing-page route.
-- If the quote expires after 45 seconds, generate a new one; never force a stale quote.
+- If the synthetic quote expires after 120 seconds, generate a new one; never force a stale quote.
 - **Prepare my recording** deliberately replaces the fictional session state in one click. Use it before each take. The separate **Reset demo** control still asks for confirmation.
 - The **Before/After** result shows *projected* values prior to confirmation and *settled simulation* values after confirmation. Do not describe them as exchange fills.
 - If demo browsing accidentally affects the tab session, click **Prepare my recording** and restart the take rather than cutting between mismatched balances.
