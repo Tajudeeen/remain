@@ -135,7 +135,7 @@ export function demoGuardReport(state,intent,result){
   row('COVERAGE',coverageBlocked?'blocked':'pass','Net cash coverage',demoMoney(netMax(limit))+' demo USDT maximum',demoMoney(target)+' demo USDT requested',coverageBlocked?(scenario.liquidityMilli<sellable?'Fictional liquidity is too thin. Reduce the target or use a different scenario.':'The retained floor limits your sale. Reduce the target or deliberately change the floor.'):'Maximum synthetic net proceeds cover the target.')
  ];
  if(result.status==='READY'&&result.quote){
-  checks.push(row('QUOTE','pass','Guarded output',demoMoney(result.quote.minimumCents)+' USDT minimum','At least '+demoMoney(target)+' demo USDT','This synthetic quote expires in 45 seconds. It is not a live trading price.'));
+  checks.push(row('QUOTE','pass','Guarded output',demoMoney(result.quote.minimumCents)+' USDT minimum','At least '+demoMoney(target)+' demo USDT','This synthetic quote expires in 120 seconds. It is not a live trading price.'));
  }
  return checks;
 }
