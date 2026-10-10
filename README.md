@@ -1,12 +1,19 @@
 # Remain
 
-Public web app: [remain-cash.netlify.app](https://remain-cash.netlify.app/). The main deployment serves the explicitly labelled synthetic planning tools by default. This public repository now also contains an opt-in real-user wallet and hosted Binance read path, and a fail-closed gateway to the separately hosted durable execution service. Enabling either live backend requires real server-side deployment credentials and verified eligibility. Do not interpret the fixture planner or a configured gateway as proof of a funded trade. See [hosted-live product operations](docs/hosted-live-readonly.md) and [existing deployment evidence](docs/netlify-deployment.md).
+Public web app: [remain-paper.pages.dev](https://remain-paper.pages.dev/). The main deployment serves the explicitly labelled synthetic planning tools by default. This public repository now also contains an opt-in real-user wallet and hosted Binance read path, and a fail-closed gateway to the separately hosted durable execution service. Enabling either live backend requires real server-side deployment credentials and verified eligibility. Do not interpret the fixture planner or a configured gateway as proof of a funded trade. See [hosted-live product operations](docs/hosted-live-readonly.md) and [existing deployment evidence](docs/netlify-deployment.md).
 
 Raise cash. Stay invested.
 
+
+### Current public deployment (10 October 2026)
+
+- **[Cloudflare Pages](https://remain-paper.pages.dev/)** is the current GitHub-connected free public host. **[Paper Studio](https://remain-paper.pages.dev/studio.html)** and same-origin TEST_FIXTURE planning/receipt APIs passed an independent, signed-out browser walkthrough at build `04a62622768d3c7407cbd51cc48402e76d58a025`.
+- [Deployment runbook](docs/cloudflare-pages-hosting.md) explains how Pages keeps the hosted demo separate from the existing, execution-disabled Cloudflare Durable Object service.
+- Legacy [Netlify deployment](https://remain-cash.netlify.app/) is outdated due to an exhausted or unavailable deployment allowance and **must not** be used for current judging. The code's live-RFQ and mainnet gates remain blocked.
+
 ## Paper Studio: complete risk-checked simulation
 
-**[Launch the full interactive Paper Studio](https://remain-cash.netlify.app/studio.html)** (after the newest site build is published) or open `/studio.html` on a local build. Three fictional stock positions, a demo USDT ledger, cash-target search, user-controlled retained floor, six market conditions, a 45-second synthetic quote, explicit simulation-only order confirmation, a fictional fill and an inspectable SHA-256 receipt. No wallet or Binance API required; no on-chain trade is performed. Receipts verify supplied simulated accounting but have no blockchain authenticity. Full walkthrough and constraints: [Paper Studio specification](docs/paper-studio.md).
+**[Launch the full interactive Paper Studio](https://remain-paper.pages.dev/studio.html)** or open `/studio.html` on a local build. Three fictional stock positions, a demo USDT ledger, cash-target search, user-controlled retained floor, six market conditions, a 45-second synthetic quote, explicit simulation-only order confirmation, a fictional fill and an inspectable SHA-256 receipt. No wallet or Binance API required; no on-chain trade is performed. Receipts verify supplied simulated accounting but have no blockchain authenticity. Full walkthrough and constraints: [Paper Studio specification](docs/paper-studio.md).
 
 
 
