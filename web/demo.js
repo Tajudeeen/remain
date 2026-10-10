@@ -66,15 +66,17 @@ function showQuote(q){
  $('demo-expected').textContent=demoMoney(q.expectedCents)+' USDT';
  $('demo-sold').textContent=demoUnits(q.soldMilli)+' '+asset.ticker;
  $('demo-remain').textContent=demoUnits(q.remainingMilli)+' '+asset.ticker;
- $('demo-guard').dataset.state='ready';
- $('demo-guard').textContent='PASS · Market permitted · Fresh synthetic RFQ · Position floor protected · Minimum cash covers target';
+ const closed=q.input.scenario==='closed';
+ $('demo-guard').dataset.state=closed?'caution':'ready';
+ $('demo-guard').textContent=closed
+  ?'CAUTION · Underlying market closed · Explicit simulation permission applied · Quote and retained floor checked'
+  :'PASS · Regular simulated market · Fresh synthetic RFQ · Position floor protected · Minimum cash covers target';
  $('demo-quote-math').textContent='Illustrative price '+demoMoney(asset.priceCents)+' USDT · fee '+demoMoney(q.feeCents)+
   ' · impact '+(q.impactBps/100).toFixed(2)+'% · slippage buffer '+demoMoney(q.slippageCents)+
   ' · quote expires in 45 seconds.';
  const released=Math.min(100,100*q.soldMilli/q.balanceMilli);
  $('demo-exposure').style.setProperty('--paper-sold',released.toFixed(2)+'%');
  $('demo-kept-pct').textContent=(100-released).toFixed(1)+'%';
- $('demo-guard').dataset.state='ready';
  $('demo-review').disabled=false;
  progress();tick();
 }
