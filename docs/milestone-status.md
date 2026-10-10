@@ -1,3 +1,16 @@
+# Post-merge status update: 10 October 2026
+
+**Authoritative current distinction:** Gate 0 live Binance held-stock RFQ/build, approved real execution, and BSC settlement remain **BLOCKED/UNVERIFIED**. Passing CI establishes code and synthetic behavior only. The repository is public. The separate Cloudflare financial service is intentionally execution-disabled.
+
+- **Gate 17, prepared live operations:** Offline configuration/preflight, encrypted backup and reconciliation tools, CI and workerd verification implemented. Real compatible RFQ, R2 disaster restore, approved persistent activation and funded settlement remain pending.
+- **Gate 18, Paper Studio:** Implemented and squash-merged as [PR #56](https://github.com/Tajudeeen/remain/pull/56), main commit `b5a6e4296538799e6cd15c3ed952494dc36ac884`. Complete fictional portfolio, simulated cash plan, BellGuard-*like* policies, confirmation, journal, accounting and simulation receipt. [Main verification](https://github.com/Tajudeeen/remain/actions/runs/38033164560) and [Cloudflare runtime verification](https://github.com/Tajudeeen/remain/actions/runs/38033164568) passed. This is **not** a BSC testnet or mainnet settlement and does **not** use the production BellGuard implementation.
+- **Public release for Gate 18 remains pending:** [Exact-build deployed-site check](https://github.com/Tajudeeen/remain/actions/runs/38033164554) failed waiting for Netlify to publish the reviewed `main` commit. On 10 October Netlify still reports production deployment `6ac90c72947b9f0008c62e9e`, source `08e5cd79a89fd0af41499f68dd2764ce1b502a09`. Do not advertise `/studio.html` as live until exact-deploy smoke passes.
+- **Gate 19, independent hardening review:** [PR #57](https://github.com/Tajudeeen/remain/pull/57) covers wallet scan timeouts, bounded status reads, genuine connect-button action, simulator journal restoration and adversarial browser tests. This is an in-progress code review until its last head passes checks and is merged.
+
+See [October 10 evidence and gaps](submission/audit-20261010.md). Older records below remain historical evidence; their source-privacy and deployment language is not automatically the current state.
+
+---
+
 # Milestone status
 
 Gate 17 implements offline execution configuration checks, read-only actual-payload preflight, strict pin/RPC configuration, encrypted WAL-safe backup/drill, exact-build host smoke, protected live-evidence rechecks, a genuine-evidence submission review path and a full synthetic authenticated execution-browser harness. Local full verification passed 857 tests, including 22 new adversarial and recovery checks. The private fixture packet stays blocked. Real vendor payloads, reviewed live host configuration and funded settlement are still missing. See [live operations](live-operations.md). Local Docker is absent and the browser daemon failed during startup. Remote browser/container checks passed revision `0fbfc55fe5b3ea7d1388ccd1141c97a8965e4a87`, including the full authenticated synthetic flow. The final submission-review revision must also pass remote checks before merge.
