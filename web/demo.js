@@ -1,5 +1,5 @@
 import {DEMO_ASSETS,DEMO_NOTICE,demoMoney,demoUnits,newDemoState,validDemoState,simulatePlan,
-  assertFreshDemoQuote,executeDemoOrder,createDemoReceipt,verifyDemoReceipt} from './demo-engine.js';
+  assertFreshDemoQuote,executeDemoOrder,createDemoReceipt,verifyDemoReceipt,demoGuardReport} from './demo-engine.js';
 const $=id=>document.getElementById(id);
 const KEY='remain-paper-studio-v1';
 const readState=()=>{try{const value=JSON.parse(sessionStorage.getItem(KEY)||'null');return validDemoState(value)?value:newDemoState();}catch{return newDemoState();}};
@@ -46,9 +46,47 @@ function progress(){
   el.classList.toggle('current',i===position);
  }
 }
+function renderGuardChecks(checks){
+ const root=$('demo-guard-checks');root.replaceChildren();root.hidden=!checks.length;
+ for(const check of checks){
+  const line=document.createElement('div');line.className='paper-guard-row';
+  line.dataset.status=check.status;line.dataset.rule=check.code;
+  const head=document.createElement('div');head.className='paper-guard-head';
+  const label=document.createElement('strong');label.textContent=check.label;
+  const status=document.createElement('span');status.textContent=check.status==='blocked'?'BLOCKED':check.status==='caution'?'CAUTION':'PASS';
+  head.append(label,status);
+  const observed=document.createElement('p');observed.textContent='Observed: '+check.observed;
+  const limit=document.createElement('p');limit.textContent='Rule: '+check.limit;
+  const action=document.createElement('p');action.className='paper-guard-action';action.textContent=check.action;
+  line.append(head,observed,limit,action);root.append(line);
+ }
+}
+function renderOutcome(value,settled){
+ const asset=DEMO_ASSETS.find(x=>x.id===value.assetId);
+ const before=settled?value.beforeMilli:value.balanceMilli;
+ const after=settled?value.afterMilli:value.remainingMilli;
+ const received=settled?value.cashReceivedCents:value.expectedCents;
+ const cashBefore=settled?value.cashBeforeCents:state.cashCents;
+ const cashAfter=settled?value.cashAfterCents:cashBefore+received;
+ $('demo-outcome').hidden=false;
+ $('demo-outcome').dataset.phase=settled?'settled':'projected';
+ $('demo-outcome-tag').textContent=settled?'SIMULATED FILL COMPLETE':'PROJECTED · SYNTHETIC';
+ $('demo-outcome-status').textContent=settled
+  ?'A fictional sale has updated the demo portfolio. No funds or blockchain assets moved.'
+  :'A preview using an illustrative quote. No sale has executed yet.';
+ $('demo-before-stock').textContent=demoUnits(before);
+ $('demo-after-stock').textContent=demoUnits(after);
+ $('demo-before-ticker').textContent=asset.ticker+' fictional shares';
+ $('demo-after-ticker').textContent=asset.ticker+' fictional shares retained';
+ $('demo-before-cash').textContent=demoMoney(cashBefore)+' demo USDT';
+ $('demo-after-cash').textContent=demoMoney(cashAfter)+' demo USDT';
+ $('demo-outcome-sold').textContent=demoUnits(value.soldMilli)+' '+asset.ticker;
+ $('demo-outcome-received').textContent='+'+demoMoney(received)+' demo USDT';
+}
 function invalidate(){
  if(busy)return;
  draft=null;stage='IDLE';latestReceipt=null;
+ $('demo-outcome').hidden=true;renderGuardChecks([]);
  $('demo-result').hidden=true;$('demo-review-box').hidden=true;$('demo-confirm-box').hidden=true;
  $('demo-guard').textContent='Configure your cash target and ask BellGuard for a quote.';
  $('demo-guard').dataset.state='idle';
@@ -78,13 +116,14 @@ function showQuote(q){
  $('demo-exposure').style.setProperty('--paper-sold',released.toFixed(2)+'%');
  $('demo-kept-pct').textContent=(100-released).toFixed(1)+'%';
  $('demo-review').disabled=false;
+ renderOutcome(q,false);
  progress();tick();
 }
 function tick(){
  if(!draft)return;
  const left=Math.max(0,Math.ceil((draft.expiresAtMs-Date.now())/1000));
  $('demo-expiry').textContent=left>0?'SIMULATED RFQ · '+left+'s left':'SIMULATED RFQ · expired';
- if(!left){draft=null;stage='IDLE';$('demo-review').disabled=true;$('demo-confirm').disabled=true;
+ if(!left){draft=null;stage='IDLE';$('demo-outcome').hidden=true;$('demo-review').disabled=true;$('demo-confirm').disabled=true;
   $('demo-confirm-box').hidden=true;$('demo-review-box').hidden=false;$('demo-guard').textContent='EXPIRED · Generate a fresh quote before proceeding.';
   $('demo-guard').dataset.state='blocked';notice('Quote expired. No order was created.',true);progress();}
 }
@@ -124,7 +163,7 @@ async function renderReceipt(order){
 }
 function resetView(){
  invalidate();renderOrders();
- if(state.orders.length)void renderReceipt(state.orders[0]);
+ if(state.orders.length){renderOutcome(state.orders[0],true);void renderReceipt(state.orders[0]);}
  else {
   $('demo-proof').textContent='No receipt yet. Confirm a demo order to generate one.';
   $('demo-digest').textContent='—';$('demo-proof-controls').hidden=true;
@@ -164,8 +203,10 @@ if(typeof document!=='undefined'&&$('demo-view')){
  }
  $('demo-form').addEventListener('submit',event=>{
   event.preventDefault();if(busy)return;
-  const result=simulatePlan(state,intent());
-  draft=null;stage='IDLE';$('demo-result').hidden=true;$('demo-review-box').hidden=true;$('demo-confirm-box').hidden=true;
+  const selectedIntent=intent();
+  const result=simulatePlan(state,selectedIntent);
+  renderGuardChecks(demoGuardReport(state,selectedIntent,result));
+  draft=null;stage='IDLE';$('demo-outcome').hidden=true;$('demo-result').hidden=true;$('demo-review-box').hidden=true;$('demo-confirm-box').hidden=true;
   if(result.status!=='READY'){
    $('demo-guard').dataset.state='blocked';$('demo-guard').textContent='BLOCKED · '+result.reasons.join(' ');
    $('demo-review').disabled=true;$('demo-confirm').disabled=true;
@@ -190,7 +231,7 @@ if(typeof document!=='undefined'&&$('demo-view')){
    const executed=executeDemoOrder(state,draft);
    state=executed.state;const saved=save();draft=null;stage='SETTLED';
    $('demo-result').hidden=true;$('demo-review-box').hidden=true;$('demo-confirm-box').hidden=true;
-   updatePortfolio();renderOrders();progress();await renderReceipt(executed.order);
+   updatePortfolio();renderOrders();renderOutcome(executed.order,true);progress();await renderReceipt(executed.order);
    notice('SIMULATED FILL COMPLETE · '+demoMoney(executed.order.cashReceivedCents)+' demo USDT received and '+
     demoUnits(executed.order.afterMilli)+' demo shares retained.'+
     (saved?'':' Browser storage is unavailable; this session will not persist.'));
@@ -200,6 +241,18 @@ if(typeof document!=='undefined'&&$('demo-view')){
   finally{busy=false;}
  });
  $('demo-cancel').addEventListener('click',()=>{invalidate();notice('Review cancelled. No simulated order was created.');});
+ const prepareRecording=()=>{
+  if(busy)return;
+  state=newDemoState();
+  $('demo-asset').value='nova';$('demo-target').value='250.00';
+  $('demo-retain').value='70';$('demo-impact').value='50';
+  $('demo-market').value='regular';$('demo-closed').checked=false;
+  save();resetView();
+  notice('RECORDING READY · Fictional portfolio restored · 250 USDT target · 70% retention. Begin with Overview, Portfolio and Simulate.');
+  if(window.location.hash!=='#demo-overview')window.location.hash='#demo-overview';
+  else document.getElementById('demo-overview').scrollIntoView();
+ };
+ $('demo-record-ready').addEventListener('click',prepareRecording);
  $('demo-reset').addEventListener('click',()=>{
   if(!window.confirm('Reset all fictional holdings, demo USDT and simulated history in this tab?'))return;
   state=newDemoState();save();resetView();notice('Demo portfolio restored. No real assets were involved.');
