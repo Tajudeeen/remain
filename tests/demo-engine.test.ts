@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {DEMO_ASSETS,newDemoState,simulatePlan,assertFreshDemoQuote,executeDemoOrder,createDemoReceipt,verifyDemoReceipt,validDemoState} from '../web/demo-engine.js';
+import {DEMO_ASSETS,newDemoState,simulatePlan,assertFreshDemoQuote,executeDemoOrder,createDemoReceipt,verifyDemoReceipt,validDemoState,demoGuardReport} from '../web/demo-engine.js';
 const intent={assetId:'nova',cashTarget:'250',retainPercent:70,maxImpactBps:50,scenario:'regular',allowClosed:false};
 test('a minimum-input quote preserves the floor and the cash target',()=>{
  const s=newDemoState(),p=simulatePlan(s,intent,10000);assert.equal(p.status,'READY');if(!p.quote)throw Error('quote missing');
@@ -113,4 +113,43 @@ test('simulation quote expiry cannot be extended by changing client-side quote f
  if(!q)throw Error('missing quote');
  assert.throws(()=>assertFreshDemoQuote(s,{...q,expiresAtMs:q.expiresAtMs+10000},11000),/DEMO_QUOTE_CHANGED/);
  assert.throws(()=>assertFreshDemoQuote(s,{...q,minimumCents:q.minimumCents-100},11000),/DEMO_QUOTE_CHANGED/);
+});
+
+test('guard report matches exact synthetic impact, stock floor and payout limits',()=>{
+ const state=newDemoState(),plan=simulatePlan(state,intent,10000);
+ const checks=demoGuardReport(state,intent,plan);
+ assert.deepEqual(checks.map(x=>x.code),['MARKET','IMPACT','FLOOR','COVERAGE','QUOTE']);
+ assert.ok(checks.every(c=>c.status==='pass'));
+ assert.equal(checks.find(c=>c.code==='IMPACT')!.observed,'0.20%');
+ assert.equal(checks.find(c=>c.code==='IMPACT')!.limit,'Your cap: 0.50%');
+ assert.match(checks.find(c=>c.code==='FLOOR')!.limit,/9\.8 must remain/);
+ assert.equal(checks.find(c=>c.code==='COVERAGE')!.limit,'250.00 demo USDT requested');
+ assert.equal(checks.find(c=>c.code==='QUOTE')!.observed,plan.quote?.minimumCents!==undefined?(plan.quote.minimumCents/100).toFixed(2)+' USDT minimum':'');
+});
+test('risk explanations never suggest waiving a market halt or invent live quotes',()=>{
+ const state=newDemoState();
+ for(const [scenario,code] of [['paused','MARKET'],['stale','MARKET'],['volatile','IMPACT'],['thin','COVERAGE']] as const){
+  const input={...intent,scenario},p=simulatePlan(state,input,10000);
+  assert.equal(p.status,'BLOCKED');
+  const report=demoGuardReport(state,input,p),reason=report.find(r=>r.code===code)!;
+  assert.equal(reason.status,'blocked',scenario);
+  assert.ok(reason.observed.length>0&&reason.limit.length>0&&reason.action.length>0);
+ }
+ const halted=demoGuardReport(state,{...intent,scenario:'paused',allowClosed:true},simulatePlan(state,{...intent,scenario:'paused',allowClosed:true},10000));
+ assert.equal(halted.find(x=>x.code==='MARKET')?.status,'blocked');
+ const closed={...intent,scenario:'closed',allowClosed:true};
+ assert.equal(demoGuardReport(state,closed,simulatePlan(state,closed,10000)).find(x=>x.code==='MARKET')?.status,'caution');
+ const invalid={...intent,cashTarget:'not-valid'};
+ assert.equal(demoGuardReport(state,invalid,simulatePlan(state,invalid,10000))[0]?.code,'TARGET_FORMAT');
+});
+test('risk explanations preserve integer rounding at liquidity boundary',()=>{
+ const state=newDemoState();
+ const input={...intent,scenario:'thin',cashTarget:'250'};
+ const p=simulatePlan(state,input,10000);
+ assert.equal(p.status,'BLOCKED');
+ const check=demoGuardReport(state,input,p).find(c=>c.code==='COVERAGE')!;
+ assert.equal(check.status,'blocked');
+ assert.match(check.action,/Reduce the target/);
+ const actual=Number(check.observed.split(' ')[0]);
+ assert.ok(actual>0&&actual<250);
 });
