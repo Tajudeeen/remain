@@ -13,7 +13,7 @@ Raise cash. Stay invested.
 
 ## Paper Studio: complete risk-checked simulation
 
-**[Launch the full interactive Paper Studio](https://remain-paper.pages.dev/studio)** or open `/studio.html` on a local build. Three fictional stock positions, a demo USDT ledger, **one-click recording reset**, cash-target search, explainable market/impact/floor/cash coverage checks, dynamic **Before → After** positions and USDT, a 45-second synthetic quote, explicit simulated order confirmation, and inspectable SHA-256 receipts. No wallet or Binance API required; no on-chain trade is performed. Receipts verify supplied simulated accounting but have no blockchain authenticity. Full walkthrough and constraints: [Paper Studio specification](docs/paper-studio.md).
+**[Launch the full interactive Paper Studio](https://remain-paper.pages.dev/studio)** or open `/studio.html` on a local build. Three fictional stock positions, a demo USDT ledger, **one-click recording reset**, cash-target search, explainable market/impact/floor/cash coverage checks, dynamic **Before → After** positions and USDT, a 120-second synthetic quote, explicit simulated order confirmation, and inspectable SHA-256 receipts. No wallet or Binance API required; no on-chain trade is performed. Receipts verify supplied simulated accounting but have no blockchain authenticity. Full walkthrough and constraints: [Paper Studio specification](docs/paper-studio.md).
 
 
 
