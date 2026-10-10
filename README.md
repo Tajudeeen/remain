@@ -7,17 +7,17 @@ Raise cash. Stay invested.
 
 ### Current public deployment (10 October 2026)
 
-- **[Cloudflare Pages](https://remain-paper.pages.dev/)** is the current GitHub-connected free public host. **[Paper Studio](https://remain-paper.pages.dev/studio.html)** and same-origin TEST_FIXTURE planning/receipt APIs passed an independent, signed-out browser walkthrough at build `04a62622768d3c7407cbd51cc48402e76d58a025`.
+- **[Cloudflare Pages](https://remain-paper.pages.dev/)** is the current GitHub-connected free public host. **[Paper Studio](https://remain-paper.pages.dev/studio)** and same-origin TEST_FIXTURE planning/receipt APIs passed an independent, signed-out browser walkthrough at build `04a62622768d3c7407cbd51cc48402e76d58a025`.
 - [Deployment runbook](docs/cloudflare-pages-hosting.md) explains how Pages keeps the hosted demo separate from the existing, execution-disabled Cloudflare Durable Object service.
 - Legacy [Netlify deployment](https://remain-cash.netlify.app/) is outdated due to an exhausted or unavailable deployment allowance and **must not** be used for current judging. The code's live-RFQ and mainnet gates remain blocked.
 
 ## Paper Studio: complete risk-checked simulation
 
-**[Launch the full interactive Paper Studio](https://remain-paper.pages.dev/studio.html)** or open `/studio.html` on a local build. Three fictional stock positions, a demo USDT ledger, cash-target search, user-controlled retained floor, six market conditions, a 45-second synthetic quote, explicit simulation-only order confirmation, a fictional fill and an inspectable SHA-256 receipt. No wallet or Binance API required; no on-chain trade is performed. Receipts verify supplied simulated accounting but have no blockchain authenticity. Full walkthrough and constraints: [Paper Studio specification](docs/paper-studio.md).
+**[Launch the full interactive Paper Studio](https://remain-paper.pages.dev/studio)** or open `/studio.html` on a local build. Three fictional stock positions, a demo USDT ledger, **one-click recording reset**, cash-target search, explainable market/impact/floor/cash coverage checks, dynamic **Before → After** positions and USDT, a 45-second synthetic quote, explicit simulated order confirmation, and inspectable SHA-256 receipts. No wallet or Binance API required; no on-chain trade is performed. Receipts verify supplied simulated accounting but have no blockchain authenticity. Full walkthrough and constraints: [Paper Studio specification](docs/paper-studio.md).
 
 
 
-**Current audit:** [October 10 verification, remaining feature gaps and production blocker](docs/submission/audit-20261010.md). **Historical live-release status:** [Dated snapshot (October 9)](docs/submission/current-readiness-20261009.md). The newest GitHub code is not yet published by the Netlify production site because multiple builds were marked Skipped; consult the live `/healthz` commit before claiming the latest wallet and evidence features work publicly. The historical `docs/submission/packet.json` is not a current deployment certificate.
+**Current production:** Cloudflare Pages hosts the current reviewed build. See the latest successful [exact-SHA deployment smoke](https://github.com/Tajudeeen/remain/actions/workflows/deployment-smoke.yml) and `/healthz` before submission. The [October 10 audit](docs/submission/audit-20261010.md) and [October 9 readiness snapshot](docs/submission/current-readiness-20261009.md) include **historical Netlify deployment blockers**, not the current public release target. The historical `docs/submission/packet.json` is not a current deployment certificate.
 
 ## Verified deployment and trust boundaries (October 9, 2026)
 
