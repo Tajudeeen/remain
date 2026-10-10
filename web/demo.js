@@ -136,6 +136,26 @@ function download(name,value){
  a.href=href;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(href),1000);
 }
 if(typeof document!=='undefined'&&$('demo-view')){
+ // All studio navigation is in-page. Highlight the current section without
+ // loading main-app routing, live wallet adapters, or any backend modules.
+ const studioLinks=Array.from(document.querySelectorAll('nav[aria-label="Paper Studio sections"] a'));
+ const updateStudioLocation=()=>{
+  const target=studioLinks.some(link=>link.getAttribute('href')===window.location.hash)
+   ?window.location.hash:'#demo-overview';
+  for(const link of studioLinks){
+   if(link.getAttribute('href')===target)link.setAttribute('aria-current','location');
+   else link.removeAttribute('aria-current');
+  }
+ };
+ window.addEventListener('hashchange',updateStudioLocation);
+ for(const selected of studioLinks)selected.addEventListener('click',()=>{
+  // Keep the visible section selected synchronously while the browser scrolls.
+  for(const link of studioLinks){
+   if(link===selected)link.setAttribute('aria-current','location');
+   else link.removeAttribute('aria-current');
+  }
+ });
+ updateStudioLocation();
  $('demo-asset').replaceChildren();
  for(const a of DEMO_ASSETS){const option=document.createElement('option');option.value=a.id;option.textContent=a.name+' · '+a.ticker;$('demo-asset').append(option);}
  for(const id of ['demo-asset','demo-target','demo-retain','demo-impact','demo-market','demo-closed']){

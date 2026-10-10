@@ -396,6 +396,21 @@ try {
   await browser('open', `http://127.0.0.1:${address.port}/studio.html`);
   await browser('wait', '--load', 'networkidle');
   await check("document.title.includes('Paper Studio') && document.querySelector('#demo-asset').options.length===3 && document.querySelector('#demo-cash').textContent==='350.00 USDT' && !document.querySelector('#demo-view').hidden");
+  stage = 'paper studio recording navigation never leaves the demo';
+  await check("Array.from(document.querySelectorAll('a[href]')).every(a => a.getAttribute('href').startsWith('#demo-') && !!document.querySelector(a.getAttribute('href'))) && document.querySelectorAll('script[src]').length === 1");
+  for(const target of ['#demo-portfolio','#demo-trade','#demo-history','#demo-overview']){
+    await browser('click', `nav[aria-label="Paper Studio sections"] a[href="${target}"]`);
+    await browser('wait','--fn',`window.location.hash==='${target}' && document.querySelector('nav a[href="${target}"]').getAttribute('aria-current')==='location'`);
+    await check(`location.pathname==='/studio.html' && document.querySelector('#demo-asset').options.length===3`);
+  }
+  await browser('click','nav a[href="#demo-history"]');
+  await browser('click','footer a[href="#demo-receipts"]');
+  await browser('wait','--fn',"window.location.hash==='#demo-receipts'");
+  await check("location.pathname==='/studio.html'");
+  await browser('click','.brand');
+  await browser('wait','--fn',"window.location.hash==='#demo-overview'");
+  await check("location.pathname==='/studio.html'");
+  stage = 'paper studio complete cash-to-simulated-settlement journey';
   await browser('click', '#demo-calculate');
   await browser('wait','--fn',"document.querySelector('#demo-guard').dataset.state==='ready' && !document.querySelector('#demo-review').disabled");
   await check("document.querySelector('#demo-minimum').textContent.endsWith('USDT') && document.querySelector('#demo-remain').textContent.includes('NOVA-SIM')");

@@ -1,8 +1,16 @@
 # Remain Paper Studio
 
-**Verified free-host URL:** https://remain-paper.pages.dev/studio.html
+**Verified free-host URL:** https://remain-paper.pages.dev/studio
 
 Paper Studio is a self-contained, fully fictional product walkthrough. It is **not** a BSC testnet deployment, a Binance Web3 integration, an executable RFQ, or a mainnet sale. The read-only real-wallet and vendor integrations remain separate.
+
+## Recording-safe, standalone navigation
+
+Open the canonical Cloudflare Pages URL **https://remain-paper.pages.dev/studio**. Once inside Paper Studio, every clickable link (the Remain logo, top navigation, footer, and contextual links) scrolls **within the Paper Studio document**. None opens the original homepage, live wallet, unsigned-review workspace, GitHub, or an external site. The demo loads only `demo.js` and `demo-engine.js`; it makes no live wallet or Binance request.
+
+Use the four top navigation links to record a coherent journey: **Overview → Portfolio → Simulate → History & proof**. The logo brings you back to the demo overview. You may demonstrate risk blocks, one simulated fill and a verified simulation receipt without route changes or a wallet popup. The Reset button resets only fictional demo state (after its explicit confirmation).
+
+The standalone *frontend* does not authenticate real data. Every balance and fill remains synthetic, including when recording a competition video. Users can independently access Remain's live app elsewhere, but there are deliberately no outward links from Paper Studio.
 
 ## Judge walkthrough (under 2 minutes)
 
@@ -27,7 +35,7 @@ Paper Studio is a self-contained, fully fictional product walkthrough. It is **n
 
 ## Verification
 
-Run npm run verify and npm run test:coverage (Node 24). The demo-engine test suite covers pass/block scenarios, expiry, replay, tampering and accounting. Run npm run test:web for a Chromium walkthrough and five viewport widths. Check the exact deployed Netlify build SHA: passing GitHub CI alone does not certify a release.
+Run npm run verify and npm run test:coverage (Node 24). The demo-engine test suite covers pass/block scenarios, expiry, replay, tampering and accounting. Run npm run test:web for a Chromium walkthrough and five viewport widths. Check Cloudflare Pages' exact deployed Git SHA, the /studio route, the no-escape navigation test, and the real-browser simulated-flow check. Passing repository CI alone does not certify a live release.
 
 ## Submission truthfulness
 
