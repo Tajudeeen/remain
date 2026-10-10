@@ -1,6 +1,6 @@
 # Remain engineering rules
 
-Remain is a cash-target tokenized-stock product with BellGuard risk checks. The repository is private until its owner explicitly approves public release.
+Remain is a cash-target tokenized-stock product with BellGuard risk checks. The repository is already public (verified 2026-10-10). Historical 'keep source private' instructions below describe earlier stages, not the current visibility. Keep all user secrets private and do not enable financial execution.
 
 ## Gated work
 

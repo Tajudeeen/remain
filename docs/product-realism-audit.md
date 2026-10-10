@@ -1,3 +1,5 @@
+> **10 October follow-up:** [Paper Studio merged](https://github.com/Tajudeeen/remain/pull/56) and [post-merge engineering audit](submission/audit-20261010.md). Home now prioritizes fictional Paper Studio. This October 9 comparison remains the historical live-interface record. Production deploy still runs an older source commit, so distinguish repository behavior from the public site.
+
 # Product-realism audit
 
 Audited on 2026-10-09. This document separates **actual data paths** from test fixtures and service prerequisites. UI changes alone cannot establish a successful order.

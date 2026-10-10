@@ -244,8 +244,11 @@ try {
   await browser('click','#live-refresh');
   await browser('wait','--fn',"document.querySelector('#live-server').textContent==='Market data unavailable'");
 
-  await browser('click', '#wallet-connect');
+  // Header 'Connect wallet' must open the provider chooser on an explicit click,
+  // not merely navigate to a section while leaving the user disconnected.
+  await browser('click', '#nav-wallet-connect');
   await check("!document.querySelector('#wallet-chooser').hidden && document.querySelector('#wallet-chooser').textContent.includes('No compatible browser wallet') && document.querySelector('#wallet-state').textContent === 'Not connected' && document.querySelector('#live-inspect').disabled && !document.querySelector('#wallet-connect').disabled");
+  await browser('click', '#wallet-connect');
 
   stage = 'real-browser late wallet discovery and selected-provider BSC balance read';
   // An EIP-6963 provider arriving AFTER the chooser opens must appear
@@ -408,6 +411,14 @@ try {
   await check("document.querySelector('#demo-guard').dataset.state==='blocked' && document.querySelector('#demo-guard').textContent.includes('halted') && document.querySelector('#demo-order-count').textContent==='1'");
   await browser('click','[data-demo-scenario="regular"]');
   await check("document.querySelector('#demo-guard').dataset.state==='ready' && !document.querySelector('#demo-review').disabled");
+  // Market closure requires explicit permission and must be styled as caution, not a normal pass.
+  await browser('select','#demo-market','closed');
+  await browser('click','#demo-calculate');
+  await check("document.querySelector('#demo-guard').dataset.state==='blocked'");
+  await browser('check','#demo-closed');
+  await browser('click','#demo-calculate');
+  await check("document.querySelector('#demo-guard').dataset.state==='caution' && document.querySelector('#demo-guard').textContent.includes('Explicit simulation permission')");
+  await browser('click','[data-demo-scenario="regular"]');
   await browser('fill','#demo-target','50000');
   await browser('click','#demo-calculate');
   await check("document.querySelector('#demo-guard').dataset.state==='blocked' && document.querySelector('#demo-order-count').textContent==='1'");

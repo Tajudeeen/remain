@@ -41,6 +41,7 @@
 .paper-results #demo-guard{display:block;font-size:12px;line-height:1.7;border-left:3px solid #777e69;background:#272d23;padding:13px 16px;color:#bfc6b6;margin:0 0 25px}
 .paper-results #demo-guard[data-state=blocked]{border-color:#e89980;color:#f2baa5}
 .paper-results #demo-guard[data-state=ready]{border-color:#badb99;color:#dfebd0}
+.paper-results #demo-guard[data-state=caution]{border-color:#d6a94b;color:#f5d58f;background:#393020}
 .paper-result-metrics{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .paper-result-metrics .metric{padding:16px 0;border-top:1px solid #49513f}.paper-result-metrics small{display:block;font-size:10px;color:#b4bbaa}
 .paper-result-metrics strong{display:block;font-size:clamp(18px,2vw,27px);line-height:1.25;font-weight:500;letter-spacing:-.9px;margin-top:8px;word-break:break-word}.paper-result-metrics .metric:first-child strong{color:#e8bf54}

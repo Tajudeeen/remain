@@ -30,3 +30,25 @@ test('wrong chain, account mismatch, and scan limits fail closed',async()=>{
  await assert.rejects(scanCatalogPage(catalog,p,owner,0,1),/WALLET_CHANGED/);
  await assert.rejects(scanCatalogPage(catalog,p,owner,0,9),/INVALID_SCAN/);
 });
+
+test('wallet scan times out instead of hanging forever on account discovery',async()=>{
+ const provider={request:(_:unknown)=>new Promise(()=>{})};
+ await assert.rejects(scanCatalogPage(catalog,provider,owner,0,1,undefined,{timeoutMs:10}),/WALLET_RPC_TIMEOUT/);
+});
+test('wallet scan stops promptly when revoked during a pending wallet prompt',async()=>{
+ const controller=new AbortController();
+ const provider={request:(_:unknown)=>new Promise(()=>{})};
+ const task=scanCatalogPage(catalog,provider,owner,0,1,controller.signal,{timeoutMs:1000});
+ controller.abort(new Error('SCAN_ABORTED'));
+ await assert.rejects(task,/SCAN_ABORTED/);
+});
+test('wallet scan rechecks account after reads and rejects a stuck last handshake',async()=>{
+ let reads=0;
+ const p={request:({method,params}:{method:string;params?:{data:string;to:string}[]})=>{
+  if(method==='eth_accounts'){reads++;return reads>=4?new Promise(()=>{}):Promise.resolve([owner]);}
+  if(method==='eth_chainId')return Promise.resolve('0x38');
+  if(method==='eth_call')return Promise.resolve(params![0]!.data==='0x313ce567'?word(6):word(2500000));
+  throw Error('UNEXPECTED_REQUEST');
+ }};
+ await assert.rejects(scanCatalogPage(catalog,p,owner,0,1,undefined,{timeoutMs:10}),/WALLET_RPC_TIMEOUT/);
+});

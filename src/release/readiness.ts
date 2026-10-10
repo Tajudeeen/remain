@@ -14,7 +14,7 @@ const pendingGates = {
   eligibility: 'The owner must confirm applicable eligibility and participation terms.',
   ownerDevexReport: 'The owner-authored Developer Experience Report is not complete.',
   demoVideo: 'A final accessible video of four minutes or less is not recorded.',
-  publicSource: 'The source is private. Public release requires owner approval and a final history review.',
+  publicSource: 'The source repository is already public. Final history/secret review, exact commit and signed-out source links still need owner verification.',
   signedOutLinks: 'The final repo, video and report links have not passed signed-out review.'
 } as const;
 
