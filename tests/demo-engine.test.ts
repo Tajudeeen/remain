@@ -63,3 +63,54 @@ test('repeated orders cannot release stock below floor',()=>{
  }
  assert.ok(s.positions.nova!<=DEMO_ASSETS[0]!.startingMilli);
 });
+
+test('reloaded browser journal rejects forged cash, order events and position history',()=>{
+ const original=newDemoState(),plan=simulatePlan(original,intent,10000);
+ if(!plan.quote)throw Error('missing quote');
+ const first=executeDemoOrder(original,plan.quote,10100).state;
+ const nextPlan=simulatePlan(first,{...intent,cashTarget:'50'},11000);
+ if(!nextPlan.quote)throw Error('missing second quote');
+ const second=executeDemoOrder(first,nextPlan.quote,11100).state;
+ assert.equal(validDemoState(second),true);
+ const poisoned=[
+  (s:typeof second)=>{s.cashCents+=100;},
+  (s:typeof second)=>{s.positions.nova!+=1;},
+  (s:typeof second)=>{s.orders[0]!.cashReceivedCents+=1;},
+  (s:typeof second)=>{s.orders[0]!.afterMilli+=1;},
+  (s:typeof second)=>{s.orders[0]!.events[2]!.type='SIMULATED_FILL';},
+  (s:typeof second)=>{s.orders[1]!.cashAfterCents+=1;},
+  (s:typeof second)=>{Object.assign(s.orders[1]!,{transactionHash:'0x'+'a'.repeat(64)});},
+  (s:typeof second)=>{s.orders.push(s.orders[0]!);}
+ ];
+ for(const poison of poisoned){
+  const copied=structuredClone(second);
+  poison(copied);
+  assert.equal(validDemoState(copied),false,'inconsistent fictional journal must be rejected before display');
+ }
+});
+test('bounded synthetic quote search matches an independent exact-size oracle',()=>{
+ const ceil=(n:number,b:number)=>Math.floor((n*b+9999)/10000);
+ const minimum=(priceCents:number,m:number,impact:number)=>{
+  const gross=Math.floor(m*priceCents/1000);
+  return Math.max(0,gross-ceil(gross,15)-ceil(gross,impact)-ceil(gross,35));
+ };
+ for(const asset of DEMO_ASSETS){
+  for(const retainPercent of [0,40,70,95]){
+   for(const cashTarget of ['1','50','250','700','1500']){
+    const plan=simulatePlan(newDemoState(),{...intent,assetId:asset.id,retainPercent,cashTarget},50000);
+    if(plan.status==='BLOCKED')continue;
+    const q=plan.quote!;const before=minimum(asset.priceCents,q.soldMilli-1,q.impactBps);
+    assert.ok(q.minimumCents>=q.targetCents,asset.ticker);
+    assert.ok(before<q.targetCents,asset.ticker+' must use minimal integer debit within synthetic model');
+    assert.ok(q.remainingMilli>=q.floorMilli,asset.ticker);
+    assert.equal(q.minimumCents,minimum(asset.priceCents,q.soldMilli,q.impactBps));
+   }
+  }
+ }
+});
+test('simulation quote expiry cannot be extended by changing client-side quote fields',()=>{
+ const s=newDemoState(),q=simulatePlan(s,intent,10000).quote;
+ if(!q)throw Error('missing quote');
+ assert.throws(()=>assertFreshDemoQuote(s,{...q,expiresAtMs:q.expiresAtMs+10000},11000),/DEMO_QUOTE_CHANGED/);
+ assert.throws(()=>assertFreshDemoQuote(s,{...q,minimumCents:q.minimumCents-100},11000),/DEMO_QUOTE_CHANGED/);
+});
