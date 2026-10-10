@@ -81,7 +81,7 @@
 @media(max-width:375px){.topbar nav{gap:9px;font-size:10px}.topbar .network{white-space:nowrap}}
 
 /* Studio-only anchor navigation keeps demo videos entirely inside Paper Studio. */
-html{scroll-behavior:smooth}
+html{scroll-behavior:auto}
 #demo-overview,#demo-portfolio,#demo-trade,#demo-history,#demo-receipts{scroll-margin-top:24px}
 .topbar nav[aria-label="Paper Studio sections"] a{transition:color .18s ease}
 .topbar nav[aria-label="Paper Studio sections"] a[aria-current="location"]{color:var(--yellow);text-decoration:underline;text-underline-offset:6px}
