@@ -49,3 +49,10 @@ test('status reader aborts a streaming response rather than leaving a pending UI
  controller.abort(new Error('STATUS_CANCELLED'));
  await assert.rejects(task);
 });
+
+test('status parser rejects an advertised byte length that disagrees with the stream',async()=>{
+ const wrong=async()=>new Response(JSON.stringify({ok:true}),{
+  headers:{'content-type':'application/json','content-length':'1'}
+ }) as Response;
+ await assert.rejects(statusJSON('/api/status',undefined,wrong),/STATUS_UNAVAILABLE/);
+});
