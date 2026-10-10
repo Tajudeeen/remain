@@ -87,11 +87,10 @@ html{scroll-behavior:auto}
 .topbar nav[aria-label="Paper Studio sections"] a[aria-current="location"]{color:var(--yellow);text-decoration:underline;text-underline-offset:6px}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.topbar nav[aria-label="Paper Studio sections"] a{transition:none}}
 
-/* Keep studio section tabs on screen while filming; avoid auto-scroll clicks
-   racing another smooth scroll back to the non-sticky header. */
-body:has(#demo-view) .topbar{position:sticky;top:0;z-index:30;background:var(--bg);border-bottom:1px solid var(--line)}
-#demo-overview,#demo-portfolio,#demo-trade,#demo-history,#demo-receipts{scroll-margin-top:132px}
-@media(max-width:768px){#demo-overview,#demo-portfolio,#demo-trade,#demo-history,#demo-receipts{scroll-margin-top:170px}}
+/* The Studio header must never cover quote or risk controls after an
+   automatic scroll. A sticky header intercepted actual browser clicks. */
+body:has(#demo-view) .topbar{position:relative;top:auto;z-index:auto;background:var(--bg);border-bottom:1px solid var(--line)}
+#demo-overview,#demo-portfolio,#demo-trade,#demo-history,#demo-receipts{scroll-margin-top:24px}
 
 /* Judge-ready end-to-end simulation outcome and explainable guard decisions. */
 .paper-record-button{display:inline-flex;align-items:center;justify-content:space-between;gap:22px;margin-top:11px;padding:15px 19px;background:#eac66e;border:1px solid #f4d689;color:#20251c;font-size:12px;font-weight:700;letter-spacing:.2px;min-height:50px}
