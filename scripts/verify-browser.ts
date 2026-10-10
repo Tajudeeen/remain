@@ -400,6 +400,7 @@ try {
   await check("!document.querySelector('#demo-confirm-box').hidden && !document.querySelector('#demo-confirm').disabled");
   await browser('click','#demo-confirm');
   await browser('wait','--fn',"document.querySelector('#demo-order-count').textContent==='1'");
+  await browser('wait','--fn',"document.querySelector('#demo-proof').textContent.includes('SIMULATED SETTLEMENT')");
   await check("document.querySelector('#demo-message').textContent.includes('SIMULATED FILL COMPLETE') && document.querySelector('#demo-cash').textContent!=='350.00 USDT' && document.querySelector('#demo-proof').textContent.includes('SIMULATED SETTLEMENT')");
   await browser('click','#demo-verify');
   await check("document.querySelector('#demo-proof').textContent.includes('PASS') && document.querySelector('#demo-digest').textContent.length>20");
@@ -407,7 +408,7 @@ try {
   await check("document.querySelector('#demo-guard').dataset.state==='blocked' && document.querySelector('#demo-guard').textContent.includes('halted') && document.querySelector('#demo-order-count').textContent==='1'");
   await browser('click','[data-demo-scenario="regular"]');
   await check("document.querySelector('#demo-guard').dataset.state==='ready' && !document.querySelector('#demo-review').disabled");
-  await browser('fill','#demo-target','99999');
+  await browser('fill','#demo-target','50000');
   await browser('click','#demo-calculate');
   await check("document.querySelector('#demo-guard').dataset.state==='blocked' && document.querySelector('#demo-order-count').textContent==='1'");
   stage = 'paper studio responsive views';
