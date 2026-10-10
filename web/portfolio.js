@@ -4,7 +4,23 @@ import { validateCatalog } from './catalog.js';
 
 // Explicit, bounded, read-only BSC scans. A failed RPC is unknown, never a zero holding.
 // The total portfolio is never fabricated or valued without supported market prices.
-export async function scanCatalogPage(catalog, provider, owner, cursor=0, limit=8, signal) {
+// Even a malicious/inert EIP-1193 provider cannot strand the initial/final wallet check.
+export async function boundedScanRequest(provider, method, signal, timeoutMs=12000) {
+  if (!Number.isInteger(timeoutMs) || timeoutMs<1 || timeoutMs>12000 || !provider || typeof provider.request!=='function')
+    throw Error('INVALID_SCAN');
+  signal?.throwIfAborted();
+  let timer, onAbort;
+  const interruption = new Promise((_,reject)=>{
+    timer=setTimeout(()=>reject(Error('WALLET_RPC_TIMEOUT')),timeoutMs);
+    if(signal){
+      onAbort=()=>reject(signal.reason ?? Error('SCAN_ABORTED'));
+      signal.addEventListener('abort',onAbort,{once:true});
+    }
+  });
+  try {return await Promise.race([Promise.resolve().then(()=>provider.request({method})),interruption]);}
+  finally {clearTimeout(timer);if(signal&&onAbort)signal.removeEventListener('abort',onAbort);}
+}
+export async function scanCatalogPage(catalog, provider, owner, cursor=0, limit=8, signal, options={}) {
   // Stock identities are immutable contract addresses, unlike expiring quotes.
   // Bound the browsing snapshot to 15 minutes so multi-page RPC scans can finish.
   const age=Date.now()-catalog?.observedAtMs;
@@ -14,8 +30,8 @@ export async function scanCatalogPage(catalog, provider, owner, cursor=0, limit=
       !Number.isInteger(limit)||limit<1||limit>8) throw Error('INVALID_SCAN');
   signal?.throwIfAborted();
   if (!provider || typeof provider.request!=='function') throw Error('WALLET_UNAVAILABLE');
-  const accounts=await provider.request({method:'eth_accounts'});
-  const chain=await provider.request({method:'eth_chainId'});
+  const accounts=await boundedScanRequest(provider,'eth_accounts',signal,options.timeoutMs);
+  const chain=await boundedScanRequest(provider,'eth_chainId',signal,options.timeoutMs);
   if (!Array.isArray(accounts)||accounts[0]?.toLowerCase()!==owner.toLowerCase()||
       typeof chain!=='string'||!/^0x[0-9a-fA-F]+$/.test(chain)||BigInt(chain)!==56n) throw Error('WALLET_CHANGED');
   const holdings=[], failed=[];
@@ -36,8 +52,8 @@ export async function scanCatalogPage(catalog, provider, owner, cursor=0, limit=
     }
   }
   signal?.throwIfAborted();
-  const after=await provider.request({method:'eth_accounts'});
-  const chainAfter=await provider.request({method:'eth_chainId'});
+  const after=await boundedScanRequest(provider,'eth_accounts',signal,options.timeoutMs);
+  const chainAfter=await boundedScanRequest(provider,'eth_chainId',signal,options.timeoutMs);
   if(!Array.isArray(after)||after[0]?.toLowerCase()!==owner.toLowerCase()||
       typeof chainAfter!=='string'||!/^0x[0-9a-fA-F]+$/.test(chainAfter)||BigInt(chainAfter)!==56n)throw Error('WALLET_CHANGED');
   return Object.freeze({cursor:end,total:verified.stocks.length,complete:end===verified.stocks.length,
