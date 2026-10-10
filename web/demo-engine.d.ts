@@ -10,6 +10,8 @@ export function demoUnits(milli:number):string;
 export function newDemoState():DemoState;
 export function validDemoState(value:unknown):value is DemoState;
 export function simulatePlan(state:DemoState,intent:DemoIntent,now?:number):{status:'READY';reasons:string[];quote:DemoQuote}|{status:'BLOCKED';reasons:string[];quote:null};
+export type DemoGuardCheck = {code:string;status:'pass'|'caution'|'blocked';label:string;observed:string;limit:string;action:string};
+export function demoGuardReport(state:DemoState,intent:DemoIntent,result:ReturnType<typeof simulatePlan>):DemoGuardCheck[];
 export function assertFreshDemoQuote(state:DemoState,quote:DemoQuote,now?:number):true;
 export function executeDemoOrder(state:DemoState,quote:DemoQuote,now?:number):{state:DemoState;order:DemoOrder};
 export function demoReceiptPayload(order:DemoOrder):{kind:string;mode:string;authenticity:string;notice:string;order:DemoOrder};
