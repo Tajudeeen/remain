@@ -411,6 +411,14 @@ try {
   await check("document.querySelector('#demo-guard').dataset.state==='blocked' && document.querySelector('#demo-guard').textContent.includes('halted') && document.querySelector('#demo-order-count').textContent==='1'");
   await browser('click','[data-demo-scenario="regular"]');
   await check("document.querySelector('#demo-guard').dataset.state==='ready' && !document.querySelector('#demo-review').disabled");
+  // Market closure requires explicit permission and must be styled as caution, not a normal pass.
+  await browser('select','#demo-market','closed');
+  await browser('click','#demo-calculate');
+  await check("document.querySelector('#demo-guard').dataset.state==='blocked'");
+  await browser('check','#demo-closed');
+  await browser('click','#demo-calculate');
+  await check("document.querySelector('#demo-guard').dataset.state==='caution' && document.querySelector('#demo-guard').textContent.includes('Explicit simulation permission')");
+  await browser('click','[data-demo-scenario="regular"]');
   await browser('fill','#demo-target','50000');
   await browser('click','#demo-calculate');
   await check("document.querySelector('#demo-guard').dataset.state==='blocked' && document.querySelector('#demo-order-count').textContent==='1'");
