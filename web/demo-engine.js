@@ -6,7 +6,7 @@ export const DEMO_ASSETS = Object.freeze([
   Object.freeze({id:'vector',name:'Vector Labs',ticker:'VCTR-SIM',sector:'Semiconductors',priceCents:8600,startingMilli:18000,accent:'#AFA6DB'})
 ]);
 export const DEMO_NOTICE='SIMULATED · fictional assets, prices, USDT and fills. No wallet, Binance quote, signature or blockchain transaction.';
-const quoteLifetimeMs=45000;
+const quoteLifetimeMs=120000;
 const scenarios=Object.freeze({
   regular:{label:'Regular market',impactBps:20,liquidityMilli:50000,open:true},
   closed:{label:'Underlying market closed',impactBps:35,liquidityMilli:50000,open:false},
