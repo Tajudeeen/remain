@@ -10,7 +10,7 @@ Raise cash. Stay invested.
 
 
 
-**Live-release status:** [Dated, evidence-linked readiness snapshot (October 9)](docs/submission/current-readiness-20261009.md). The newest GitHub code is not yet published by the Netlify production site because multiple builds were marked Skipped; consult the live `/healthz` commit before claiming the latest wallet and evidence features work publicly. The historical `docs/submission/packet.json` is not a current deployment certificate.
+**Current audit:** [October 10 verification, remaining feature gaps and production blocker](docs/submission/audit-20261010.md). **Historical live-release status:** [Dated snapshot (October 9)](docs/submission/current-readiness-20261009.md). The newest GitHub code is not yet published by the Netlify production site because multiple builds were marked Skipped; consult the live `/healthz` commit before claiming the latest wallet and evidence features work publicly. The historical `docs/submission/packet.json` is not a current deployment certificate.
 
 ## Verified deployment and trust boundaries (October 9, 2026)
 
