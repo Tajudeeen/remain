@@ -19,14 +19,29 @@ export function serviceSnapshot(market, execution) {
     executionLabel: execution.available ? 'Execution backend configured' : 'Trade execution unavailable'
   });
 }
-async function statusJSON(endpoint, signal) {
-  const res = await fetch(endpoint, {signal,credentials:'omit',cache:'no-store',redirect:'error'});
-  if (!res.ok || !/^application\/json(?:\s*;|$)/i.test(res.headers.get('content-type') ?? '')) throw Error('STATUS_UNAVAILABLE');
-  const length = Number(res.headers.get('content-length') || '0');
-  if (!Number.isSafeInteger(length) || length > 2048) throw Error('STATUS_UNAVAILABLE');
-  const payload = await res.text();
-  if (payload.length > 2048) throw Error('STATUS_UNAVAILABLE');
-  return JSON.parse(payload);
+export async function statusJSON(endpoint, signal, fetcher=fetch) {
+  const res = await fetcher(endpoint, {signal,credentials:'omit',cache:'no-store',redirect:'error'});
+  if (!res.ok || !/^application\/json(?:\s*;|$)/i.test(res.headers.get('content-type') ?? '') || !res.body) throw Error('STATUS_UNAVAILABLE');
+  const specified=res.headers.get('content-length');
+  const length=specified===null?null:Number(specified);
+  if (length!==null&&(!Number.isSafeInteger(length)||length<0||length>2048)) throw Error('STATUS_UNAVAILABLE');
+  const chunks=[],reader=res.body.getReader();let size=0;
+  const abort=()=>{void reader.cancel().catch(()=>{});};
+  signal?.addEventListener('abort',abort,{once:true});
+  try {
+    while(true) {
+      signal?.throwIfAborted();
+      const {done,value}=await reader.read();
+      if(done)break;
+      size+=value.byteLength;
+      if(size>2048){void reader.cancel().catch(()=>{});throw Error('STATUS_UNAVAILABLE');}
+      chunks.push(value);
+    }
+    signal?.throwIfAborted();
+  } finally {signal?.removeEventListener('abort',abort);reader.releaseLock();}
+  const raw=new Uint8Array(size);let offset=0;
+  for(const chunk of chunks){raw.set(chunk,offset);offset+=chunk.byteLength;}
+  return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(raw));
 }
 if (typeof document !== 'undefined' && document.getElementById('status-market')) {
   const wallet = document.getElementById('status-wallet');
