@@ -29,10 +29,36 @@ export function validDemoState(value){
     !value.positions||typeof value.positions!=='object'||!Array.isArray(value.orders)||value.orders.length>16)return false;
   if(!DEMO_ASSETS.every(a=>isInt(value.positions[a.id],0,a.startingMilli)))return false;
   if(Object.keys(value.positions).length!==DEMO_ASSETS.length)return false;
-  // Browser storage is not authenticated. This is a convenience, never financial evidence.
-  return value.orders.every(o=>o&&o.kind==='REMAIN_SIMULATED_ORDER_V1'&&typeof o.id==='string'&&
-    isInt(o.cashReceivedCents,0,10000000)&&isInt(o.soldMilli,1,50000)&&
-    asAsset(o.assetId)&&Array.isArray(o.events)&&o.events.length===5);
+  // Browser storage is not authenticated, but even a fictional journal must
+  // reconcile across transactions. The newest event balances equal current
+  // state; walking backwards must reconstruct all retained local history.
+  if(value.epoch<value.orders.length)return false;
+  let cash=value.cashCents;
+  const balances={...value.positions},seen=new Set();
+  const stages=['INTENT_ACCEPTED','BELLGUARD_PASSED','USER_CONFIRMED','SIMULATED_FILL','ACCOUNTING_RECONCILED'];
+  for(const o of value.orders){
+    const asset=asAsset(o?.assetId);
+    if(!asset||o.kind!=='REMAIN_SIMULATED_ORDER_V1'||o.mode!=='SIMULATION'||
+      o.status!=='SETTLED_SIMULATION'||o.ticker!==asset.ticker||
+      typeof o.id!=='string'||!/^SIM-[0-9]+-[0-9]+-(?:nova|orbit|vector)$/.test(o.id)||
+      seen.has(o.id)||!isInt(o.createdAtMs,0,9999999999999)||
+      !isInt(o.soldMilli,1,50000)||!isInt(o.beforeMilli,0,asset.startingMilli)||
+      !isInt(o.afterMilli,0,asset.startingMilli)||!isInt(o.floorMilli,0,asset.startingMilli)||
+      o.beforeMilli-o.soldMilli!==o.afterMilli||o.afterMilli<o.floorMilli||
+      !isInt(o.cashBeforeCents,0,200000000)||!isInt(o.cashAfterCents,0,200000000)||
+      !isInt(o.cashReceivedCents,1,10000000)||o.cashAfterCents!==o.cashBeforeCents+o.cashReceivedCents||
+      !isInt(o.minimumCents,1,10000000)||!isInt(o.targetCents,1,10000000)||
+      o.cashReceivedCents<o.minimumCents||o.minimumCents<o.targetCents||
+      !isInt(o.impactBps,0,500)||o.signature!==null||
+      o.transactionHash!==null||o.blockNumber!==null||
+      !Array.isArray(o.events)||o.events.length!==5||
+      o.events.some((e,i)=>!e||e.sequence!==i+1||e.type!==stages[i]||e.atMs!==o.createdAtMs)||
+      cash!==o.cashAfterCents||balances[o.assetId]!==o.afterMilli)return false;
+    seen.add(o.id);
+    cash=o.cashBeforeCents;
+    balances[o.assetId]=o.beforeMilli;
+  }
+  return true;
 }
 export function simulatePlan(state,intent,now=Date.now()){
   const blocked=reasons=>({status:'BLOCKED',reasons,quote:null});
