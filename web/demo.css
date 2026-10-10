@@ -130,3 +130,5 @@ body:has(#demo-view) .topbar{position:sticky;top:0;z-index:30;background:var(--b
 .paper-outcome-summary strong{color:#eecb79;font-size:14px;letter-spacing:-.3px}
 .paper-outcome .paper-muted{line-height:1.6}
 @media(max-width:680px){.paper-outcome{padding:19px}.paper-outcome-heading{flex-wrap:wrap}.paper-outcome-grid{grid-template-columns:1fr;gap:8px}.paper-outcome-arrow{transform:rotate(90deg);font-size:21px}.paper-outcome-column{padding:18px}.paper-outcome-sub{margin-top:12px}.paper-outcome-summary{gap:12px}}
+
+#demo-guard-checks[hidden],#demo-outcome[hidden]{display:none}
