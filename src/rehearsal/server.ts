@@ -13,6 +13,10 @@ import { ExecutionHttp, executionError } from '../execution/http.ts';
 const assets = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']], ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']], ['/logo.png', ['logo.png', 'image/png']],
+  ['/studio.html', ['studio.html', 'text/html; charset=utf-8']],
+  ['/demo.css', ['demo.css', 'text/css; charset=utf-8']],
+  ['/demo.js', ['demo.js', 'text/javascript; charset=utf-8']],
+  ['/demo-engine.js', ['demo-engine.js', 'text/javascript; charset=utf-8']],
   ['/proof.js', ['proof.js', 'text/javascript; charset=utf-8']],
   ['/response.js', ['response.js', 'text/javascript; charset=utf-8']],
   ['/live.js', ['live.js', 'text/javascript; charset=utf-8']],

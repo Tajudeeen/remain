@@ -1,0 +1,18 @@
+export type DemoAsset = Readonly<{id:string;name:string;ticker:string;sector:string;priceCents:number;startingMilli:number;accent:string}>;
+export type DemoState = {version:number;epoch:number;cashCents:number;positions:Record<string,number>;orders:DemoOrder[]};
+export type DemoIntent = {assetId:string;cashTarget:string;retainPercent:number;maxImpactBps:number;scenario:string;allowClosed:boolean};
+export type DemoQuote = {id:string;epoch:number;assetId:string;ticker:string;input:DemoIntent;targetCents:number;balanceMilli:number;floorMilli:number;soldMilli:number;remainingMilli:number;grossCents:number;feeCents:number;impactCents:number;slippageCents:number;expectedCents:number;minimumCents:number;impactBps:number;feeBps:number;slippageBps:number;issuedAtMs:number;expiresAtMs:number;venue:string;mode:'SIMULATION';chainTransaction:null};
+export type DemoOrder = {kind:'REMAIN_SIMULATED_ORDER_V1';id:string;mode:'SIMULATION';assetId:string;ticker:string;createdAtMs:number;soldMilli:number;beforeMilli:number;afterMilli:number;floorMilli:number;cashBeforeCents:number;cashAfterCents:number;cashReceivedCents:number;minimumCents:number;targetCents:number;impactBps:number;events:{sequence:number;type:string;atMs:number}[];status:'SETTLED_SIMULATION';transactionHash:null;blockNumber:null;signature:null};
+export const DEMO_ASSETS:readonly DemoAsset[];
+export const DEMO_NOTICE:string;
+export function demoMoney(cents:number):string;
+export function demoUnits(milli:number):string;
+export function newDemoState():DemoState;
+export function validDemoState(value:unknown):value is DemoState;
+export function simulatePlan(state:DemoState,intent:DemoIntent,now?:number):{status:'READY';reasons:string[];quote:DemoQuote}|{status:'BLOCKED';reasons:string[];quote:null};
+export function assertFreshDemoQuote(state:DemoState,quote:DemoQuote,now?:number):true;
+export function executeDemoOrder(state:DemoState,quote:DemoQuote,now?:number):{state:DemoState;order:DemoOrder};
+export function demoReceiptPayload(order:DemoOrder):{kind:string;mode:string;authenticity:string;notice:string;order:DemoOrder};
+export function digestDemoPayload(payload:unknown):Promise<string>;
+export function createDemoReceipt(order:DemoOrder):Promise<{payload:ReturnType<typeof demoReceiptPayload>;sha256:string}>;
+export function verifyDemoReceipt(receipt:unknown):Promise<boolean>;
